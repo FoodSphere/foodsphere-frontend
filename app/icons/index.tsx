@@ -13,15 +13,15 @@ import { CloseIcon } from "@/public/icons/CloseIcon";
 import { CustomerIcon } from "@/public/icons/CustomerIcon";
 import { DashboardIcon } from "@/public/icons/DashboardIcon";
 import { EditIcon } from "@/public/icons/EditIcon";
+import { HidePasswordIcon } from "@/public/icons/HidePasswordIcon";
 import { LogoutIcon } from "@/public/icons/LogoutIcon";
 import { MenuIcon } from "@/public/icons/MenuIcon";
 import { MinusIcon } from "@/public/icons/MinusIcon";
 import { OrderIcon } from "@/public/icons/OrderIcon";
-import { PlusIcon } from "@/public/icons/PlusIcon";
 import { PencilIcon } from "@/public/icons/PencilIcon";
+import { PlusIcon } from "@/public/icons/PlusIcon";
 import { PrintIcon } from "@/public/icons/PrintIcon";
 import { PromotionIcon } from "@/public/icons/PromotionIcon";
-import { HidePasswordIcon } from "@/public/icons/HidePasswordIcon";
 import { RestaurantIcon } from "@/public/icons/RestaurantIcon";
 import { SearchIcon } from "@/public/icons/SearchIcon";
 import { SettingIcon } from "@/public/icons/SettingIcon";
@@ -82,4 +82,4 @@ const Icons: React.FC<IconProps> = ({ name, ...props }) => {
   return <SvgIcon className="w-auto" {...props} />;
 };
 
-export { Icons, iconNames };
+export { iconNames,Icons };
