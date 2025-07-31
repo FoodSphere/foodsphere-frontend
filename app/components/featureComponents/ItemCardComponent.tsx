@@ -6,26 +6,26 @@ interface Ingredient {
 }
 
 interface ItemCardComponentProps {
-  page: string;
   imgUrl: string;
   title: string;
   amount: number;
   unit: string;
   onEdit?: () => void;
   onClose?: () => void;
+  useIngredients?: boolean;
   showIngredients?: boolean;
   setShowIngredientsState?: React.Dispatch<React.SetStateAction<boolean>>;
   Ingredients?: Ingredient[];
 }
 
 export const ItemCardComponent = ({
-  page,
   imgUrl,
   title,
   amount,
   unit,
   onEdit,
   onClose,
+  useIngredients = false,
   showIngredients = false,
   setShowIngredientsState,
   Ingredients = [],
@@ -39,7 +39,7 @@ export const ItemCardComponent = ({
       />
       <div className="w-full flex flex-col items-center border-x-2 border-b-2 border-primary-orange-main rounded-b-2xl">
         <h3 className="text-xl mt-4 mb-2 text-center text-black">{title}</h3>
-        <p className="mb-4 text-center text-gray-700 font-medium">
+        <p className="mb-4 text-center text-gray-700 font-semibold">
           {amount} {unit}
         </p>
         <div className="flex gap-4 mb-4">
@@ -65,7 +65,7 @@ export const ItemCardComponent = ({
             </button>
           )}
         </div>
-        {page === "menu" && (
+        {useIngredients && (
           <button
             className="text-sky-500 text-sm font-medium flex items-center gap-1 mb-2 hover:underline"
             onClick={() =>
@@ -76,7 +76,7 @@ export const ItemCardComponent = ({
             {showIngredients ? "Hide ingredients" : "Show ingredients"}
           </button>
         )}
-        {page == "menu" && showIngredients && Ingredients.length > 0 && (
+        {useIngredients && showIngredients && Ingredients.length > 0 && (
           <ul className="w-full border-t-2 border-dashed border-black my-2 pt-2">
             {Ingredients.map((ingredient, index) => (
               <li

@@ -7,46 +7,28 @@ const StockRender = () => {
     <div className="flex">
       <div className='text-red-500'>Stock Hello World!!!</div>
       <ItemCardComponent
-        page="stock"
-        imgUrl="https://www.japanesecooking101.com/wp-content/uploads/2012/03/IMG_3833.jpeg"
-        title="Tonkutsu"
+        imgUrl="https://www.everydaycheapskate.com/wp-content/uploads/20250407-how-to-cook-boneless-skinless-chicken-breast-on-a-cutting-board-with-thyme-garlic-and-red-peppercorns.png"
+        title="Chicken Breast"
         amount={10}
-        unit="kg"
+        unit="pcs."
         onEdit={() => console.log("Edit Item")}
         onClose={() => console.log("Close Item")}
-        showIngredients={true}
-        Ingredients={[
-          { title: "Ingredient 1", amount: 100 },
-          { title: "Ingredient 2", amount: 200 },
-        ]}
       />
       <ItemCardComponent
-        page="stock"
-        imgUrl="https://www.japanesecooking101.com/wp-content/uploads/2012/03/IMG_3833.jpeg"
-        title="Tonkutsu"
+        imgUrl="https://www.everydaycheapskate.com/wp-content/uploads/20250407-how-to-cook-boneless-skinless-chicken-breast-on-a-cutting-board-with-thyme-garlic-and-red-peppercorns.png"
+        title="Chicken Breast"
         amount={10}
-        unit="kg"
+        unit="pcs."
         onEdit={() => console.log("Edit Item")}
         onClose={() => console.log("Close Item")}
-        showIngredients={true}
-        Ingredients={[
-          { title: "Ingredient 1", amount: 100 },
-          { title: "Ingredient 2", amount: 200 },
-        ]}
       />
       <ItemCardComponent
-        page="stock"
-        imgUrl="https://www.japanesecooking101.com/wp-content/uploads/2012/03/IMG_3833.jpeg"
-        title="Tonkutsu"
+        imgUrl="https://www.everydaycheapskate.com/wp-content/uploads/20250407-how-to-cook-boneless-skinless-chicken-breast-on-a-cutting-board-with-thyme-garlic-and-red-peppercorns.png"
+        title="Chicken Breast"
         amount={10}
-        unit="kg"
+        unit="pcs."
         onEdit={() => console.log("Edit Item")}
         onClose={() => console.log("Close Item")}
-        showIngredients={true}
-        Ingredients={[
-          { title: "Ingredient 1", amount: 100 },
-          { title: "Ingredient 2", amount: 200 },
-        ]}
       />
     </div>
   )
