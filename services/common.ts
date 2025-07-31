@@ -2,9 +2,10 @@
 
 import { signOut } from "next-auth/react";
 
+import { getCookie } from "@/libs/cookie";
+
 import { useGlobalStore } from "../store/globalStore";
 import { EHttpStatusCode } from "../types/enum";
-import { getCookie } from "@/libs/cookie";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 

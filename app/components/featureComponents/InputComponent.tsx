@@ -85,9 +85,9 @@ export const InputComponent = ({
           BackIcon={
             isPassword ? (
               iconState ? (
-                <Icons name="ShowPassword" className="w-5 h-5 text-gray-500" />
+                <Icons name="ShowPasswordIcon" className="w-5 h-5 text-gray-500" />
               ) : (
-                <Icons name="HidePassword" className="w-5 h-5 text-gray-500" />
+                <Icons name="HidePasswordIcon" className="w-5 h-5 text-gray-500" />
               )
             ) : (
               ""
@@ -104,7 +104,7 @@ export const InputComponent = ({
       {onRemove && (
         <div className="flex justify-end">
           <Icons
-            name="Trash"
+            name="TrashIcon"
             onClick={onRemove}
             className="w-5 h-5 text-primary-red-main"
           />

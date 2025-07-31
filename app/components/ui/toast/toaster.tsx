@@ -1,5 +1,7 @@
 "use client";
 
+import { iconNames, Icons } from "@/app/icons";
+
 import {
   Toast,
   ToastClose,
@@ -9,7 +11,6 @@ import {
   ToastViewport,
 } from "./toast";
 import { useToast } from "./use-toast";
-import { iconNames, Icons } from "@/app/icons";
 
 export function Toaster() {
   const { toasts } = useToast();
