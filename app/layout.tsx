@@ -9,8 +9,8 @@ const notoSanThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "FOODSPHERE - POS platform",
-  description: "POS platform for medium size retaurant.",
+  title: "FOODSPHERE - POS Platform",
+  description: "POS platform for medium size restaurant.",
 };
 
 export default function RootLayout({
@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* <link rel="icon" href="/icons/sahapanLogo01.svg" /> */}
+        <link rel="icon" href="https://storage.ensigame.com/logos/teams/be384481caba4964ce41eda884e4ad24.png" />
       </head>
       <body
         className={`${notoSanThai.className}`}
