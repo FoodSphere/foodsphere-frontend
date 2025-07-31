@@ -24,6 +24,7 @@ import { PrintIcon } from "@/public/icons/PrintIcon";
 import { PromotionIcon } from "@/public/icons/PromotionIcon";
 import { RestaurantIcon } from "@/public/icons/RestaurantIcon";
 import { SearchIcon } from "@/public/icons/SearchIcon";
+import { SendIcon } from "@/public/icons/SendIcon";
 import { SettingIcon } from "@/public/icons/SettingIcon";
 import { ShowPasswordIcon } from "@/public/icons/ShowPasswordIcon";
 import { StockIcon } from "@/public/icons/StockIcon";
@@ -59,6 +60,7 @@ const iconNames = {
   HidePasswordIcon,
   RestaurantIcon,
   SearchIcon,
+  SendIcon,
   SettingIcon,
   ShowPasswordIcon,
   StockIcon,
