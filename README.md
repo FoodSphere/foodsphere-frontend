@@ -1,8 +1,5 @@
 # FOODSPHERE
 
-this branch name "dev" is for development FOODSPHERE project.
-you has to checkout for another features from this branch.
-
 First, install package:
 
 ```bash
