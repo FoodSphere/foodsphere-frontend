@@ -1,6 +1,6 @@
 "use client";
 
-import { ItemTypeEnum, ActionEnum } from "@/public/enum/confirmModalEnum";
+import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { ItemCardComponent } from "@/app/components/featureComponents/ItemCardComponent";
@@ -33,10 +33,8 @@ const StockRender = () => {
         onClose={() => console.log("Close Item")}
       />
       {/* <ConfirmModalComponent
-        title="Confirmation"
-        action={ActionEnum.Add}
+        confirmType={ConfirmTypeEnum.DeleteStock}
         itemName="Tomato"
-        itemType={ItemTypeEnum.Stock}
         onConfirm={() => console.log("Confirm")}
         onCancel={() => console.log("Cancel")}
       /> */}

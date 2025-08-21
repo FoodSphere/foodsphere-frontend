@@ -1,9 +1,19 @@
-export enum ItemTypeEnum {
-    Menu = "Menu",
-    Stock = "Stock"
-}
-
-export enum ActionEnum {
-    Add = "Add",
-    Edit = "Edit"
+export enum ConfirmTypeEnum {
+  AddTable,
+  DeleteTable,
+  OpenBill,
+  CashPayment,
+  QRPayment,
+  CardPayment,
+  PaymentSuccess,
+  AddStock,
+  EditStock,
+  CloseStock,
+  DeleteStock,
+  AddMenu,
+  EditMenu,
+  CloseMenu,
+  DeleteMenu,
+  UpdateOrder,
+  CancelOrder
 }
