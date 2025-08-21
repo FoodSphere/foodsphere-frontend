@@ -1,6 +1,6 @@
 "use client";
 
-import { ActionEnum, ItemTypeEnum } from "@/public/enum/confirmModalEnum";
+import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { ItemCardComponent } from "@/app/components/featureComponents/ItemCardComponent";
@@ -54,10 +54,8 @@ const MenuRender = () => {
         ]}
       />
       {/* <ConfirmModalComponent 
-        title="Confirmation"
-        action={ActionEnum.Edit}
+        confirmType={ConfirmTypeEnum.AddMenu}
         itemName="Sukiyaki"
-        itemType={ItemTypeEnum.Menu}
         onConfirm={() => console.log("Confirm")}
         onCancel={() => console.log("Cancel")}
       /> */}
