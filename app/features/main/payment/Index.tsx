@@ -1,7 +1,7 @@
 "use client";
 
-import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
-import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
+// import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
+// import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 
 const PaymentRender = () => {
   return (
