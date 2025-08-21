@@ -1,7 +1,6 @@
 "use client";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
-import { ItemTypeEnum } from "@/public/enum/itemTypeEnum";
 
 const TableRender = () => {
   return (

@@ -1,8 +1,9 @@
 import { Icons } from "@/app/icons";
-import { ItemTypeEnum } from "@/public/enum/itemTypeEnum";
+import { ActionEnum, ItemTypeEnum } from "@/public/enum/confirmModalEnum";
 
 interface ConfirmModalComponentProps {
   title: string;
+  action?: ActionEnum | null;
   itemName?: string | null;
   itemType?: ItemTypeEnum | null;
   onConfirm?: () => void;
@@ -11,26 +12,26 @@ interface ConfirmModalComponentProps {
 
 export const ConfirmModalComponent = ({
   title,
+  action = null,
   itemName = null,
   itemType = null,
   onConfirm,
   onCancel,
 }: ConfirmModalComponentProps) => {
   return (
-    <div className="min-w-full min-h-full fixed top-0 flex flex-col justify-center items-center bg-[rgba(0,0,0,0.8)]">
+    <div className="min-w-full min-h-full fixed top-0 left-0 flex flex-col justify-center items-center bg-[rgba(0,0,0,0.8)]">
       <div className="bg-white rounded-t-2xl w-[400px] text-center">
         <p className="text-black font-bold text-2xl m-5">{title}</p>
       </div>
       <hr className="border-t border-gray-300"></hr>
       <div className="bg-white rounded-b-2xl w-[400px]">
-        {itemName && (
+        {action && itemName && itemType && (
           <p className="text-black mt-8 mb-5 text-center">
-            Add{" "}
+            {action}{" "}
             <span className="text-primary-orange-main underline">
               {itemName}
             </span>{" "}
-            to restaurant's{" "}
-            {itemType === ItemTypeEnum.Menu ? "menu list" : "stock list"}
+            to restaurant's {itemType.toLowerCase()} list
           </p>
         )}
         <div
