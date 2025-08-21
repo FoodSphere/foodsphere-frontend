@@ -25,7 +25,7 @@ export const Sidebar = () => {
       <div className="flex flex-col gap-10">
         {/* product logo */}
         <div className="text-2xl font-extrabold text-primary-orange-main">
-          FOOD SHPERE
+          FOOD SPHERE
         </div>
         {/* feature links */}
         <SidebarNavList className="flex flex-col gap-1" links={links} />
