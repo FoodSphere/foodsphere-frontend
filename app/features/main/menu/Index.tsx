@@ -1,5 +1,8 @@
 "use client";
 
+import { ItemTypeEnum } from "@/public/enum/itemTypeEnum";
+
+import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { ItemCardComponent } from "@/app/components/featureComponents/ItemCardComponent";
 
 const MenuRender = () => {
@@ -50,6 +53,13 @@ const MenuRender = () => {
           { title: "Ingredient 2", amount: 200 },
         ]}
       />
+      {/* <ConfirmModalComponent 
+        title="Confirmation"
+        itemName="Sukiyaki"
+        itemType={ItemTypeEnum.Menu}
+        onConfirm={() => console.log("Confirm")}
+        onCancel={() => console.log("Cancel")}
+      /> */}
     </div>
   );
 };
