@@ -4,11 +4,15 @@
 // import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 // import { MenuStatusEnum } from "@/public/enum/menuStatusEnum";
 
+import { OrderCardDisplay } from "./components/OrderCardDisplay";
+
 const OrderRender = () => {
   return (
-    <div>
+
+    <div className="w-full flex flex-col justify-center items-center">
       <div className="text-red-500">Order Hello World!!!</div>
-      {/* <ConfirmModalComponent
+      <OrderCardDisplay />
+        {/* <ConfirmModalComponent
         confirmType={ConfirmTypeEnum.CancelOrder}
         itemName="Tomato"
         onConfirm={() => console.log("Confirm")}
