@@ -1,9 +1,8 @@
 "use client";
 
-import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
-
-import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { ItemCardComponent } from "@/app/components/featureComponents/ItemCardComponent";
+// import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
+// import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 
 const StockRender = () => {
   return (

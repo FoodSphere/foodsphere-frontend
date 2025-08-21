@@ -1,8 +1,7 @@
 "use client";
 
-import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
-
-import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
+// import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
+// import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 import { ItemCardComponent } from "@/app/components/featureComponents/ItemCardComponent";
 
 const MenuRender = () => {

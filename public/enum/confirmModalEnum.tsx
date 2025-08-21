@@ -15,5 +15,5 @@ export enum ConfirmTypeEnum {
   CloseMenu,
   DeleteMenu,
   UpdateOrder,
-  CancelOrder
+  CancelOrder,
 }

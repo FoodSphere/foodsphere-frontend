@@ -1,7 +1,8 @@
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+
 import { Icons } from "@/app/icons";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 import { MenuStatusEnum } from "@/public/enum/menuStatusEnum";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 interface ConfirmModalComponentProps {
   confirmType: ConfirmTypeEnum;
@@ -111,7 +112,7 @@ export const ConfirmModalComponent = ({
         ? validFullName && validCardNumber && validCvv
         : true
     );
-  }, [fullName, cardNumber, cvv]);
+  }, [fullName, cardNumber, cvv, confirmType]);
 
   return (
     <div className="min-w-full min-h-full fixed top-0 left-0 flex flex-col justify-center items-center bg-[rgba(0,0,0,0.8)]">
@@ -185,7 +186,7 @@ export const ConfirmModalComponent = ({
                 <span className="text-primary-orange-main underline">
                   {itemName}
                 </span>{" "}
-                to restaurant's{" "}
+                to restaurant{" "}
                 {[ConfirmTypeEnum.AddMenu].includes(confirmType)
                   ? "menu list"
                   : "stock list"}{" "}
@@ -201,7 +202,7 @@ export const ConfirmModalComponent = ({
                 <span className="text-primary-orange-main underline">
                   {itemName}
                 </span>{" "}
-                in restaurant's{" "}
+                in restaurant{" "}
                 {[ConfirmTypeEnum.EditMenu].includes(confirmType)
                   ? "menu"
                   : "stock"}{" "}
@@ -217,7 +218,7 @@ export const ConfirmModalComponent = ({
                 <span className="text-primary-orange-main underline">
                   {itemName}
                 </span>{" "}
-                in restaurant's{" "}
+                in restaurant{" "}
                 {[ConfirmTypeEnum.CloseMenu].includes(confirmType)
                   ? "menu"
                   : "stock"}{" "}
@@ -233,7 +234,7 @@ export const ConfirmModalComponent = ({
                 <span className="text-primary-orange-main underline">
                   {itemName}
                 </span>{" "}
-                to restaurant's{" "}
+                to restaurant{" "}
                 {[ConfirmTypeEnum.DeleteMenu].includes(confirmType)
                   ? "menu"
                   : "stock"}{" "}
