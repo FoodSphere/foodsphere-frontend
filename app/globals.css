@@ -25,13 +25,13 @@
 }
 
 /* 3. กำหนดค่าตัวแปรสำหรับ Dark Mode */
-@media (prefers-color-scheme: light) {
+/* @media (prefers-color-scheme: light) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
-    /* คุณสามารถกำหนดค่าสีสำหรับ dark mode ใหม่ได้ที่นี่ หากต้องการ */
+    คุณสามารถกำหนดค่าสีสำหรับ dark mode ใหม่ได้ที่นี่ หากต้องการ
   }
-}
+} */
 
 /* 4. บอกให้ Tailwind รู้จักตัวแปรสีพื้นฐาน */
 @theme {
