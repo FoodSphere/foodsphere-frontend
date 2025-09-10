@@ -28,7 +28,7 @@ jobs:
 
       # 4. Install dependencies
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       # 5. Run ESLint
       - name: Lint code
