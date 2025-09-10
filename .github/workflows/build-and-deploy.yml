@@ -1,0 +1,44 @@
+name: Deploy Next.js to Vercel
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      # 3. Setup pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 5. Run ESLint
+      - name: Lint code
+        run: pnpm lint
+
+      # 6. Build Next.js
+      - name: Build Next.js
+        run: pnpm build
+
+      # 7. Deploy to Vercel
+      - name: Deploy to Vercel
+        run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --confirm
