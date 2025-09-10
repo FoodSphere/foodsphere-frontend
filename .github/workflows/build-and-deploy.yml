@@ -18,8 +18,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
-          run_install: false # we’ll run install manually
+          run_install: false
 
       # 3. Setup Node.js (no cache here)
       - name: Setup Node.js
