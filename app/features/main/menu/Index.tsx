@@ -1,5 +1,6 @@
 "use client";
 
+import { HistoryComponent } from "@/app/components/featureComponents/HistoryComponent";
 import { FilterBarComponent } from "@/app/components/featureComponents/FilterBarComponent";
 // import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 // import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
@@ -62,6 +63,7 @@ const MenuRender = () => {
         onConfirm={() => console.log("Confirm")}
         onCancel={() => console.log("Cancel")}
       /> */}
+      <HistoryComponent/>
     </div>
   );
 };
