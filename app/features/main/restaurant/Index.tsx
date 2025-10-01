@@ -1,11 +1,33 @@
-import React from 'react'
+"use client";
+import React, { useState } from "react";
+
+import { ButtonGroup, ViewType } from "./components/ButtonGroup";
+import { ManageDiscountView } from "./components/ManageDiscount";
+import { ManageEmployeesView } from "./components/ManageEmployees";
+import { MyRestaurantView } from "./components/MyRestaurant";
 
 const RestaurantRender = () => {
-  return (
-    <div>
-      <div className='text-primary-orange-main'>Restaurant Hello world!!!</div>
-    </div>
-  )
-}
+  const [currentView, setCurrentView] = useState<ViewType>("my-restaurant");
 
-export default RestaurantRender
+  const renderContent = () => {
+    switch (currentView) {
+      case "my-restaurant":
+        return <MyRestaurantView />;
+      case "manage-employees":
+        return <ManageEmployeesView />;
+      case "manage-discount":
+        return <ManageDiscountView />;
+      default:
+        return <MyRestaurantView />;
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen w-full bg-gray-100 p-4 lg:p-8 font-sans">
+      <ButtonGroup activeView={currentView} setActiveView={setCurrentView} />
+      <main className="flex-1 pl-4 lg:pl-8">{renderContent()}</main>
+    </div>
+  );
+};
+
+export default RestaurantRender;
