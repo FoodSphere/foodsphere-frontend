@@ -12,7 +12,7 @@ export default function Layout({
   return (
     <div className="flex flex-row">
       {!isLoginPage && <Sidebar />}
-      {children}
+      <main className="ml-[208px]">{children}</main>
     </div>
   );
 }
