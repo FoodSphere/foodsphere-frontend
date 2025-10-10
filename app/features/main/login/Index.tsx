@@ -1,19 +1,52 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import { Icons } from "@/app/icons";
 
 const LoginRender = () => {
+  const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
   });
 
+  const isLogin: boolean = true;
+  const permission: string = "dashboard";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     // Add your login logic here
+    if (isLogin) {
+      switch (permission) {
+        case "dashboard":
+          router.push("/");
+          break;
+        case "order":
+          router.push("/order");
+          break;
+        case "table":
+          router.push("/table");
+          break;
+        case "stock":
+          router.push("/stock");
+          break;
+        case "menu":
+          router.push("/menu");
+          break;
+        case "restaurant":
+          router.push("/restaurant");
+          break;
+        default:
+          router.push("/error");
+      }
+    } else {
+      console.log("Something went wrong!!!")
+    }
   };
 
   return (

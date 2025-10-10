@@ -21,7 +21,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className="w-52 min-h-screen bg-primary-gray-main text-[15px] flex flex-col justify-between items-center py-20">
+    <div className="w-52 min-h-screen bg-primary-gray-main text-[15px] flex flex-col justify-between items-center py-20 fixed">
       <div className="flex flex-col gap-10">
         {/* product logo */}
         <div className="text-2xl font-extrabold text-primary-orange-main">
@@ -33,7 +33,7 @@ export const Sidebar = () => {
 
       {/* logout */}
       <Link
-        href="/"
+        href="/login"
         className="text-black flex flex-col items-center gap-2 hover:text-primary-orange-main transition duration-150 ease-in-out"
       >
         <Icons className="w-6 text-primary-orange-main" name="LogoutIcon" />
