@@ -18,8 +18,6 @@ const MenuRender = () => {
           onEdit={() => console.log("Edit Item")}
           onClose={() => console.log("Close Item")}
           useIngredients={true}
-          showIngredients={true}
-          setShowIngredientsState={() => console.log("Set Show Ingredients")}
           Ingredients={[
             { title: "Ingredient 1", amount: 100 },
             { title: "Ingredient 2", amount: 200 },
@@ -33,8 +31,6 @@ const MenuRender = () => {
           onEdit={() => console.log("Edit Item")}
           onClose={() => console.log("Close Item")}
           useIngredients={true}
-          showIngredients={false}
-          setShowIngredientsState={() => console.log("Set Show Ingredients")}
           Ingredients={[
             { title: "Ingredient 1", amount: 100 },
             { title: "Ingredient 2", amount: 200 },
@@ -48,8 +44,6 @@ const MenuRender = () => {
           onEdit={() => console.log("Edit Item")}
           onClose={() => console.log("Close Item")}
           useIngredients={true}
-          showIngredients={true}
-          setShowIngredientsState={() => console.log("Set Show Ingredients")}
           Ingredients={[
             { title: "Ingredient 1", amount: 100 },
             { title: "Ingredient 2", amount: 200 },

@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Icons } from "@/app/icons";
 
 interface Ingredient {
@@ -13,8 +15,6 @@ interface ItemCardComponentProps {
   onEdit?: () => void;
   onClose?: () => void;
   useIngredients?: boolean;
-  showIngredients?: boolean;
-  setShowIngredientsState?: React.Dispatch<React.SetStateAction<boolean>>;
   Ingredients?: Ingredient[];
 }
 
@@ -26,12 +26,12 @@ export const ItemCardComponent = ({
   onEdit,
   onClose,
   useIngredients = false,
-  showIngredients = false,
-  setShowIngredientsState,
   Ingredients = [],
 }: ItemCardComponentProps) => {
+  var [showIngredients, setShowIngredients] = useState(false);
+
   return (
-    <div className="shadow relative flex flex-col items-center">
+    <div className="relative flex flex-col items-center">
       {imgUrl ? (
         <img
           src={imgUrl}
@@ -74,10 +74,7 @@ export const ItemCardComponent = ({
         {useIngredients && (
           <button
             className="cursor-pointer text-sky-500 text-sm font-medium flex items-center gap-1 mb-4 hover:underline"
-            onClick={() =>
-              setShowIngredientsState &&
-              setShowIngredientsState(!showIngredients)
-            }
+            onClick={() => setShowIngredients(!showIngredients)}
           >
             {showIngredients ? "Hide ingredients" : "Show ingredients"}
             {showIngredients ? (
@@ -88,17 +85,19 @@ export const ItemCardComponent = ({
           </button>
         )}
         {useIngredients && showIngredients && Ingredients.length > 0 && (
-          <ul className="w-full border-t-2 border-dashed border-black mb-2 pt-2">
-            {Ingredients.map((ingredient, index) => (
-              <li
-                key={index}
-                className="flex justify-between px-2 py-1 text-base text-gray-800"
-              >
-                <span>{ingredient.title}</span>
-                <span>x {ingredient.amount}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="w-full overflow-hidden">
+            <ul className="w-full border-t-2 border-dashed border-black mb-2 pt-2">
+              {Ingredients.map((ingredient, index) => (
+                <li
+                  key={index}
+                  className="flex justify-between px-2 py-1 text-base text-gray-800"
+                >
+                  <span>{ingredient.title}</span>
+                  <span>x {ingredient.amount}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </div>
