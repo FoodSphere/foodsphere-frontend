@@ -12,7 +12,7 @@ export const Table = ({
   return (
     <button
       className={`h-40 w-60 rounded-lg text-white text-2xl font-semibold transition-all hover:scale-105 
-              ${hasCustomers ? "bg-gray-600" : "bg-primary-orange-main"}`}
+              ${hasCustomers ? "bg-primary-orange-main" : "bg-gray-600"}`}
       onClick={() => onClick(id)}
     >
       Table {id}

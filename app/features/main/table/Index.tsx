@@ -1,30 +1,122 @@
 "use client";
 import { useState } from "react";
 
+import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
+import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
+
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
-
-// import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
-// import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 
 interface TableData {
   id: string;
   hasCustomers: boolean;
 }
 
+const Tables: TableData[] = [
+  { id: "01", hasCustomers: false },
+  { id: "02", hasCustomers: false },
+  { id: "03", hasCustomers: true },
+  { id: "04", hasCustomers: false },
+  { id: "05", hasCustomers: false },
+  { id: "06", hasCustomers: false },
+  { id: "07", hasCustomers: true },
+  { id: "08", hasCustomers: false },
+  { id: "09", hasCustomers: true },
+];
+
 const TableRender = () => {
-  const [tables] = useState<TableData[]>([
-    { id: "01", hasCustomers: false },
-    { id: "02", hasCustomers: false },
-    { id: "03", hasCustomers: true },
-    { id: "04", hasCustomers: false },
-    { id: "05", hasCustomers: false },
-    { id: "06", hasCustomers: false },
-    { id: "07", hasCustomers: true },
-    { id: "08", hasCustomers: false },
-    { id: "09", hasCustomers: true },
-  ]);
+  const [tables, setTables] = useState<TableData[]>(Tables);
+
+  const [currentTable, setCurrentTable] = useState<TableData | null>(null);
+
+  const [showConfirmOpenBillModal, setShowConfirmOpenBillModal] =
+    useState<Boolean>(false);
+
+  const [showConfirmAddTableModal, setShowConfirmAddTableModal] =
+    useState<Boolean>(false);
+
+  const [showConfirmRemoveTableModal, setShowConfirmRemoveTableModal] =
+    useState<Boolean>(false);
+
+  let [guests, setGuests] = useState<number>(0);
+
+  function openTable(table: TableData): void {
+    if (!table.hasCustomers) {
+      setCurrentTable(table);
+      setShowConfirmOpenBillModal(true);
+    }
+  }
+
+  function handleGuests(operation: "+" | "-"): void {
+    switch (operation) {
+      case "+":
+        setGuests(++guests);
+        break;
+      case "-":
+        if (guests > 0) {
+          setGuests(--guests);
+        }
+        break;
+    }
+  }
+
+  function handleTables(operation: "+" | "-"): void {
+    console.log(operation)
+    switch (operation) {
+      case "+":
+        // Get the highest table ID and add 1 to create a new table
+        const highestId = Math.max(
+          ...tables.map((table) => parseInt(table.id))
+        );
+        const newId = (highestId + 1).toString().padStart(2, "0");
+
+        setTables((prevTables) => [
+          ...prevTables,
+          { id: newId, hasCustomers: false },
+        ]);
+        break;
+
+      case "-":
+        // Remove the last table if it has no customers
+        const lastTable = tables[tables.length - 1];
+        if (!lastTable.hasCustomers) {
+          setTables((prevTables) => prevTables.slice(0, -1));
+        }
+        break;
+    }
+  }
+
+  function handleOpenBillConfirm(id: string): void {
+    setTables((prevTables) =>
+      prevTables.map((table) =>
+        table.id === id
+          ? { ...table, hasCustomers: !table.hasCustomers }
+          : table
+      )
+    );
+    reset();
+  }
+
+  function handleOpenBillCancel(): void {
+    reset();
+  }
+
+  function handleAddTableConfirm(): void {
+    handleTables("+");
+    setShowConfirmAddTableModal(false);
+  }
+
+  function handleRemoveTableConfirm(): void {
+    handleTables("-");
+    setShowConfirmRemoveTableModal(false);
+  }
+
+  function reset(): void {
+    setShowConfirmOpenBillModal(false);
+    setGuests(0);
+    setCurrentTable(null);
+  }
 
   return (
     <div className="p-8 flex flex-col gap-6">
@@ -38,25 +130,49 @@ const TableRender = () => {
             key={table.id}
             id={table.id}
             hasCustomers={table.hasCustomers}
-            onClick={(id) => console.log(id)}
+            onClick={() => openTable(table)}
           />
         ))}
       </div>
 
       {/* Edit Table Button Group */}
       <div className="fixed bottom-8 right-8">
-        <EditButtonGroup />
+        <EditButtonGroup
+          onAdd={() => setShowConfirmAddTableModal(!showConfirmAddTableModal)}
+          onRemove={() =>
+            setShowConfirmRemoveTableModal(!showConfirmRemoveTableModal)
+          }
+        />
       </div>
 
-      {/* <ConfirmModalComponent
-        confirmType={ConfirmTypeEnum.OpenBill}
-        itemName={"Table 1"}
-        onConfirm={() => console.log("Confirm")}
-        onCancel={() => console.log("Cancel")}
-        guests={4}
-        onMinus={() => console.log("Minus")}
-        onPlus={() => console.log("Plus")}
-      /> */}
+      {showConfirmOpenBillModal && currentTable && (
+        <ConfirmModalComponent
+          id={currentTable.id}
+          confirmType={ConfirmTypeEnum.OpenBill}
+          itemName={`Table ${currentTable.id}`}
+          onConfirm={() => handleOpenBillConfirm(currentTable.id)}
+          onCancel={handleOpenBillCancel}
+          guests={guests}
+          onMinus={() => handleGuests("-")}
+          onPlus={() => handleGuests("+")}
+        />
+      )}
+
+      {showConfirmAddTableModal && (
+        <ConfirmModalComponent
+          confirmType={ConfirmTypeEnum.AddTable}
+          onConfirm={handleAddTableConfirm}
+          onCancel={() => setShowConfirmAddTableModal(false)}
+        />
+      )}
+
+      {showConfirmRemoveTableModal && (
+        <ConfirmModalComponent
+          confirmType={ConfirmTypeEnum.DeleteTable}
+          onConfirm={handleRemoveTableConfirm}
+          onCancel={() => setShowConfirmRemoveTableModal(false)}
+        />
+      )}
     </div>
   );
 };
