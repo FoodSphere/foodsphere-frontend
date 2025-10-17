@@ -8,7 +8,7 @@ import { Button } from "../ui/button";
 
 interface OrderCardComponentProps {
   id: number;
-  img?: string;
+  img?: string | null;
   foodName: string;
   table: string;
   additionalDetail?: string;
@@ -34,13 +34,19 @@ export const OrderCardComponent = ({
   return (
     <div className="w-5xl flex flex-row border-b-2 border-primary-orange-main">
       {/* img section */}
-      <Image
-        src={imageToUrl(img)}
-        alt="food img"
-        width={280}
-        height={200}
-        className="w-[25%] bg-amber-500"
-      />
+      {img ? (
+        <Image
+          src={imageToUrl(img)}
+          alt={foodName}
+          width={280}
+          height={200}
+          className="w-[25%] bg-amber-500"
+        />
+      ) : (
+        <div className="w-[25%] bg-gray-100 flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+          No Image
+        </div>
+      )}
       {/* order detail section */}
       <div className="w-[55%] flex flex-col">
         {/* upper section */}

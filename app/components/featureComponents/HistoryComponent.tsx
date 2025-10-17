@@ -16,7 +16,7 @@ type HistoryItem = {
   status: HistoryStatus;
   date: string;
   time: string;
-  imageUrl: string;
+  imageUrl: string | null;
 };
 
 // 2. สร้างข้อมูลตัวอย่าง (Mock Data)
@@ -28,8 +28,7 @@ const historyData: HistoryItem[] = [
     status: "New",
     date: "10/03/2025",
     time: "18:00",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
   {
     id: 2,
@@ -38,8 +37,7 @@ const historyData: HistoryItem[] = [
     status: "Edited",
     date: "10/03/2025",
     time: "17:48",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
   {
     id: 3,
@@ -48,8 +46,7 @@ const historyData: HistoryItem[] = [
     status: "Edited",
     date: "08/03/2025",
     time: "19:23",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
   {
     id: 4,
@@ -58,8 +55,7 @@ const historyData: HistoryItem[] = [
     status: "Deleted",
     date: "08/03/2025",
     time: "07:19",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
   {
     id: 5,
@@ -68,8 +64,7 @@ const historyData: HistoryItem[] = [
     status: "Edited",
     date: "02/03/2025",
     time: "16:07",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
   {
     id: 6,
@@ -78,8 +73,7 @@ const historyData: HistoryItem[] = [
     status: "Deleted",
     date: "27/02/2025",
     time: "06:56",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
   {
     id: 7,
@@ -88,8 +82,7 @@ const historyData: HistoryItem[] = [
     status: "New",
     date: "14/02/2025",
     time: "10:10",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
   {
     id: 8,
@@ -98,8 +91,7 @@ const historyData: HistoryItem[] = [
     status: "New",
     date: "10/02/2025",
     time: "17:29",
-    imageUrl:
-      "",
+    imageUrl: null,
   },
 ];
 
@@ -132,13 +124,19 @@ export function HistoryComponent() {
             {historyData.map((item, index) => (
               <React.Fragment key={item.id}>
                 <div className="flex items-center space-x-4">
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.name}
-                    width={64}
-                    height={64}
-                    className="w-16 h-16 rounded-md object-cover flex-shrink-0"
-                  />
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.name}
+                      width={64}
+                      height={64}
+                      className="w-16 h-16 rounded-md object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-md bg-gray-100 flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+                      No Image
+                    </div>
+                  )}
                   <div className="flex-grow">
                     <p className="font-semibold text-gray-900">{item.name}</p>
                     <div className="flex items-center space-x-2 mt-1">

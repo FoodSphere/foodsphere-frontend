@@ -8,15 +8,23 @@ import { Card, CardContent } from "@/app/components/ui/card";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 
+const restaurantImageUrl: string | null = null;
+
 export const MyRestaurantView = () => {
   return (
     <Card className="w-full max-w-3xl mx-auto overflow-hidden shadow-lg">
       <div className="relative">
-        <Image
-          src=""
-          alt="Hell's Kitchen"
-          className="w-full h-64 object-cover"
-        />
+        {restaurantImageUrl ? (
+          <Image
+            src={restaurantImageUrl}
+            alt="Hell's Kitchen"
+            className="w-full h-64 object-cover"
+          />
+        ) : (
+          <div className="w-full h-64 object-cover bg-gray-100 flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
+            No Image
+          </div>
+        )}
         <Button className="absolute bottom-4 right-4 bg-orange-500 hover:bg-orange-600 rounded-full h-12 w-12">
           <Pencil className="h-6 w-6 text-white" />
         </Button>
