@@ -5,9 +5,10 @@ import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 import { MenuStatusEnum } from "@/public/enum/menuStatusEnum";
 
 interface ConfirmModalComponentProps {
+  id?: string | null | undefined,
   confirmType: ConfirmTypeEnum;
   itemName?: string | null;
-  onConfirm?: () => void;
+  onConfirm?: (id: string | null | undefined) => void;
   onCancel?: () => void;
   guests?: number | null;
   onMinus?: () => void;
@@ -19,6 +20,7 @@ interface ConfirmModalComponentProps {
 }
 
 export const ConfirmModalComponent = ({
+  id,
   confirmType,
   itemName = null,
   onConfirm,
@@ -242,7 +244,6 @@ export const ConfirmModalComponent = ({
               </p>
             )}
           {[ConfirmTypeEnum.OpenBill].includes(confirmType) &&
-            guests &&
             onMinus &&
             onPlus && (
               <div>
@@ -473,8 +474,8 @@ export const ConfirmModalComponent = ({
         <div className="flex gap-8 justify-center mb-8">
           {onConfirm && (
             <button
-              disabled={!canConfirm}
-              onClick={onConfirm}
+              disabled={!canConfirm || guests === 0}
+              onClick={() => onConfirm(id)}
               className="cursor-pointer flex items-center gap-2 bg-primary-orange-main hover:bg-orange-600 disabled:opacity-40 text-white font-semibold px-4 py-3 rounded-lg shadow transition border-2 border-orange-500"
             >
               <Icons name="CheckIcon" className="text-white w-[20px]" />

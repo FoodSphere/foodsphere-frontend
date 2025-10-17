@@ -2,16 +2,24 @@ import { useState } from "react";
 
 import { Icons } from "@/app/icons";
 
-export const EditButtonGroup = () => {
+interface EditButtonGroupProps {
+  onAdd: () => void;
+  onRemove: () => void;
+}
+
+export const EditButtonGroup = ({
+  onAdd,
+  onRemove,
+}: EditButtonGroupProps) => {
   var [isEditing, setIsEditing] = useState(false);
   return (
     <div className="flex flex-col gap-4 items-center">
       {isEditing && (
         <>
-          <button className="bg-primary-orange-main text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold hover:bg-orange-600 transition-all transform hover:scale-110 shadow-lg">
+          <button onClick={onAdd} className="bg-primary-orange-main text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold hover:bg-orange-600 transition-all transform hover:scale-110 shadow-lg">
             <Icons name="PlusIcon" className="text-white w-[20px]" />
           </button>
-          <button className="bg-primary-orange-main text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold hover:bg-orange-600 transition-all transform hover:scale-110 shadow-lg">
+          <button onClick={onRemove} className="bg-primary-orange-main text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold hover:bg-orange-600 transition-all transform hover:scale-110 shadow-lg">
             <Icons name="MinusIcon" className="text-white w-[20px]" />
           </button>
         </>
