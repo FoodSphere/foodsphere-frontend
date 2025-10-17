@@ -12,6 +12,7 @@ interface ItemCardComponentProps {
   title: string;
   amount: number;
   unit: string;
+  onAdd?: () => void;
   onEdit?: () => void;
   onClose?: () => void;
   useIngredients?: boolean;
@@ -23,6 +24,7 @@ export const ItemCardComponent = ({
   title,
   amount,
   unit,
+  onAdd,
   onEdit,
   onClose,
   useIngredients = false,
@@ -31,7 +33,7 @@ export const ItemCardComponent = ({
   var [showIngredients, setShowIngredients] = useState(false);
 
   return (
-    <div className="relative flex flex-col items-center">
+    <div className="relative flex flex-col items-center w-[270px]">
       {imgUrl ? (
         <img
           src={imgUrl}
@@ -39,7 +41,9 @@ export const ItemCardComponent = ({
           className="w-full h-[145px] object-cover rounded-t-2xl"
         />
       ) : (
-        <div className="w-full h-[145px] bg-gray-300 rounded-t-2xl" />
+        <div className="w-full h-[145px] bg-gray-300 rounded-t-2xl flex items-center justify-center text-xs">
+          No Image
+        </div>
       )}
       <div className="w-full flex flex-col items-center border-x-2 border-b-2 border-primary-orange-main rounded-b-2xl bg-white px-4">
         <h3 className="cursor-default text-xl mt-4 mb-2 text-center text-black">
@@ -49,6 +53,15 @@ export const ItemCardComponent = ({
           {amount} {unit}
         </p>
         <div className="flex gap-4 mb-4">
+          {onAdd && (
+            <button
+              onClick={onAdd}
+              className="cursor-pointer flex items-center gap-2 bg-primary-orange-main hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition border-2 border-orange-500"
+            >
+              <Icons name="AddIcon" className="text-white w-[20px]" />
+              Add
+            </button>
+          )}
           {onEdit && (
             <button
               onClick={onEdit}

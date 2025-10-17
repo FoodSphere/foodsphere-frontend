@@ -7,7 +7,7 @@ import { OrderCardComponent } from "@/app/components/featureComponents/OrderCard
 // สร้าง type สำหรับข้อมูล order
 interface IOrder {
   id: number;
-  img?: string;
+  img?: string | null;
   foodName: string;
   table: string;
   additionalDetail?: string;
@@ -19,7 +19,7 @@ interface IOrder {
 const Orders: IOrder[] = [
   {
     id: 1234,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -29,7 +29,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 1235,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -39,7 +39,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 1236,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -49,7 +49,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 1237,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -59,7 +59,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 1238,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -69,7 +69,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 1239,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -79,7 +79,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 1241,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -89,7 +89,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 1242,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
@@ -99,7 +99,7 @@ const Orders: IOrder[] = [
   },
   {
     id: 12343,
-    img: "",
+    img: null,
     foodName: "string",
     table: "10",
     additionalDetail: "Lorem ipsum odor amet, consectetuer adipiscing elit.",
