@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { Icons } from "@/app/icons";
-import { Input } from "@/app/components/ui/input";
+import { useEffect,useState } from "react";
+
 import { Badge } from "@/app/components/ui/badge";
+import { Input } from "@/app/components/ui/input";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
+import { Icons } from "@/app/icons";
 
 interface Ingredient {
   title: string;

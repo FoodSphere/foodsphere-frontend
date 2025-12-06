@@ -1,6 +1,7 @@
 "use client"
-import { useState, useEffect } from "react";
-import { Icons } from "@/app/icons";
+import { useEffect,useState } from "react";
+
+import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
 import {
   Select,
@@ -9,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
-import { Badge } from "@/app/components/ui/badge";
+import { Icons } from "@/app/icons";
 
 interface StockModalProps {
   isOpen: boolean;
