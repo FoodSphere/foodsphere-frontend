@@ -2,6 +2,8 @@
 import { useState } from "react";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
+import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
+import { TableOrderModal } from "@/app/components/featureComponents/TableOrderModal";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
@@ -39,12 +41,18 @@ const TableRender = () => {
   const [showConfirmRemoveTableModal, setShowConfirmRemoveTableModal] =
     useState<Boolean>(false);
 
+  const [showTableOrderModal, setShowTableOrderModal] = useState<boolean>(false);
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+
   let [guests, setGuests] = useState<number>(0);
 
   function openTable(table: TableData): void {
     if (!table.hasCustomers) {
       setCurrentTable(table);
       setShowConfirmOpenBillModal(true);
+    } else {
+      setCurrentTable(table);
+      setShowTableOrderModal(true);
     }
   }
 
@@ -113,9 +121,11 @@ const TableRender = () => {
   }
 
   function reset(): void {
-    setShowConfirmOpenBillModal(false);
+    setShowTableOrderModal(false);
+    setShowPaymentModal(false);
     setGuests(0);
     setCurrentTable(null);
+    setShowConfirmOpenBillModal(false);
   }
 
   return (
@@ -171,6 +181,23 @@ const TableRender = () => {
           confirmType={ConfirmTypeEnum.DeleteTable}
           onConfirm={handleRemoveTableConfirm}
           onCancel={() => setShowConfirmRemoveTableModal(false)}
+        />
+      )}
+
+      {showTableOrderModal && currentTable && (
+        <TableOrderModal
+          isOpen={showTableOrderModal}
+          onClose={() => setShowTableOrderModal(false)}
+          tableId={currentTable.id}
+          onCheckBill={() => setShowPaymentModal(true)}
+        />
+      )}
+
+      {showPaymentModal && currentTable && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          tableId={currentTable.id}
         />
       )}
     </div>
