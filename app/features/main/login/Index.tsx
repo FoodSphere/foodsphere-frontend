@@ -45,12 +45,12 @@ const LoginRender = () => {
           router.push("/error");
       }
     } else {
-      console.log("Something went wrong!!!")
+      console.log("Something went wrong!!!");
     }
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-8 lg:p-16">
+    <div className="flex min-h-screen w-full items-center justify-center p-8 lg:p-16 gap-10">
       <div className="w-full max-w-md text-center">
         <h1 className="mb-2 text-4xl font-bold">Welcome to</h1>
         <h1 className="mb-6 text-5xl font-bold text-primary-orange-main">

@@ -9,10 +9,18 @@ export default function Layout({
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
 
-  return (
-    <div className="flex flex-row">
-      {!isLoginPage && <Sidebar />}
-      <main className="ml-[208px]">{children}</main>
-    </div>
-  );
+  if (isLoginPage) {
+    return (
+      <div className="flex flex-row justify-center">
+        <main>{children}</main>
+      </div>
+    );
+  } else {
+    return (
+      <div className="flex flex-row">
+        <Sidebar />
+        <main className="ml-[210px]">{children}</main>
+      </div>
+    );
+  }
 }
