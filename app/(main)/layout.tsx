@@ -11,15 +11,19 @@ export default function Layout({
 
   if (isLoginPage) {
     return (
-      <div className="flex flex-row justify-center">
-        <main>{children}</main>
+      <div className="flex flex-row justify-center min-h-screen">
+        <main className="w-full">{children}</main>
       </div>
     );
   } else {
     return (
-      <div className="flex flex-row">
+      // ❌ ลบ flex flex-row ออก
+      // ✅ ใส่ min-h-screen และ bg-gray-50 เพื่อความสวยงาม
+      <div className="min-h-screen">
         <Sidebar />
-        <main className="ml-[210px]">{children}</main>
+
+        {/* พอ Parent ไม่ใช่ Flex, ตัว main จะยืดเต็มจออัตโนมัติ (หักลบ ml-210px เอง) */}
+        <main className="ml-[210px] p-4">{children}</main>
       </div>
     );
   }

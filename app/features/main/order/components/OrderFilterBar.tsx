@@ -2,10 +2,13 @@
 
 import clsx from "clsx";
 
-// กำหนด Type สำหรับสถานะทั้งหมด + "All"
-export type FilterStatus = "All" | "Not Done" | "Cooking" | "Completed" | "Cancel";
+export type FilterStatus =
+  | "All"
+  | "Not Done"
+  | "Cooking"
+  | "Completed"
+  | "Cancel";
 
-// รายการปุ่มที่จะแสดง
 const filterButtons: { label: string; value: FilterStatus }[] = [
   { label: "All menu", value: "All" },
   { label: "Not Done", value: "Not Done" },
@@ -24,24 +27,28 @@ export const OrderFilterBar = ({
   onFilterChange,
 }: OrderFilterBarProps) => {
   return (
-    <div className="flex flex-row gap-2">
-      {filterButtons.map((button) => (
-        <button
-          key={button.value}
-          onClick={() => onFilterChange(button.value)}
-          className={clsx(
-            "px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200",
-            {
-              "bg-primary-orange-main text-white shadow-md":
-                currentFilter === button.value,
-              "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50":
-                currentFilter !== button.value,
-            }
-          )}
-        >
-          {button.label}
-        </button>
-      ))}
+    <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+      {/* Increased padding (p-2) and rounded-xl */}
+      <div className="bg-gray-100 p-2 rounded-xl flex flex-row gap-2 w-max min-w-fit border border-gray-200">
+        {filterButtons.map((button) => (
+          <button
+            key={button.value}
+            onClick={() => onFilterChange(button.value)}
+            className={clsx(
+              // Increased padding (px-6 py-2.5) and font size (text-base)
+              "px-6 py-2.5 rounded-lg text-base font-medium transition-all duration-200 whitespace-nowrap",
+              {
+                "bg-[#F26E4F] text-white shadow-md transform scale-105":
+                  currentFilter === button.value,
+                "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-200/50":
+                  currentFilter !== button.value,
+              }
+            )}
+          >
+            {button.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

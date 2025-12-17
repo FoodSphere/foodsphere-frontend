@@ -1,7 +1,5 @@
 "use client";
 
-// import { Icons } from "@/app/icons"; // ลบ import นี้ออกเพื่อป้องกัน error
-
 interface OrderSearchBarProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
@@ -12,38 +10,25 @@ export const OrderSearchBar = ({
   onSearchChange,
 }: OrderSearchBarProps) => {
   return (
-    <div className="relative w-full max-w-sm">
+    // Increased width to 350px on desktop
+    <div className="relative w-full md:w-[350px] lg:w-[400px]">
       <input
         type="text"
         value={searchTerm}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Search a name, order or etc"
-        className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange-main/50"
+        // Increased padding (py-3) and font size (text-base)
+        className="w-full pl-5 pr-12 py-3 bg-white border border-gray-300 rounded-xl text-base shadow-sm focus:outline-none focus:border-[#F26E4F] focus:ring-2 focus:ring-[#F26E4F]/20 transition-all placeholder:text-gray-400"
       />
-      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-        {/* ใช้ SVG icon โดยตรงแทนการ import `Icons` 
-          เพื่อหลีกเลี่ยง_ "Element type is invalid" error 
-          ในกรณีที่ import "SearchIcon" ไม่สำเร็จ
-        */}
-        {/* <Icons
-          name="SearchIcon"
-          className="w-5 h-5 text-gray-400"
-          onError={(e: any) => {
-            // Fallback ในกรณีที่ Icon ไม่มี
-            e.target.style.display = 'none';
-            const svg = e.target.closest('div').querySelector('svg');
-            if (svg) svg.style.display = 'block';
-          }}
-        /> */}
-        {/* Fallback SVG เผื่อ Icons component ไม่มี "SearchIcon" */}
+      {/* Centered Icon */}
+      <div className="absolute top-1/2 -translate-y-1/2 right-4 pointer-events-none">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
-          strokeWidth={1.5}
+          strokeWidth={2} // Thicker stroke
           stroke="currentColor"
-          className="w-5 h-5 text-gray-400"
-          // style={{ display: 'none' }} // ไม่ต้องซ่อนแล้ว
+          className="w-6 h-6 text-gray-400" // Larger icon
         >
           <path
             strokeLinecap="round"

@@ -32,7 +32,7 @@ export const OrderCardComponent = ({
   onCancel,
 }: OrderCardComponentProps) => {
   return (
-    <div className="w-5xl flex flex-row border-b-2 border-primary-orange-main">
+    <div className="w-full flex flex-row border-b-2 border-primary-orange-main">
       {/* img section */}
       {img ? (
         <Image
@@ -104,7 +104,7 @@ export const OrderCardComponent = ({
           </div>
         )}
         {status === "Cooking" && (
-          <div className="h-full flex flex-col justify-end">
+          <div className="h-full flex flex-col justify-end items-center">
             <Button onClick={() => onUpdate(id)}>
               <Icons className="w-5" name="CheckIcon" />
               Update
