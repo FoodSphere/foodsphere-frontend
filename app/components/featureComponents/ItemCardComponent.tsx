@@ -46,8 +46,8 @@ export const ItemCardComponent = ({
         </div>
       )}
       <div className="w-full flex flex-col items-center border-x-2 border-b-2 border-primary-orange-main rounded-b-2xl bg-white px-4">
-        <h3 className="cursor-default text-xl mt-4 mb-2 text-center text-black">
-          {title}
+        <h3 className="cursor-default text-xl mt-4 mb-2 text-center text-black" title={title}>
+          {title.length > 20 ? title.slice(0, 20) + "..." : title}
         </h3>
         <p className="cursor-default text-lg mb-4 text-center text-gray-700 font-semibold">
           {amount} {unit}

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
@@ -28,6 +29,7 @@ const Tables: TableData[] = [
 ];
 
 const TableRender = () => {
+  const router = useRouter();
   const [tables, setTables] = useState<TableData[]>(Tables);
 
   const [currentTable, setCurrentTable] = useState<TableData | null>(null);
@@ -204,6 +206,8 @@ const TableRender = () => {
           onClose={() => setShowTableOrderModal(false)}
           tableId={currentTable.id}
           onCheckBill={() => setShowPaymentModal(true)}
+          onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
+          onEditOrder={() => router.push(`/table/${currentTable.id}/edit`)}
         />
       )}
 
