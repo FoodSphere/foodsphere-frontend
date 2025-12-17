@@ -8,11 +8,10 @@ import { OrderCardDisplay } from "./components/OrderCardDisplay";
 
 const OrderRender = () => {
   return (
-
-    <div className="w-full flex flex-col justify-center items-center">
-      <div className="text-red-500">Order Hello World!!!</div>
+    <div className="w-screen flex flex-col justify-center px-10">
+      <div className="text-4xl text-black font-bold">Order</div>
       <OrderCardDisplay />
-        {/* <ConfirmModalComponent
+      {/* <ConfirmModalComponent
         confirmType={ConfirmTypeEnum.CancelOrder}
         itemName="Tomato"
         onConfirm={() => console.log("Confirm")}
