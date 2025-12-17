@@ -91,7 +91,7 @@ const SalesChart: React.FC = () => {
                 callbacks: {
                   label: (context) =>
                     `Sales: ${new Intl.NumberFormat("en-US").format(
-                      context.parsed.y
+                      context.parsed.y ?? 0
                     )}`,
                 },
                 backgroundColor: "#000",
