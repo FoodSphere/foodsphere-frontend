@@ -16,6 +16,8 @@ interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   tableId: string;
+  onCashPayment: () => void;
+  onQRPayment: () => void;
 }
 
 const MOCK_SUMMARY_ITEMS: OrderItem[] = [
@@ -60,6 +62,8 @@ export const PaymentModal = ({
   isOpen,
   onClose,
   tableId,
+  onCashPayment,
+  onQRPayment,
 }: PaymentModalProps) => {
   const [discountCode, setDiscountCode] = useState("");
   
@@ -187,22 +191,14 @@ export const PaymentModal = ({
               </div>
 
               <div className="space-y-3">
-                <div className="w-full bg-[#FF5C39] hover:bg-[#ff451f] text-white h-14 rounded-xl font-bold text-lg shadow-md flex items-center justify-between px-6 cursor-pointer transition-colors relative">
+                <div onClick={onCashPayment} className="w-full bg-[#FF5C39] hover:bg-[#ff451f] text-white h-14 rounded-xl font-bold text-lg shadow-md flex items-center justify-between px-6 cursor-pointer transition-colors relative">
                   <span>Cash Pay</span>
                   <div className="bg-white text-[#FF5C39] font-bold w-8 h-8 rounded flex items-center justify-center text-xl">B</div>
                 </div>
                 
-                <div className="w-full bg-[#003D6B] hover:bg-[#002f52] text-white h-14 rounded-xl font-bold text-lg shadow-md flex items-center justify-between px-6 cursor-pointer transition-colors">
+                <div onClick={onQRPayment} className="w-full bg-[#003D6B] hover:bg-[#002f52] text-white h-14 rounded-xl font-bold text-lg shadow-md flex items-center justify-between px-6 cursor-pointer transition-colors">
                   <span>Thai QR Pay</span>
                    <Icons name="ThaiQRIcon" className="w-6 h-6 fill-white" />
-                </div>
-                
-                <div className="w-full bg-black hover:bg-gray-900 text-white h-14 rounded-xl font-bold text-lg shadow-md flex items-center justify-between px-6 cursor-pointer transition-colors">
-                  <span>Credit/Debit Card</span>
-                  <div className="flex gap-1">
-                     <div className="w-6 h-4 bg-white rounded-[2px]" />
-                     <div className="w-6 h-4 bg-white rounded-[2px]" />
-                  </div>
                 </div>
               </div>
 
