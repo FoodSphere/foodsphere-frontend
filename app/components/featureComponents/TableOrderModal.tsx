@@ -17,6 +17,8 @@ interface TableOrderModalProps {
   onClose: () => void;
   tableId: string;
   onCheckBill?: () => void;
+  onAddOrder?: () => void;
+  onEditOrder?: () => void;
 }
 
 const MOCK_ORDERS: OrderItem[] = [
@@ -75,6 +77,8 @@ export const TableOrderModal = ({
   onClose,
   tableId,
   onCheckBill,
+  onAddOrder,
+  onEditOrder,
 }: TableOrderModalProps) => {
   const [orders, setOrders] = useState<OrderItem[]>(MOCK_ORDERS);
 
@@ -192,10 +196,14 @@ export const TableOrderModal = ({
             </div>
 
             <div className="mt-4 space-y-3 pt-4 border-t border-gray-100 shrink-0">
-              <button className="w-full bg-[#FF5C39] hover:bg-[#ff451f] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors">
+              <button 
+                onClick={onAddOrder}
+                className="w-full bg-[#FF5C39] hover:bg-[#ff451f] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors">
                 Add Order <Icons name="PlusIcon" className="w-6 h-6" />
               </button>
-              <button className="w-full bg-[#5C5C5C] hover:bg-[#4a4a4a] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors">
+              <button 
+                onClick={onEditOrder}
+                className="w-full bg-[#5C5C5C] hover:bg-[#4a4a4a] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors">
                 Edit Order <Icons name="EditIcon" className="w-6 h-6" />
               </button>
             </div>
