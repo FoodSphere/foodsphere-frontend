@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
@@ -28,6 +29,7 @@ const Tables: TableData[] = [
 ];
 
 const TableRender = () => {
+  const router = useRouter();
   const [tables, setTables] = useState<TableData[]>(Tables);
 
   const [currentTable, setCurrentTable] = useState<TableData | null>(null);
@@ -43,6 +45,12 @@ const TableRender = () => {
 
   const [showTableOrderModal, setShowTableOrderModal] = useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+
+  const [showConfirmCashPayment, setShowConfirmCashPayment] = useState<boolean>(false);
+  const [showConfirmQRPayment, setShowConfirmQRPayment] = useState<boolean>(false);
+
+  const [showPaymentSuccessModal, setShowPaymentSuccessModal] =
+    useState<Boolean>(false);
 
   let [guests, setGuests] = useState<number>(0);
 
@@ -120,12 +128,20 @@ const TableRender = () => {
     setShowConfirmRemoveTableModal(false);
   }
 
+  function handleConfirmPayment(): void {
+   console.log("Payment Successful!")
+   setShowPaymentSuccessModal(true);
+   setShowConfirmCashPayment(false);
+   setShowConfirmQRPayment(false);
+  }
+
   function reset(): void {
     setShowTableOrderModal(false);
     setShowPaymentModal(false);
     setGuests(0);
     setCurrentTable(null);
     setShowConfirmOpenBillModal(false);
+    setShowPaymentSuccessModal(false);
   }
 
   return (
@@ -190,6 +206,8 @@ const TableRender = () => {
           onClose={() => setShowTableOrderModal(false)}
           tableId={currentTable.id}
           onCheckBill={() => setShowPaymentModal(true)}
+          onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
+          onEditOrder={() => router.push(`/table/${currentTable.id}/edit`)}
         />
       )}
 
@@ -198,6 +216,35 @@ const TableRender = () => {
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
           tableId={currentTable.id}
+          onCashPayment={() => setShowConfirmCashPayment(true)}
+          onQRPayment={() => setShowConfirmQRPayment(true)}
+        />
+      )}
+
+      {showConfirmCashPayment && (
+        <ConfirmModalComponent
+          confirmType={ConfirmTypeEnum.CashPayment}
+          total={856}
+          onConfirm={handleConfirmPayment}
+          onCancel={() => setShowConfirmCashPayment(false)}
+        />
+      )}
+
+      {showConfirmQRPayment && (
+        <ConfirmModalComponent
+          confirmType={ConfirmTypeEnum.QRPayment}
+          total={856}
+          qrUrl="https://media-cdn.tripadvisor.com/media/photo-s/17/92/17/25/thai-qr-payment.jpg"
+          onConfirm={handleConfirmPayment}
+          onCancel={() => setShowConfirmQRPayment(false)}
+        />
+      )}
+
+      {showPaymentSuccessModal && (
+        <ConfirmModalComponent
+          confirmType={ConfirmTypeEnum.PaymentSuccess}
+          onConfirm={() => setShowPaymentSuccessModal(false)}
+          onCancel={() => setShowPaymentSuccessModal(false)}
         />
       )}
     </div>

@@ -4,7 +4,6 @@ export enum ConfirmTypeEnum {
   OpenBill,
   CashPayment,
   QRPayment,
-  CardPayment,
   PaymentSuccess,
   AddStock,
   EditStock,

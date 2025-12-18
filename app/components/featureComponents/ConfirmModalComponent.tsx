@@ -10,10 +10,10 @@ interface ConfirmModalComponentProps {
   itemName?: string | null;
   onConfirm?: (id: string | null | undefined) => void;
   onCancel?: () => void;
-  guests?: number | null;
+  guests?: number;
   onMinus?: () => void;
   onPlus?: () => void;
-  total?: number | null;
+  total?: number;
   qrUrl?: string | null;
   oldStatus?: MenuStatusEnum | null;
   newStatus?: MenuStatusEnum | null;
@@ -25,102 +25,47 @@ export const ConfirmModalComponent = ({
   itemName = null,
   onConfirm,
   onCancel,
-  guests = null,
+  guests = 0,
   onMinus,
   onPlus,
-  total = null,
+  total = 0,
   qrUrl = null,
   oldStatus = null,
   newStatus = null,
 }: ConfirmModalComponentProps) => {
   const [pay, setPay] = useState("");
   const [change, setChange] = useState("");
-  const [canConfirm, setCanConfirm] = useState(
-    [
-      ConfirmTypeEnum.AddMenu,
-      ConfirmTypeEnum.EditMenu,
-      ConfirmTypeEnum.CloseMenu,
-      ConfirmTypeEnum.DeleteMenu,
-      ConfirmTypeEnum.AddStock,
-      ConfirmTypeEnum.EditStock,
-      ConfirmTypeEnum.CloseStock,
-      ConfirmTypeEnum.DeleteStock,
-      ConfirmTypeEnum.QRPayment,
-      ConfirmTypeEnum.UpdateOrder,
-      ConfirmTypeEnum.CancelOrder,
-    ].includes(confirmType)
-      ? true
-      : false
-  );
 
-  const [fullName, setFullName] = useState<string>("");
-  const [cardNumber, setCardNumber] = useState<string>("");
-  const [cardExpiration, setCardExpiration] = useState<string>("");
-  const [cvv, setCvv] = useState<string>("");
-
-  const handlePayBlur = () => {
+  function isPayGreaterThanTotal(pay: string, total: number) {
     if (pay && total) {
       const num = parseFloat(pay);
       if (!isNaN(num)) {
-        setPay(num.toFixed(2));
+        console.log(num >= total)
+        return num >= total;
+      }
+    }
+    return false;
+  }
 
-        const diff = num - total;
+  const handlePayBlur = () => {
+    if (pay && total) {
+      const isPayGreater = isPayGreaterThanTotal(pay, total);
 
-        if (diff >= 0) {
-          setChange(diff.toFixed(2));
-          setCanConfirm(true);
-        } else {
-          console.log("Pay must be greater than total! Please try again.");
-          setChange("");
-          setCanConfirm(false);
-        }
+      if (isPayGreater) {
+        const diff = parseFloat(pay) - total;
+        setChange(diff.toFixed(2));
+      } else {
+        console.log("Pay must be greater than total! Please try again.");
+        setChange("");
       }
     }
   };
-
-  const handleCardPaymentFormSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    console.log("Form submitted:", {
-      fullName,
-      cardNumber,
-      cardExpiration,
-      cvv,
-    });
-  };
-
-  const handleCardPaymentNumberBlur = () => {
-    if (cardNumber) {
-      const cleanValue = cardNumber.replace(/\D/g, "");
-      let formattedValue = "";
-
-      for (let i = 0; i < cleanValue.length; i++) {
-        if (i > 0 && i % 4 === 0) {
-          formattedValue += "-";
-        }
-        formattedValue += cleanValue[i];
-      }
-
-      setCardNumber(formattedValue);
-    }
-  };
-
-  useEffect(() => {
-    const validFullName = fullName.trim() !== "";
-    const validCardNumber = cardNumber.replace(/-/g, "").length === 16;
-    const validCvv = cvv.length === 3;
-
-    setCanConfirm(
-      [ConfirmTypeEnum.CardPayment].includes(confirmType)
-        ? validFullName && validCardNumber && validCvv
-        : true
-    );
-  }, [fullName, cardNumber, cvv, confirmType]);
 
   return (
-    <div className="min-w-full min-h-full fixed top-0 left-0 flex flex-col justify-center items-center bg-[rgba(0,0,0,0.8)]">
+    <div className="min-w-full min-h-full fixed top-0 left-0 flex flex-col justify-center items-center bg-[rgba(0,0,0,0.8)] z-[9999]">
       <div
         className={`bg-white rounded-t-2xl text-center ${
-          [ConfirmTypeEnum.QRPayment, ConfirmTypeEnum.CardPayment].includes(
+          [ConfirmTypeEnum.QRPayment].includes(
             confirmType
           )
             ? "w-[600px]"
@@ -160,9 +105,6 @@ export const ConfirmModalComponent = ({
           {[ConfirmTypeEnum.QRPayment].includes(confirmType) && (
             <p>QR payment confirmation</p>
           )}
-          {[ConfirmTypeEnum.CardPayment].includes(confirmType) && (
-            <p>Credit/Debit card payment confirmation</p>
-          )}
           {[ConfirmTypeEnum.PaymentSuccess].includes(confirmType) && (
             <p>Payment Successfully!</p>
           )}
@@ -171,7 +113,7 @@ export const ConfirmModalComponent = ({
       <hr className="border-t border-gray-300"></hr>
       <div
         className={`bg-white rounded-b-2xl text-center ${
-          [ConfirmTypeEnum.QRPayment, ConfirmTypeEnum.CardPayment].includes(
+          [ConfirmTypeEnum.QRPayment].includes(
             confirmType
           )
             ? "w-[600px]"
@@ -324,120 +266,6 @@ export const ConfirmModalComponent = ({
                 </div>
               </div>
             )}
-          {[ConfirmTypeEnum.CardPayment].includes(confirmType) && total && (
-            <form
-              onSubmit={handleCardPaymentFormSubmit}
-              className="space-y-6 mx-10"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label
-                    htmlFor="fullName"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    <span className="flex items-center">
-                      Full name<span className="text-red-500">*</span>
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    name="fullName"
-                    value={fullName}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setFullName(e.target.value)
-                    }
-                    placeholder="Bonnie Green"
-                    required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="cardNumber"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    <span className="flex items-center">
-                      Card number<span className="text-red-500">*</span>
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    id="cardNumber"
-                    name="cardNumber"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    onBlur={handleCardPaymentNumberBlur}
-                    placeholder="XXXX-XXXX-XXXX-XXXX"
-                    required
-                    maxLength={16}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label
-                    htmlFor="cardExpiration"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    <span className="flex items-center">
-                      Card expirations<span className="text-red-500">*</span>
-                    </span>
-                  </label>
-                  <div className="flex gap-4">
-                    <input
-                      type="month"
-                      id="cardExpiration"
-                      name="cardExpiration"
-                      value={cardExpiration}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                        setCardExpiration(e.target.value)
-                      }
-                      placeholder="MM"
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="cvv"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    <span className="flex items-center">
-                      CVV<span className="text-red-500">*</span>
-                    </span>
-                  </label>
-                  <input
-                    type="password"
-                    id="cvv"
-                    name="cvv"
-                    value={cvv}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      setCvv(e.target.value)
-                    }
-                    placeholder="•••"
-                    required
-                    maxLength={3}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-around items-baseline mb-5">
-                <p className="text-2xl font-semibold">Total</p>
-                <p className="text-lg">
-                  <span className="text-primary-orange-main font-semibold">
-                    {total.toFixed(2)}
-                  </span>{" "}
-                  B.
-                </p>
-              </div>
-            </form>
-          )}
           {[ConfirmTypeEnum.UpdateOrder].includes(confirmType) &&
             oldStatus &&
             newStatus &&
@@ -474,7 +302,7 @@ export const ConfirmModalComponent = ({
         <div className="flex gap-8 justify-center mb-8">
           {onConfirm && (
             <button
-              disabled={!canConfirm || guests === 0}
+              disabled={(confirmType === ConfirmTypeEnum.OpenBill && guests === 0) || (confirmType === ConfirmTypeEnum.CashPayment && !isPayGreaterThanTotal(pay, total))}
               onClick={() => onConfirm(id)}
               className="cursor-pointer flex items-center gap-2 bg-primary-orange-main hover:bg-orange-600 disabled:opacity-40 text-white font-semibold px-4 py-3 rounded-lg shadow transition border-2 border-orange-500"
             >
