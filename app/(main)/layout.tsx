@@ -7,9 +7,12 @@ export default function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/login";
+  const isLoginOrForgotPasswordOrResetPasswordPage =
+    pathname === "/login" ||
+    pathname === "/forgot-password" ||
+    pathname === "/reset-password";
 
-  if (isLoginPage) {
+  if (isLoginOrForgotPasswordOrResetPasswordPage) {
     return (
       <div className="flex flex-row justify-center min-h-screen">
         <main className="w-full">{children}</main>

@@ -3,24 +3,53 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
 import { Icons } from "@/app/icons";
+
+const loginSchema = z.object({
+  username: z.string().min(1, "Email is required").email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+const mockUser = {
+  email: "admin@admin.com",
+  password: "Admin@123",
+};  
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginRender = () => {
   const router = useRouter();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
   });
 
   const isLogin: boolean = true;
   const permission: string = "dashboard";
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = (data: LoginFormValues) => {
     // Add your login logic here
+    // For now we just use the mock variables, but in real app 'data' would be sent to API
+    if (data.username !== mockUser.email || data.password !== mockUser.password) {
+      setError("root", { message: "Email or password incorrect" });
+      return;
+    }
+
     if (isLogin) {
       switch (permission) {
         case "dashboard":
@@ -45,7 +74,7 @@ const LoginRender = () => {
           router.push("/error");
       }
     } else {
-      console.log("Something went wrong!!!");
+      setError("root", { message: "Invalid username or password" });
     }
   };
 
@@ -58,28 +87,35 @@ const LoginRender = () => {
         </h1>
         <p className="mb-8 text-gray-600">Login to your restaurant.</p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div>
             <input
               type="text"
               placeholder="Email"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-primary-orange-main focus:outline-none"
-              value={formData.username}
-              onChange={(e) =>
-                setFormData({ ...formData, username: e.target.value })
-              }
+              className={`w-full rounded-lg border px-4 py-3 focus:outline-none ${
+                errors.username
+                  ? "border-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:border-primary-orange-main"
+              }`}
+              {...register("username")}
             />
+            {errors.username && (
+              <p className="mt-1 text-left text-sm text-red-500">
+                {errors.username.message}
+              </p>
+            )}
           </div>
 
-          <div className="relative">
+          <div className="relative mb-0">
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
-              className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-primary-orange-main focus:outline-none"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
+              className={`w-full rounded-lg border px-4 py-3 focus:outline-none ${
+                errors.password
+                  ? "border-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:border-primary-orange-main"
+              }`}
+              {...register("password")}
             />
             <button
               type="button"
@@ -94,14 +130,26 @@ const LoginRender = () => {
             </button>
           </div>
 
-          <div className="text-right">
+          {errors.password && (
+            <p className="mt-1 text-left text-sm text-red-500">
+              {errors.password.message}
+            </p>
+          )}
+
+          <div className="text-right mt-1">
             <a
-              href="#"
+              href="/forgot-password"
               className="text-sm text-primary-orange-main hover:underline"
             >
               Forgot password?
             </a>
           </div>
+
+          {errors.root && (
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-500">
+              {errors.root.message}
+            </div>
+          )}
 
           <button
             type="submit"
