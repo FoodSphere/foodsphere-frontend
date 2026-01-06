@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Icons } from "@/app/icons";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
@@ -84,6 +84,9 @@ export const ConfirmModalComponent = ({
             ConfirmTypeEnum.DeleteStock,
             ConfirmTypeEnum.UpdateOrder,
             ConfirmTypeEnum.CancelOrder,
+            ConfirmTypeEnum.AddEmployee,
+            ConfirmTypeEnum.EditEmployee,
+            ConfirmTypeEnum.DeleteEmployee,
           ].includes(confirmType) && <p>Confirmation</p>}
           {[ConfirmTypeEnum.AddTable].includes(confirmType) && (
             <p>Are you sure to add table?</p>
@@ -121,7 +124,7 @@ export const ConfirmModalComponent = ({
         }`}
       >
         <div className="text-black flex justify-center mt-8 mb-6">
-          {[ConfirmTypeEnum.AddMenu, ConfirmTypeEnum.AddStock].includes(
+          {[ConfirmTypeEnum.AddMenu, ConfirmTypeEnum.AddStock, ConfirmTypeEnum.AddEmployee].includes(
             confirmType
           ) &&
             itemName && (
@@ -132,12 +135,14 @@ export const ConfirmModalComponent = ({
                 </span>{" "}
                 to restaurant{" "}
                 {[ConfirmTypeEnum.AddMenu].includes(confirmType)
-                  ? "menu list"
-                  : "stock list"}{" "}
+                  ? "menu"
+                  : [ConfirmTypeEnum.AddStock].includes(confirmType)
+                  ? "stock"
+                  : "staff"}{" "}
                 list
               </p>
             )}
-          {[ConfirmTypeEnum.EditMenu, ConfirmTypeEnum.EditStock].includes(
+          {[ConfirmTypeEnum.EditMenu, ConfirmTypeEnum.EditStock, ConfirmTypeEnum.EditEmployee].includes(
             confirmType
           ) &&
             itemName && (
@@ -149,7 +154,9 @@ export const ConfirmModalComponent = ({
                 in restaurant{" "}
                 {[ConfirmTypeEnum.EditMenu].includes(confirmType)
                   ? "menu"
-                  : "stock"}{" "}
+                  : [ConfirmTypeEnum.EditStock].includes(confirmType)
+                  ? "stock"
+                  : "staff"}{" "}
                 list
               </p>
             )}
@@ -169,7 +176,7 @@ export const ConfirmModalComponent = ({
                 list
               </p>
             )}
-          {[ConfirmTypeEnum.DeleteMenu, ConfirmTypeEnum.DeleteStock].includes(
+          {[ConfirmTypeEnum.DeleteMenu, ConfirmTypeEnum.DeleteStock, ConfirmTypeEnum.DeleteEmployee].includes(
             confirmType
           ) &&
             itemName && (
@@ -178,10 +185,12 @@ export const ConfirmModalComponent = ({
                 <span className="text-primary-orange-main underline">
                   {itemName}
                 </span>{" "}
-                to restaurant{" "}
+                in restaurant{" "}
                 {[ConfirmTypeEnum.DeleteMenu].includes(confirmType)
                   ? "menu"
-                  : "stock"}{" "}
+                  : [ConfirmTypeEnum.DeleteStock].includes(confirmType)
+                  ? "stock"
+                  : "staff"}{" "}
                 list
               </p>
             )}
