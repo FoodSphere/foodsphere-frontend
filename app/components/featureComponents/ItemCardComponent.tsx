@@ -46,7 +46,10 @@ export const ItemCardComponent = ({
         </div>
       )}
       <div className="w-full flex flex-col items-center border-x-2 border-b-2 border-primary-orange-main rounded-b-2xl bg-white px-4">
-        <h3 className="cursor-default text-xl mt-4 mb-2 text-center text-black" title={title}>
+        <h3
+          className="cursor-default text-xl mt-4 mb-2 text-center text-black"
+          title={title}
+        >
           {title.length > 20 ? title.slice(0, 20) + "..." : title}
         </h3>
         <p className="cursor-default text-lg mb-4 text-center text-gray-700 font-semibold">
@@ -58,7 +61,7 @@ export const ItemCardComponent = ({
               onClick={onAdd}
               className="cursor-pointer flex items-center gap-2 bg-primary-orange-main hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition border-2 border-orange-500"
             >
-              <Icons name="AddIcon" className="text-white w-[20px]" />
+              <Icons name="AddIcon" className="text-white w-5" />
               Add
             </button>
           )}
@@ -67,7 +70,7 @@ export const ItemCardComponent = ({
               onClick={onEdit}
               className="cursor-pointer flex items-center gap-2 bg-primary-orange-main hover:bg-orange-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition border-2 border-orange-500"
             >
-              <Icons name="EditIcon" className="text-white w-[20px]" />
+              <Icons name="EditIcon" className="text-white w-5" />
               Edit
             </button>
           )}
@@ -78,7 +81,7 @@ export const ItemCardComponent = ({
             >
               <Icons
                 name="CloseIcon"
-                className="text-primary-orange-main w-[20px]"
+                className="text-primary-orange-main w-5"
               />
               Close
             </button>

@@ -1,5 +1,5 @@
-"use client"
-import { useEffect,useState } from "react";
+"use client";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
@@ -93,7 +93,7 @@ export const StockModal = ({
             {isEditMode ? "Edit Stock" : "Add New Stock"}
           </h2>
         </div>
-        
+
         <div className="border-b border-black mx-8 mb-6"></div>
 
         {/* Content */}
@@ -123,7 +123,9 @@ export const StockModal = ({
               <label className="text-lg font-medium text-black">Name</label>
               <Input
                 value={name}
-                placeholder={isEditMode ? "Edit stock name..." : "Add stock name..."}
+                placeholder={
+                  isEditMode ? "Edit stock name..." : "Add stock name..."
+                }
                 onChange={(e) => setName(e.target.value)}
                 className="bg-white border-none h-12 text-lg rounded-xl"
               />
@@ -141,14 +143,14 @@ export const StockModal = ({
                     className="bg-white border-none h-12 text-lg rounded-xl pr-10"
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col">
-                    <button 
-                      onClick={() => setQuantity(q => q + 1)}
+                    <button
+                      onClick={() => setQuantity((q) => q + 1)}
                       className="text-gray-500 hover:text-black leading-none"
                     >
                       +
                     </button>
-                    <button 
-                      onClick={() => setQuantity(q => Math.max(0, q - 1))}
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(0, q - 1))}
                       className="text-gray-500 hover:text-black leading-none"
                     >
                       -
