@@ -122,7 +122,7 @@ export function TableOrderAddSidebarComponent({
       <CardFooter className="flex flex-col space-y-3 pt-2 pb-6 px-6 bg-gray-50 rounded-b-xl">
         <Button 
             onClick={onConfirmOrder}
-            className="cursor-pointer w-full bg-primary-orange-main hover:bg-orange-600 disabled:opacity-40 text-white font-bold py-6 rounded-xl text-lg transition"
+            className="cursor-pointer w-full bg-primary-orange-main hover:bg-orange-600 disabled:opacity-40 disabled:text-white text-white font-bold py-6 rounded-xl text-lg transition"
             disabled={orderItems.length === 0}
         >
             <Icons name="SendIcon" className="w-5 h-5 mr-2" />
