@@ -23,9 +23,19 @@ const RestaurantRender = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-100 p-4 lg:p-8 font-sans">
-      <ButtonGroup activeView={currentView} setActiveView={setCurrentView} />
-      <main className="flex-1 pl-4 lg:pl-8">{renderContent()}</main>
+    <div className="flex min-h-screen w-full bg-white p-6 lg:p-10 gap-10">
+      {/* Sidebar Section */}
+      <div className="flex flex-col gap-5">
+        <h1 className="text-4xl font-extrabold text-black tracking-tight">
+          Restaurant
+        </h1>
+        <ButtonGroup activeView={currentView} setActiveView={setCurrentView} />
+      </div>
+
+      {/* Main Content Section */}
+      <main className="flex-1 flex flex-col justify-center items-center gap-6 pl-10">
+        <div className="w-full">{renderContent()}</div>
+      </main>
     </div>
   );
 };
