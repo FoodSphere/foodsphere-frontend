@@ -14,13 +14,23 @@ const handleResponse = async (res: Response) => {
     const contentType = res.headers.get("content-type");
 
     if (contentType && contentType.includes("application/json")) {
-      return await res.json();
+      return {
+        statusCode: res.status,
+        message: {
+          th: "",
+          en: "",
+        },
+        data: await res.json(),
+      };
     } else {
       const text = await res.text();
       throw new Error(text);
     }
-  } catch (error) {
-    throw new Error(JSON.stringify(error, null, 2));
+  } catch (error: any) {
+    // แก้จาก JSON.stringify เป็นการดึง message ออกมา
+    const errorMessage = error?.message || JSON.stringify(error);
+    console.error("API Error Detail:", errorMessage); // log ดูเอง
+    throw new Error(errorMessage);
   }
 };
 

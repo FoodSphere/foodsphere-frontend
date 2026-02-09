@@ -2,15 +2,12 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import * as z from "zod";
 
 const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Invalid email address"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
 });
 
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
@@ -40,15 +37,16 @@ const ForgotPasswordRender = () => {
         <h1 className="mb-4 text-center text-3xl font-semibold text-slate-800">
           Forgot your password
         </h1>
-        
+
         <p className="mb-8 text-center text-slate-600">
-          Please enter the email address you'd like your password reset information sent to
+          Please enter the email address you'd like your password reset
+          information sent to
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-2">
-            <label 
-              htmlFor="email" 
+            <label
+              htmlFor="email"
               className="text-sm font-medium text-slate-700"
             >
               Enter email address
@@ -64,9 +62,7 @@ const ForgotPasswordRender = () => {
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-red-500">
-                {errors.email.message}
-              </p>
+              <p className="text-sm text-red-500">{errors.email.message}</p>
             )}
           </div>
 

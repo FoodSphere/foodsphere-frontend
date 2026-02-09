@@ -1,4 +1,4 @@
-import ForgotPasswordRender from "@/app/features/main/forgot-password/Index";
+import ForgotPasswordRender from "@/app/features/auth/forgot-password/Index";
 
 const page = () => {
   return (

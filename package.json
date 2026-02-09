@@ -46,6 +46,7 @@
     "isomorphic-dompurify": "^2.36.0",
     "jsdom": "^26.1.0",
     "jsonwebtoken": "^9.0.3",
+    "jwt-decode": "^4.0.0",
     "lodash": "^4.17.23",
     "lowlight": "^3.3.0",
     "lucide-react": "^0.453.0",

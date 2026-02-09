@@ -1,80 +1,91 @@
 "use client";
-import { useState } from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { jwtDecode } from "jwt-decode"; // import library
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import * as z from "zod";
 
 import { Icons } from "@/app/icons";
+import { setCookie } from "@/libs/cookie"; // import setCookie
+import { getRedirectPath } from "@/libs/role-mapping";
+import { loginService } from "@/services/login/loginApi";
+
+// Type สำหรับข้อมูลใน JWT Token (ปรับตาม Backend ของจริง)
+interface IJwtPayload {
+  sub: string;
+  email: string;
+  role: string; // หรือ permission
+  exp: number;
+  [key: string]: any;
+}
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Email is required").email("Invalid email address"),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
-
-const mockUser = {
-  email: "admin@admin.com",
-  password: "Admin@123",
-};  
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginRender = () => {
   const router = useRouter();
-
   const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     setError,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-    },
+    defaultValues: { email: "", password: "" },
   });
 
-  const isLogin: boolean = true;
-  const permission: string = "dashboard";
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      const res = await loginService({
+        email: data.email,
+        password: data.password,
+      });
 
-  const onSubmit = (data: LoginFormValues) => {
-    // Add your login logic here
-    // For now we just use the mock variables, but in real app 'data' would be sent to API
-    if (data.username !== mockUser.email || data.password !== mockUser.password) {
-      setError("root", { message: "Email or password incorrect" });
-      return;
-    }
+      if (res && res.data && res.data.access_token) {
+        const token = res.data.access_token;
 
-    if (isLogin) {
-      switch (permission) {
-        case "dashboard":
-          router.push("/");
-          break;
-        case "order":
-          router.push("/order");
-          break;
-        case "table":
-          router.push("/table");
-          break;
-        case "stock":
-          router.push("/stock");
-          break;
-        case "menu":
-          router.push("/menu");
-          break;
-        case "restaurant":
-          router.push("/restaurant");
-          break;
-        default:
-          router.push("/error");
+        // 1. Set Cookie
+        setCookie("access_token", token);
+
+        // 2. Decode & Check Permission
+        const decoded: IJwtPayload = jwtDecode(token);
+
+        // ใช้ fallback "dashboard" กรณีไม่มี role ส่งมา
+        const userRole = decoded.role || "dashboard";
+
+        // 3. Redirect โดยใช้ Helper function (ลด switch case)
+        const targetPath = getRedirectPath(userRole);
+        router.push(targetPath);
+      } else {
+        setError("root", {
+          message: "Login failed: No access token received.",
+        });
       }
-    } else {
-      setError("root", { message: "Invalid username or password" });
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      // ... Logic Error Handling เดิมของคุณทำได้ดีแล้ว ...
+      let errorMessage = "Something went wrong. Please try again.";
+      try {
+        const errorObj = JSON.parse(error.message);
+        if (errorObj?.message) {
+          errorMessage =
+            typeof errorObj.message === "string"
+              ? errorObj.message
+              : "Invalid credentials";
+        }
+      } catch (e) {
+        if (error.message) errorMessage = "Invalid email or password";
+      }
+      setError("root", { message: errorMessage });
     }
   };
 
@@ -92,16 +103,17 @@ const LoginRender = () => {
             <input
               type="text"
               placeholder="Email"
+              disabled={isSubmitting}
               className={`w-full rounded-lg border px-4 py-3 focus:outline-none ${
-                errors.username
+                errors.email
                   ? "border-red-500 focus:border-red-500"
                   : "border-gray-300 focus:border-primary-orange-main"
               }`}
-              {...register("username")}
+              {...register("email")}
             />
-            {errors.username && (
+            {errors.email && (
               <p className="mt-1 text-left text-sm text-red-500">
-                {errors.username.message}
+                {errors.email.message}
               </p>
             )}
           </div>
@@ -110,6 +122,7 @@ const LoginRender = () => {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
+              disabled={isSubmitting}
               className={`w-full rounded-lg border px-4 py-3 focus:outline-none ${
                 errors.password
                   ? "border-red-500 focus:border-red-500"
@@ -153,9 +166,16 @@ const LoginRender = () => {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-primary-orange-main py-3 text-center font-semibold text-white transition-colors hover:bg-[#FF4722]"
+            disabled={isSubmitting}
+            className="w-full rounded-lg bg-primary-orange-main py-3 text-center font-semibold text-white transition-colors hover:bg-[#FF4722] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Login
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                Processing... {/* หรือใส่ Loading Spinner Icon ตรงนี้ */}
+              </span>
+            ) : (
+              "Login"
+            )}
           </button>
         </form>
       </div>

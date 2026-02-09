@@ -1,4 +1,4 @@
-import LoginRender from "@/app/features/main/login/Index";
+import LoginRender from "@/app/features/auth/login/Index";
 
 const page = () => {
   return (
