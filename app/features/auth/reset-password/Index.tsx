@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import * as z from "zod";
+
 import { Icons } from "@/app/icons";
 
 // Mock data TODO: Retrieve old password
@@ -38,10 +39,10 @@ const ResetPasswordForm = () => {
   const email = searchParams.get("email");
 
   // TODO: Add validation for token and email
-//   if (!token || !email) {
-//     router.push("/_not-found");
-//     return;
-//   }
+  //   if (!token || !email) {
+  //     router.push("/_not-found");
+  //     return;
+  //   }
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -61,7 +62,9 @@ const ResetPasswordForm = () => {
 
   const onSubmit = (data: ResetPasswordValues) => {
     if (data.password === oldPassword) {
-      setError("root", { message: "Password must be different from old password" });
+      setError("root", {
+        message: "Password must be different from old password",
+      });
       return;
     }
 

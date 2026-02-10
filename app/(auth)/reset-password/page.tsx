@@ -1,4 +1,4 @@
-import ResetPasswordRender from "@/app/features/main/reset-password/Index";
+import ResetPasswordRender from "@/app/features/auth/reset-password/Index";
 
 export const metadata = {
   title: "Reset Password | FoodSphere",
