@@ -47,7 +47,6 @@ export const Sidebar = () => {
       </div>
 
       {/* Logout Button */}
-      {/* เปลี่ยนจาก Link เป็น button เพื่อให้ Semantic ถูกต้อง */}
       <button
         onClick={handleLogout}
         className="text-black flex flex-col items-center gap-2 hover:text-primary-orange-main transition duration-150 ease-in-out w-full"

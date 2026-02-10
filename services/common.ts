@@ -35,7 +35,7 @@ const handleResponse = async (res: Response) => {
 };
 
 function getAuthHeader() {
-  const token = getCookie("accessToken");
+  const token = getCookie("access_token");
 
   return {
     Authorization: `Bearer ${token}`,

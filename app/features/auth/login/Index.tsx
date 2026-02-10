@@ -3,21 +3,22 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { jwtDecode } from "jwt-decode"; // import library
+import { jwtDecode } from "jwt-decode";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as z from "zod";
 
 import { Icons } from "@/app/icons";
-import { setCookie } from "@/libs/cookie"; // import setCookie
+import { setCookie } from "@/libs/cookie";
 import { getRedirectPath } from "@/libs/role-mapping";
 import { loginService } from "@/services/login/loginApi";
+import { getMyRestaurantService } from "@/services/login/loginApi";
 
-// Type สำหรับข้อมูลใน JWT Token (ปรับตาม Backend ของจริง)
+// Type สำหรับข้อมูลใน JWT Token
 interface IJwtPayload {
   sub: string;
   email: string;
-  role: string; // หรือ permission
+  role: string;
   exp: number;
   [key: string]: any;
 }
@@ -45,6 +46,7 @@ const LoginRender = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
+      // 1. Login
       const res = await loginService({
         email: data.email,
         password: data.password,
@@ -53,16 +55,45 @@ const LoginRender = () => {
       if (res && res.data && res.data.access_token) {
         const token = res.data.access_token;
 
-        // 1. Set Cookie
+        // 2. Set Token Cookie
         setCookie("access_token", token);
 
-        // 2. Decode & Check Permission
+        // 3. Decode Token (เพื่อดู Role)
         const decoded: IJwtPayload = jwtDecode(token);
-
-        // ใช้ fallback "dashboard" กรณีไม่มี role ส่งมา
         const userRole = decoded.role || "dashboard";
 
-        // 3. Redirect โดยใช้ Helper function (ลด switch case)
+        // 4. Logic: ดึงร้านค้า (Get Restaurants)
+        try {
+          const restaurantRes = await getMyRestaurantService();
+
+          // ตรวจสอบโครงสร้างข้อมูลที่ Backend ส่งกลับมา (สมมติว่าเป็น Array ใน data)
+          // อาจจะเป็น restaurantRes.data หรือ restaurantRes.data.items แล้วแต่ API
+          const restaurants = Array.isArray(restaurantRes?.data)
+            ? restaurantRes.data
+            : [];
+
+          if (restaurants.length > 0) {
+            // Auto-Select ร้านแรก
+            const firstRestaurant = restaurants[0];
+
+            // เก็บ ID ร้านค้าลง Cookie เพื่อใช้ในหน้าอื่นๆ (เช่นตอนดึง Order, Menu)
+            setCookie("restaurant_id", firstRestaurant.id);
+
+            console.log("Auto-selected restaurant:", firstRestaurant.name);
+          } else {
+            // กรณีไม่มีร้านค้าเลย (อาจจะแจ้งเตือน หรือ Redirect ไปหน้าสร้างร้าน)
+            console.warn("No restaurants found for this user.");
+            // setError("root", { message: "No restaurant found. Please contact admin." });
+            // return; // ถ้าไม่อยากให้ไปต่อ
+          }
+        } catch (shopError) {
+          console.error("Failed to fetch restaurants", shopError);
+          // จะยอมให้ผ่านไปหน้า Dashboard หรือไม่ ขึ้นอยู่กับ requirement
+          // ในที่นี้ยอมให้ผ่านไปก่อน แต่ user อาจจะทำอะไรไม่ได้
+        }
+        // ---------------------------------------------------------
+
+        // 5. Redirect ตาม Role
         const targetPath = getRedirectPath(userRole);
         router.push(targetPath);
       } else {
@@ -72,7 +103,6 @@ const LoginRender = () => {
       }
     } catch (error: any) {
       console.error("Login Error:", error);
-      // ... Logic Error Handling เดิมของคุณทำได้ดีแล้ว ...
       let errorMessage = "Something went wrong. Please try again.";
       try {
         const errorObj = JSON.parse(error.message);
@@ -171,7 +201,7 @@ const LoginRender = () => {
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
-                Processing... {/* หรือใส่ Loading Spinner Icon ตรงนี้ */}
+                Processing...
               </span>
             ) : (
               "Login"
