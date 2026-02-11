@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { StockModal } from "@/app/components/featureComponents/StockModal";
+import { StockModal } from "@/app/features/main/stock/components/StockModal";
 import { Icons } from "@/app/icons";
+import { getStockTags } from "@/services/stock/stockApi";
 
+import { StockAddTagDrawer } from "./components/StockAddTagDrawer";
 import { StockCard } from "./components/StockCard";
-// Import Custom Components
+import { StockEditTagDrawer } from "./components/StockEditTagDrawer";
 import { StockFilterBar } from "./components/StockFilterBar";
 import { StockHistory, StockHistoryItem } from "./components/StockHistory";
 
@@ -165,30 +167,42 @@ const fetchStockData = async () => {
   };
 };
 
-const CATEGORIES = [
-  "All ingredient",
-  "Pork",
-  "Beef",
-  "Chicken",
-  "Fish",
-  "Seafood",
-  "Vegetable",
-  "Fruit",
-  "Beverage",
-  "Others",
-];
-
 const StockRender = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [historyItems, setHistoryItems] = useState<StockHistoryItem[]>([]);
+
+  const [categories, setCategories] = useState<string[]>(["All ingredient"]);
   const [selectedCategory, setSelectedCategory] = useState("All ingredient");
+
   const [isLoading, setIsLoading] = useState(true);
 
   // --- State สำหรับควบคุม Modal ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
 
+  // --- Tag Drawer States ---
+  const [isTagDrawerOpen, setIsTagDrawerOpen] = useState(false); // For Add
+  const [isEditTagDrawerOpen, setIsEditTagDrawerOpen] = useState(false); // For Edit
+
+  // --- Menu Dropdown State (Manage Categories) ---
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
+
   // --- Event Handlers ---
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        categoryMenuRef.current &&
+        !categoryMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // เปิด Modal สำหรับเพิ่มใหม่
   const handleOpenAddModal = () => {
     setEditingItem(null); // เคลียร์ค่าให้เป็น null เพื่อบอก Modal ว่าคือ "Add Mode"
@@ -224,24 +238,6 @@ const StockRender = () => {
     setIsModalOpen(false);
   };
 
-  // --- API Fetching ---
-  useEffect(() => {
-    const initData = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchStockData(); // เรียก API จริงตรงนี้
-        setStockItems(data.items);
-        setHistoryItems(data.history);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initData();
-  }, []);
-
   // ฟังก์ชันสำหรับเปิด-ปิดสถานะ
   const handleToggleStatus = (id: string) => {
     setStockItems((prevItems) =>
@@ -255,6 +251,51 @@ const StockRender = () => {
     console.log(
       `${item?.title} is now ${!item?.isAvailable ? "Open" : "Closed"}`
     );
+  };
+
+  // แยกฟังก์ชันดึง Tags ออกมาเพื่อให้เรียกซ้ำได้ (Refetch)
+  const fetchTagsData = async () => {
+    try {
+      const tagsData = await getStockTags();
+      if (tagsData && Array.isArray(tagsData)) {
+        const tagNames = tagsData.map((tag: any) => tag.name);
+        setCategories(["All ingredient", ...tagNames]);
+      }
+    } catch (error) {
+      console.error("Error fetching tags:", error);
+    }
+  };
+
+  // --- API Fetching ---
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        setIsLoading(true);
+        // เรียก Stock Data และ Tags พร้อมกัน
+        const [stockData] = await Promise.all([
+          fetchStockData(),
+          fetchTagsData(), // เรียกฟังก์ชันที่แยกออกมา
+        ]);
+
+        setStockItems(stockData.items);
+        setHistoryItems(stockData.history);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initData();
+  }, []);
+
+  const handleTagCreated = async () => {
+    await fetchTagsData(); // โหลด Tags ใหม่
+  };
+
+  const handleTagUpdated = async () => {
+    await fetchTagsData(); // Refresh dropdown
+    // อาจจะ Reset selectedCategory ถ้าชื่อเปลี่ยน
   };
 
   // --- Filtering Logic ---
@@ -274,27 +315,69 @@ const StockRender = () => {
           <h2 className="text-xl font-medium text-gray-600 mt-1">Categories</h2>
         </div>
 
-        <button
-          onClick={handleOpenAddModal}
-          className="bg-primary-orange-main hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
-        >
-          <Icons name="PlusIcon" className="w-5 h-5 text-white" />
-          Add Ingredient
-        </button>
+        <div className="flex gap-3 relative z-10">
+          {/* Manage Category Dropdown */}
+          <div className="relative" ref={categoryMenuRef}>
+            <button
+              onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
+              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-all"
+            >
+              <Icons name="SettingIcon" className="w-5 h-5 text-gray-600" />
+              Manage Category
+              <Icons
+                name="ArrowDownIcon"
+                className={`w-4 h-4 transition-transform ${isCategoryMenuOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isCategoryMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <button
+                  onClick={() => {
+                    setIsTagDrawerOpen(true);
+                    setIsCategoryMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-3 hover:bg-orange-50 text-gray-700 font-medium flex items-center gap-2"
+                >
+                  <Icons name="PlusIcon" className="w-4 h-4" />
+                  New Category
+                </button>
+                <div className="h-px bg-gray-100 mx-2" />
+                <button
+                  onClick={() => {
+                    setIsEditTagDrawerOpen(true);
+                    setIsCategoryMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-3 hover:bg-orange-50 text-gray-700 font-medium flex items-center gap-2"
+                >
+                  <Icons name="PencilIcon" className="w-4 h-4" />
+                  Edit Category
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Add Ingredient Button */}
+          <button
+            onClick={handleOpenAddModal}
+            className="bg-primary-orange-main hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
+          >
+            <Icons name="PlusIcon" className="w-5 h-5 text-white" />
+            Add Ingredient
+          </button>
+        </div>
       </div>
 
-      {/* 2. Main Content Layout */}
+      {/* Main Content Layout */}
       <div className="flex flex-col xl:flex-row gap-6 items-start">
-        {/* Left Side: Filter & Grid */}
         <div className="flex-1 w-full flex flex-col gap-6">
-          {/* Filter Bar Component */}
           <StockFilterBar
-            categories={CATEGORIES}
+            categories={categories}
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
           />
 
-          {/* Grid Area */}
           {isLoading ? (
             <div className="w-full h-60 flex items-center justify-center text-gray-400">
               Loading...
@@ -309,16 +392,14 @@ const StockRender = () => {
                   title={item.title}
                   amount={item.amount}
                   unit={item.unit}
-                  isAvailable={item.isAvailable} // ส่งสถานะไป
+                  isAvailable={item.isAvailable}
                   onEdit={() => handleOpenEditModal(item)}
-                  onToggleStatus={() => handleToggleStatus(item.id)} // ใช้ฟังก์ชันใหม่
+                  onToggleStatus={() => handleToggleStatus(item.id)}
                 />
               ))}
             </div>
           )}
         </div>
-
-        {/* Right Side: History Component */}
         <StockHistory historyItems={historyItems} />
       </div>
 
@@ -327,6 +408,20 @@ const StockRender = () => {
         onClose={() => setIsModalOpen(false)}
         stockItem={editingItem}
         onSave={handleSaveStock}
+      />
+
+      {/* Add Tag Drawer */}
+      <StockAddTagDrawer
+        isOpen={isTagDrawerOpen}
+        onClose={() => setIsTagDrawerOpen(false)}
+        onSuccess={handleTagUpdated}
+      />
+
+      {/* Edit Tag Drawer */}
+      <StockEditTagDrawer
+        isOpen={isEditTagDrawerOpen}
+        onClose={() => setIsEditTagDrawerOpen(false)}
+        onSuccess={handleTagUpdated}
       />
     </div>
   );

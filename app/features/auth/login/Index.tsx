@@ -77,7 +77,7 @@ const LoginRender = () => {
             const firstRestaurant = restaurants[0];
 
             // เก็บ ID ร้านค้าลง Cookie เพื่อใช้ในหน้าอื่นๆ (เช่นตอนดึง Order, Menu)
-            setCookie("restaurant_id", firstRestaurant.id);
+            setCookie("restaurant_id", firstRestaurant.restaurant_id);
 
             console.log("Auto-selected restaurant:", firstRestaurant.name);
           } else {

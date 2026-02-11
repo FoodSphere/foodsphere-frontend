@@ -8,6 +8,5 @@ export const loginService = async (data: ILoginData) => {
 };
 
 export const getMyRestaurantService = async () => {
-  // API นี้ต้องใช้ Bearer Token ซึ่ง apiGet จัดการให้แล้วผ่าน getAuthHeader
-  return await apiGet("/restaurants");
+  return await apiGet("/s/restaurants");
 };
