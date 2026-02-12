@@ -1,31 +1,30 @@
 import { getCookie } from "@/libs/cookie";
-import { IStockTag } from "@/types/stockType";
+import { IMenuTag } from "@/types/menuType";
 
 import { apiDelete, apiGet, apiPost, apiPut } from "../common";
 
-export const getStockTags = async () => {
+export const getMenuTags = async () => {
   const restaurantId = getCookie("restaurant_id");
 
   if (!restaurantId) {
-    console.log("Restaurant ID not found in cookies");
-    return null;
+    throw new Error("Restaurant ID not found");
   }
   const response = await apiGet(`/restaurants/${restaurantId}/tags`);
 
-  return response?.data as IStockTag[];
+  return response?.data as IMenuTag[];
 };
 
-export const createStockTag = async (name: string) => {
+export const createMenuTag = async (name: string) => {
   const restaurantId = getCookie("restaurant_id");
 
   if (!restaurantId) {
-    console.log("Restaurant ID not found");
+    throw new Error("Restaurant ID not found");
   }
 
   return await apiPost(`/restaurants/${restaurantId}/tags`, { name });
 };
 
-export const updateStockTag = async (tagId: string | number, name: string) => {
+export const updateMenuTag = async (tagId: string | number, name: string) => {
   const restaurantId = getCookie("restaurant_id");
 
   if (!restaurantId) {
@@ -36,7 +35,7 @@ export const updateStockTag = async (tagId: string | number, name: string) => {
   return await apiPut(`/restaurants/${restaurantId}/tags/${tagId}`, { name });
 };
 
-export const deleteStockTag = async (tagId: string | number) => {
+export const deleteMenuTag = async (tagId: string | number) => {
   const restaurantId = getCookie("restaurant_id");
 
   if (!restaurantId) {

@@ -6,9 +6,9 @@ interface StockCardProps {
   title: string;
   amount: number;
   unit: string;
-  isAvailable?: boolean; // เพิ่ม prop นี้
+  isAvailable?: boolean;
   onEdit: () => void;
-  onToggleStatus: () => void; // เปลี่ยนจาก onClose เป็น onToggleStatus
+  onToggleStatus: () => void;
 }
 
 export const StockCard = ({
@@ -16,7 +16,7 @@ export const StockCard = ({
   title,
   amount,
   unit,
-  isAvailable = true, // default เป็น true
+  isAvailable = true,
   onEdit,
   onToggleStatus,
 }: StockCardProps) => {

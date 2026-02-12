@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import { Icons } from "@/app/icons"; 
-import { createStockTag } from "@/services/stock/stockTagApi";
+import { Icons } from "@/app/icons";
+import { createMenuTag } from "@/services/menu/menuTagApi";
 
 interface AddTagDrawerProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface AddTagDrawerProps {
   onSuccess: () => void; // callback เพื่อบอกให้หน้าหลักโหลดข้อมูลใหม่
 }
 
-export const StockAddTagDrawer = ({
+export const MenuAddTagDrawer = ({
   isOpen,
   onClose,
   onSuccess,
@@ -28,7 +28,7 @@ export const StockAddTagDrawer = ({
       setIsLoading(true);
       setError("");
 
-      await createStockTag(tagName);
+      await createMenuTag(tagName);
 
       setTagName(""); // Reset form
       onSuccess(); // Refresh categories in parent

@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 
 import { Icons } from "@/app/icons";
 import {
-  deleteStockTag,
-  getStockTags,
-  updateStockTag,
-} from "@/services/stock/stockTagApi"; // นำเข้า deleteStockTag
-import { IStockTag } from "@/types/stockType";
+  deleteMenuTag,
+  getMenuTags,
+  updateMenuTag,
+} from "@/services/menu/menuTagApi";
+import { IMenuTag } from "@/types/menuType";
 
 interface StockEditTagDrawerProps {
   isOpen: boolean;
@@ -21,13 +21,13 @@ export const StockEditTagDrawer = ({
   onClose,
   onSuccess,
 }: StockEditTagDrawerProps) => {
-  const [tags, setTags] = useState<IStockTag[]>([]);
+  const [tags, setTags] = useState<IMenuTag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false); // State สำหรับการลบ
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTag, setSelectedTag] = useState<IStockTag | null>(null);
+  const [selectedTag, setSelectedTag] = useState<IMenuTag | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [editName, setEditName] = useState("");
@@ -53,7 +53,7 @@ export const StockEditTagDrawer = ({
   const fetchTags = async () => {
     try {
       setIsLoading(true);
-      const data = await getStockTags();
+      const data = await getMenuTags();
       if (Array.isArray(data)) {
         setTags(data);
       }
@@ -68,7 +68,7 @@ export const StockEditTagDrawer = ({
     tag.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSelectTag = (tag: IStockTag) => {
+  const handleSelectTag = (tag: IMenuTag) => {
     setSelectedTag(tag);
     setSearchQuery(tag.name);
     setEditName(tag.name);
@@ -84,7 +84,7 @@ export const StockEditTagDrawer = ({
     try {
       setIsSaving(true);
       setError("");
-      await updateStockTag(String(selectedTag.id), editName);
+      await updateMenuTag(String(selectedTag.id), editName);
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -101,7 +101,7 @@ export const StockEditTagDrawer = ({
     try {
       setIsDeleting(true);
       setError("");
-      await deleteStockTag(String(selectedTag.id));
+      await deleteMenuTag(String(selectedTag.id));
       onSuccess();
       onClose();
     } catch (err: any) {

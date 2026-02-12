@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { StockModal } from "@/app/features/main/stock/components/StockModal";
 import { Icons } from "@/app/icons";
-import { getStockTags } from "@/services/stock/stockApi";
+import { getStockTags } from "@/services/stock/stockTagApi";
 
 import { StockAddTagDrawer } from "./components/StockAddTagDrawer";
 import { StockCard } from "./components/StockCard";
@@ -18,7 +18,7 @@ interface StockItem {
   title: string;
   amount: number;
   unit: string;
-  category: string;
+  category: string[];
   isAvailable: boolean;
 }
 
@@ -36,7 +36,7 @@ const fetchStockData = async () => {
         title: "Pork Belly",
         amount: 30,
         unit: "kg.",
-        category: "Pork",
+        category: ["Pork"],
       },
       {
         id: "2",
@@ -45,7 +45,7 @@ const fetchStockData = async () => {
         title: "Tomato",
         amount: 25,
         unit: "pcs.",
-        category: "Vegetable",
+        category: ["Vegetable"],
       },
       {
         id: "3",
@@ -54,7 +54,7 @@ const fetchStockData = async () => {
         title: "Egg No.0",
         amount: 100,
         unit: "pcs.",
-        category: "Egg",
+        category: ["Egg"],
       },
       {
         id: "4",
@@ -63,7 +63,7 @@ const fetchStockData = async () => {
         title: "Salmon",
         amount: 6,
         unit: "kg.",
-        category: "Fish",
+        category: ["Fish"],
       },
     ] as StockItem[],
     history: [
@@ -171,8 +171,9 @@ const StockRender = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [historyItems, setHistoryItems] = useState<StockHistoryItem[]>([]);
 
-  const [categories, setCategories] = useState<string[]>(["All ingredient"]);
-  const [selectedCategory, setSelectedCategory] = useState("All ingredient");
+  const ALL_CATEGORY = "All ingredient";
+  const [categories, setCategories] = useState<string[]>([ALL_CATEGORY]);
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -188,21 +189,13 @@ const StockRender = () => {
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
 
-  // --- Event Handlers ---
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        categoryMenuRef.current &&
-        !categoryMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsCategoryMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // --- Filtering Logic ---
+  const filteredItems =
+    selectedCategory === ALL_CATEGORY
+      ? stockItems
+      : stockItems.filter((item) => item.category.includes(selectedCategory));
 
+  // --- Event Handlers ---
   // เปิด Modal สำหรับเพิ่มใหม่
   const handleOpenAddModal = () => {
     setEditingItem(null); // เคลียร์ค่าให้เป็น null เพื่อบอก Modal ว่าคือ "Add Mode"
@@ -213,6 +206,21 @@ const StockRender = () => {
   const handleOpenEditModal = (item: StockItem) => {
     setEditingItem(item); // ส่งข้อมูล Item ไปเพื่อให้ Modal รู้ว่าเป็น "Edit Mode"
     setIsModalOpen(true);
+  };
+
+  // ฟังก์ชันสำหรับเปิด-ปิดสถานะ
+  const handleToggleStatus = (id: string) => {
+    setStockItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
+      )
+    );
+
+    // ตรงนี้อาจจะไปเรียก API เพื่อ Update Database จริงๆ ด้วย
+    const item = stockItems.find((i) => i.id === id);
+    console.log(
+      `${item?.title} is now ${!item?.isAvailable ? "Open" : "Closed"}`
+    );
   };
 
   const handleSaveStock = (formData: any) => {
@@ -238,20 +246,19 @@ const StockRender = () => {
     setIsModalOpen(false);
   };
 
-  // ฟังก์ชันสำหรับเปิด-ปิดสถานะ
-  const handleToggleStatus = (id: string) => {
-    setStockItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
-      )
-    );
-
-    // ตรงนี้อาจจะไปเรียก API เพื่อ Update Database จริงๆ ด้วย
-    const item = stockItems.find((i) => i.id === id);
-    console.log(
-      `${item?.title} is now ${!item?.isAvailable ? "Open" : "Closed"}`
-    );
-  };
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        categoryMenuRef.current &&
+        !categoryMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // แยกฟังก์ชันดึง Tags ออกมาเพื่อให้เรียกซ้ำได้ (Refetch)
   const fetchTagsData = async () => {
@@ -259,11 +266,15 @@ const StockRender = () => {
       const tagsData = await getStockTags();
       if (tagsData && Array.isArray(tagsData)) {
         const tagNames = tagsData.map((tag: any) => tag.name);
-        setCategories(["All ingredient", ...tagNames]);
+        setCategories([ALL_CATEGORY, ...tagNames]);
       }
     } catch (error) {
       console.error("Error fetching tags:", error);
     }
+  };
+
+  const handleTagUpdated = async () => {
+    await fetchTagsData(); // Refresh dropdown
   };
 
   // --- API Fetching ---
@@ -288,21 +299,6 @@ const StockRender = () => {
 
     initData();
   }, []);
-
-  const handleTagCreated = async () => {
-    await fetchTagsData(); // โหลด Tags ใหม่
-  };
-
-  const handleTagUpdated = async () => {
-    await fetchTagsData(); // Refresh dropdown
-    // อาจจะ Reset selectedCategory ถ้าชื่อเปลี่ยน
-  };
-
-  // --- Filtering Logic ---
-  const filteredItems =
-    selectedCategory === "All ingredient"
-      ? stockItems
-      : stockItems.filter((item) => item.category === selectedCategory);
 
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen">

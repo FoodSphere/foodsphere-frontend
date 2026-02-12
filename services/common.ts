@@ -11,7 +11,6 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const handleResponse = async (res: Response) => {
   try {
-    // --- เพิ่มส่วนนี้เข้าไปครับ ---
     // เช็คก่อนเลยว่าถ้าเป็น 204 No Content (สำเร็จแต่ไม่มีเนื้อหา) ให้ return success
     if (res.status === 204) {
       return {

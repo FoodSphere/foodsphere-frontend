@@ -51,8 +51,8 @@ export const MenuFilterBar = ({
             onClick={() => onSelectCategory(cat)}
             className={`whitespace-nowrap px-6 py-2 rounded-md text-sm font-medium transition-all ${
               selectedCategory === cat
-                ? "bg-[#FF5C39] text-white shadow-md" // ใช้สีส้มหลัก
-                : "text-gray-600 hover:text-[#FF5C39] hover:bg-white/50"
+                ? "bg-primary-orange-main text-white shadow-md"
+                : "text-gray-600 hover:text-primary-orange-main hover:bg-white/50"
             }`}
           >
             {cat}

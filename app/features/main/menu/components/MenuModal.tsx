@@ -17,8 +17,8 @@ interface MenuModalProps {
     id: string;
     imgUrl: string | null;
     title: string;
-    amount: number; // Price
-    unit: string; // Currency
+    price: number; 
+    currency: string; 
     ingredients: Ingredient[];
   } | null;
   onSave: (item: any) => void;
@@ -43,8 +43,8 @@ export const MenuModal = ({
     if (isOpen) {
       if (menuItem) {
         setName(menuItem.title);
-        setPrice(menuItem.amount);
-        setComparePrice(menuItem.amount + 100); // Mock compare price
+        setPrice(menuItem.price);
+        setComparePrice(menuItem.price + 100); // Mock compare price
         setTags(["Hotpot", "Meat", "Japan"]); // Mock tags
         setIngredients(menuItem.ingredients || []);
       } else {
