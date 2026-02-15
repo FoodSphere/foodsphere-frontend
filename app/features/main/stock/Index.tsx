@@ -1,9 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-import { StockModal } from "@/app/features/main/stock/components/StockModal";
+import { StockDrawer } from "@/app/features/main/stock/components/StockDrawer";
 import { Icons } from "@/app/icons";
+import {
+  createIngredientWithImage,
+  getIngredients,
+  updateIngredientWithImage,
+} from "@/services/stock/stockApi";
 import { getStockTags } from "@/services/stock/stockTagApi";
+import {
+  IIngredientResponse,
+  IUpdateIngredientRequest,
+} from "@/types/stockType";
 
 import { StockAddTagDrawer } from "./components/StockAddTagDrawer";
 import { StockCard } from "./components/StockCard";
@@ -11,161 +20,17 @@ import { StockEditTagDrawer } from "./components/StockEditTagDrawer";
 import { StockFilterBar } from "./components/StockFilterBar";
 import { StockHistory, StockHistoryItem } from "./components/StockHistory";
 
-// --- Type Definition ---
+// --- Type Definition (ปรับให้ตรงกับ Backend) ---
 interface StockItem {
-  id: string;
-  imgUrl: string | null;
-  title: string;
-  amount: number;
+  id: number; 
+  image_url: string | null; 
+  name: string; 
+  stock: number; 
   unit: string;
-  category: string[];
-  isAvailable: boolean;
+  description?: string;
+  tags: { tag_id: number; name: string }[]; 
+  status: number; 
 }
-
-// --- Mock API Service (ใช้สำหรับทดสอบ) ---
-const fetchStockData = async () => {
-  // จำลอง Network Delay
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  return {
-    items: [
-      {
-        id: "1",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=400",
-        title: "Pork Belly",
-        amount: 30,
-        unit: "kg.",
-        category: ["Pork"],
-      },
-      {
-        id: "2",
-        imgUrl:
-          "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=400",
-        title: "Tomato",
-        amount: 25,
-        unit: "pcs.",
-        category: ["Vegetable"],
-      },
-      {
-        id: "3",
-        imgUrl:
-          "https://images.unsplash.com/photo-1587486913049-53fc88980fa1?auto=format&fit=crop&w=400",
-        title: "Egg No.0",
-        amount: 100,
-        unit: "pcs.",
-        category: ["Egg"],
-      },
-      {
-        id: "4",
-        imgUrl:
-          "https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?auto=format&fit=crop&w=400",
-        title: "Salmon",
-        amount: 6,
-        unit: "kg.",
-        category: ["Fish"],
-      },
-    ] as StockItem[],
-    history: [
-      {
-        id: "h1",
-        itemCode: "Ingredient # 000099",
-        imgUrl:
-          "https://images.unsplash.com/photo-1599084993091-1cb5c0721cc6?auto=format&fit=crop&w=200",
-        title: "Salmon",
-        action: "Added",
-        date: "10/03/2025",
-        time: "05:48",
-        amountChange: 6,
-        unit: "kg.",
-      },
-      {
-        id: "h2",
-        itemCode: "Ingredient # 000009",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=200",
-        title: "Pork Belly",
-        action: "Consumed",
-        date: "09/03/2025",
-        time: "10:12",
-        amountChange: -10,
-        unit: "kg.",
-      },
-      {
-        id: "h3",
-        itemCode: "Ingredient # 000009",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=200",
-        title: "Pork Belly",
-        action: "Consumed",
-        date: "09/03/2025",
-        time: "10:12",
-        amountChange: -10,
-        unit: "kg.",
-      },
-      {
-        id: "h3",
-        itemCode: "Ingredient # 000009",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=200",
-        title: "Pork Belly",
-        action: "Consumed",
-        date: "09/03/2025",
-        time: "10:12",
-        amountChange: -10,
-        unit: "kg.",
-      },
-      {
-        id: "h3",
-        itemCode: "Ingredient # 000009",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=200",
-        title: "Pork Belly",
-        action: "Consumed",
-        date: "09/03/2025",
-        time: "10:12",
-        amountChange: -10,
-        unit: "kg.",
-      },
-      {
-        id: "h3",
-        itemCode: "Ingredient # 000009",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=200",
-        title: "Pork Belly",
-        action: "Consumed",
-        date: "09/03/2025",
-        time: "10:12",
-        amountChange: -10,
-        unit: "kg.",
-      },
-      {
-        id: "h3",
-        itemCode: "Ingredient # 000009",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=200",
-        title: "Pork Belly",
-        action: "Consumed",
-        date: "09/03/2025",
-        time: "10:12",
-        amountChange: -10,
-        unit: "kg.",
-      },
-      {
-        id: "h3",
-        itemCode: "Ingredient # 000009",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=200",
-        title: "Pork Belly",
-        action: "Consumed",
-        date: "09/03/2025",
-        time: "10:12",
-        amountChange: -10,
-        unit: "kg.",
-      },
-    ] as StockHistoryItem[],
-  };
-};
 
 const StockRender = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
@@ -182,71 +47,101 @@ const StockRender = () => {
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
 
   // --- Tag Drawer States ---
-  const [isTagDrawerOpen, setIsTagDrawerOpen] = useState(false); // For Add
-  const [isEditTagDrawerOpen, setIsEditTagDrawerOpen] = useState(false); // For Edit
+  const [isTagDrawerOpen, setIsTagDrawerOpen] = useState(false);
+  const [isEditTagDrawerOpen, setIsEditTagDrawerOpen] = useState(false);
 
-  // --- Menu Dropdown State (Manage Categories) ---
+  // --- Menu Dropdown State ---
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
+
+  // State สำหรับเก็บ Tag ทั้งหมด
+  const [allTags, setAllTags] = useState<{ id: number; name: string }[]>([]);
 
   // --- Filtering Logic ---
   const filteredItems =
     selectedCategory === ALL_CATEGORY
       ? stockItems
-      : stockItems.filter((item) => item.category.includes(selectedCategory));
+      : stockItems.filter((item) =>
+          item.tags.some((tag) => tag.name === selectedCategory)
+        );
 
   // --- Event Handlers ---
-  // เปิด Modal สำหรับเพิ่มใหม่
   const handleOpenAddModal = () => {
-    setEditingItem(null); // เคลียร์ค่าให้เป็น null เพื่อบอก Modal ว่าคือ "Add Mode"
+    setEditingItem(null);
     setIsModalOpen(true);
   };
 
-  // เปิด Modal สำหรับแก้ไข
   const handleOpenEditModal = (item: StockItem) => {
-    setEditingItem(item); // ส่งข้อมูล Item ไปเพื่อให้ Modal รู้ว่าเป็น "Edit Mode"
+    setEditingItem(item);
     setIsModalOpen(true);
   };
 
-  // ฟังก์ชันสำหรับเปิด-ปิดสถานะ
-  const handleToggleStatus = (id: string) => {
+  const handleToggleStatus = (id: number) => {
     setStockItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
+        item.id === id
+          ? { ...item, status: item.status === 0 ? 1 : 0 } // สมมติ 0=Open, 1=Closed
+          : item
       )
     );
 
-    // ตรงนี้อาจจะไปเรียก API เพื่อ Update Database จริงๆ ด้วย
     const item = stockItems.find((i) => i.id === id);
-    console.log(
-      `${item?.title} is now ${!item?.isAvailable ? "Open" : "Closed"}`
-    );
+    // Logic เรียก API update status (ถ้ามี)
+    console.log(`Toggled status for ${item?.name}`);
   };
 
-  const handleSaveStock = (formData: any) => {
-    if (editingItem) {
-      // Logic สำหรับ Update (Edit)
-      setStockItems((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id ? { ...item, ...formData } : item
-        )
-      );
-      console.log("Updated item:", formData);
-    } else {
-      // Logic สำหรับ Insert (Add)
-      const newItem: StockItem = {
-        ...formData,
-        id: Math.random().toString(36).substr(2, 9), // Mock ID
-        isAvailable: true,
-        category: "Others", // หรือรับค่าจาก Modal ถ้ามี
-      };
-      setStockItems((prev) => [newItem, ...prev]);
-      console.log("Added new item:", newItem);
+  const handleSaveStock = async (payload: any, file: File | null) => {
+    // หมายเหตุ: payload ที่ส่งมาจาก StockDrawer ควรจะเปลี่ยน key ให้ตรงกันด้วย
+    // หรือถ้า Drawer ยังส่งเป็น title/amount อยู่ ให้ map ตรงนี้ครับ
+    // แต่เพื่อให้ตรงตาม Requirement ผมสมมติว่าเรา map ให้เป็น name/stock แล้ว
+
+    // สร้าง Request Body ให้ตรงกับ IUpdateIngredientRequest / ICreateIngredientRequest
+    const apiPayload: IUpdateIngredientRequest = {
+      name: payload.name || payload.title, // รองรับทั้งชื่อใหม่และชื่อเก่า (เผื่อ Drawer ยังไม่แก้)
+      stock: Number(payload.stock ?? payload.amount), // รองรับทั้งสองชื่อ
+      unit: payload.unit,
+      description: payload.description || "",
+      // แปลง tags ให้เหลือแค่ { tag_id } ตามที่ API ต้องการ
+      tags: payload.tags
+        ? payload.tags.map((t: any) => ({
+            tag_id: Number(t.tag_id || t.id), // รองรับทั้ง id และ tag_id
+          }))
+        : payload.category
+          ? payload.category.map((c: any) => ({ tag_id: Number(c.id) }))
+          : [],
+    };
+
+    try {
+      if (editingItem) {
+        // --- Logic Edit ---
+        const res = await updateIngredientWithImage(
+          editingItem.id,
+          apiPayload,
+          file
+        );
+
+        if (res && (res.statusCode === 200 || res.statusCode === 204)) {
+          console.log("Updated successfully");
+          await fetchIngredientsData();
+        }
+      } else {
+        // --- Logic Add ---
+        // type casting as any เพื่อเลี่ยง strict check เนื่องจาก create ใช้ interface เดียวกัน
+        const res = await createIngredientWithImage(apiPayload as any, file);
+
+        if (res && (res.statusCode === 200 || res.statusCode === 201)) {
+          console.log("Created successfully");
+          await fetchIngredientsData();
+        }
+      }
+    } catch (error) {
+      console.error("Failed to save ingredient", error);
+      alert("Failed to save ingredient");
     }
+
     setIsModalOpen(false);
   };
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -260,13 +155,18 @@ const StockRender = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // แยกฟังก์ชันดึง Tags ออกมาเพื่อให้เรียกซ้ำได้ (Refetch)
   const fetchTagsData = async () => {
     try {
       const tagsData = await getStockTags();
       if (tagsData && Array.isArray(tagsData)) {
         const tagNames = tagsData.map((tag: any) => tag.name);
         setCategories([ALL_CATEGORY, ...tagNames]);
+
+        const formattedTags = tagsData.map((tag: any) => ({
+          id: tag.id || tag.tag_id,
+          name: tag.name,
+        }));
+        setAllTags(formattedTags);
       }
     } catch (error) {
       console.error("Error fetching tags:", error);
@@ -274,24 +174,43 @@ const StockRender = () => {
   };
 
   const handleTagUpdated = async () => {
-    await fetchTagsData(); // Refresh dropdown
+    await fetchTagsData();
   };
 
-  // --- API Fetching ---
+  const fetchIngredientsData = async () => {
+    try {
+      const res = await getIngredients();
+
+      if (res && res.data && Array.isArray(res.data)) {
+        const apiData: IIngredientResponse[] = res.data;
+
+        // Map API Data -> UI State (ชื่อตรงกันแล้ว Map ง่ายขึ้น)
+        const mappedItems: StockItem[] = apiData.map((item) => ({
+          id: item.id,
+          image_url: item.image_url === "string" ? null : item.image_url,
+          name: item.name,
+          stock: item.stock,
+          unit: item.unit,
+          description: item.description,
+          // API ส่ง tags: {tag_id, name}[] เราใช้ตามนั้นเลย
+          tags: item.tags || [],
+          status: item.status, // ใช้ status ตรงๆ (0, 1)
+        }));
+
+        setStockItems(mappedItems);
+      }
+    } catch (error) {
+      console.error("Error fetching ingredients:", error);
+    }
+  };
+
   useEffect(() => {
     const initData = async () => {
       try {
         setIsLoading(true);
-        // เรียก Stock Data และ Tags พร้อมกัน
-        const [stockData] = await Promise.all([
-          fetchStockData(),
-          fetchTagsData(), // เรียกฟังก์ชันที่แยกออกมา
-        ]);
-
-        setStockItems(stockData.items);
-        setHistoryItems(stockData.history);
+        await Promise.all([fetchIngredientsData(), fetchTagsData()]);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error initializing data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -302,7 +221,7 @@ const StockRender = () => {
 
   return (
     <div className="flex flex-col gap-6 p-6 min-h-screen">
-      {/* 1. Page Header */}
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-4xl font-extrabold text-black tracking-tight">
@@ -312,7 +231,6 @@ const StockRender = () => {
         </div>
 
         <div className="flex gap-3 relative z-10">
-          {/* Manage Category Dropdown */}
           <div className="relative" ref={categoryMenuRef}>
             <button
               onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
@@ -322,11 +240,12 @@ const StockRender = () => {
               Manage Category
               <Icons
                 name="ArrowDownIcon"
-                className={`w-4 h-4 transition-transform ${isCategoryMenuOpen ? "rotate-180" : ""}`}
+                className={`w-4 h-4 transition-transform ${
+                  isCategoryMenuOpen ? "rotate-180" : ""
+                }`}
               />
             </button>
 
-            {/* Dropdown Menu */}
             {isCategoryMenuOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <button
@@ -354,7 +273,6 @@ const StockRender = () => {
             )}
           </div>
 
-          {/* Add Ingredient Button */}
           <button
             onClick={handleOpenAddModal}
             className="bg-primary-orange-main hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg hover:shadow-xl transition-all"
@@ -365,7 +283,6 @@ const StockRender = () => {
         </div>
       </div>
 
-      {/* Main Content Layout */}
       <div className="flex flex-col xl:flex-row gap-6 items-start">
         <div className="flex-1 w-full flex flex-col gap-6">
           <StockFilterBar
@@ -383,12 +300,14 @@ const StockRender = () => {
               {filteredItems.map((item) => (
                 <StockCard
                   key={item.id}
-                  id={item.id}
-                  imgUrl={item.imgUrl}
-                  title={item.title}
-                  amount={item.amount}
+                  // --- [สำคัญ] Map Props ใหม่ให้เข้ากับ StockCard ตัวเดิม ---
+                  id={item.id} // StockCard รับ id เป็น string
+                  img_url={item.image_url} // เปลี่ยน imgUrl -> image_url
+                  name={item.name} // เปลี่ยน title -> name
+                  stock={item.stock} // เปลี่ยน amount -> stock
                   unit={item.unit}
-                  isAvailable={item.isAvailable}
+                  // สมมติว่า status 0 คือ Available
+                  status={item.status === 0}
                   onEdit={() => handleOpenEditModal(item)}
                   onToggleStatus={() => handleToggleStatus(item.id)}
                 />
@@ -399,21 +318,22 @@ const StockRender = () => {
         <StockHistory historyItems={historyItems} />
       </div>
 
-      <StockModal
+      <StockDrawer
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        stockItem={editingItem}
+        // ตรงนี้ StockDrawer อาจจะบ่นเรื่อง Type ไม่ตรง ถ้าภายใน Drawer define type ไว้แน่น
+        // คุณอาจจะต้องแก้ Interface ใน StockDrawer ให้ตรงกันด้วยครับ
+        stockItem={editingItem as any}
         onSave={handleSaveStock}
+        availableTags={allTags}
       />
 
-      {/* Add Tag Drawer */}
       <StockAddTagDrawer
         isOpen={isTagDrawerOpen}
         onClose={() => setIsTagDrawerOpen(false)}
         onSuccess={handleTagUpdated}
       />
 
-      {/* Edit Tag Drawer */}
       <StockEditTagDrawer
         isOpen={isEditTagDrawerOpen}
         onClose={() => setIsEditTagDrawerOpen(false)}

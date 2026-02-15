@@ -3,10 +3,13 @@ import { useEffect, useRef, useState } from "react";
 
 import { MenuModal } from "@/app/features/main/menu/components/MenuModal";
 import { Icons } from "@/app/icons";
+import { getMenus } from "@/services/menu/menuApi";
 import { getMenuTags } from "@/services/menu/menuTagApi";
+import { IMenuApiResponse } from "@/types/menuType";
 
 import { MenuAddTagDrawer } from "./components/MenuAddTagDrawer";
 import { MenuCard } from "./components/MenuCard";
+import { MenuEditTagDrawer } from "./components/MenuEditTagDrawer";
 import { MenuFilterBar } from "./components/MenuFilterBar";
 import { MenuHistory, MenuHistoryItem } from "./components/MenuHistory";
 
@@ -25,90 +28,6 @@ export interface IMenuItem {
   category: string[];
   isAvailable: boolean;
 }
-
-// --- Mock API Service (ใช้สำหรับทดสอบ) ---
-const fetchMenuData = async () => {
-  // จำลอง Network Delay
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  return {
-    items: [
-      {
-        id: "1",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=400",
-        title: "Soi Ju Muu",
-        price: 150,
-        currency: "Baht",
-        category: ["Pork"],
-        ingredients: [],
-        isAvailable: true,
-      },
-      {
-        id: "2",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=400",
-        title: "Soi Ju Muu",
-        price: 150,
-        currency: "Baht",
-        category: ["Pork"],
-        ingredients: [],
-        isAvailable: true,
-      },
-      {
-        id: "3",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=400",
-        title: "Soi Ju Muu",
-        price: 150,
-        currency: "Baht",
-        category: ["Pork"],
-        ingredients: [],
-        isAvailable: true,
-      },
-      {
-        id: "4",
-        imgUrl:
-          "https://images.unsplash.com/photo-1606728035784-c8a1678d2b27?auto=format&fit=crop&w=400",
-        title: "Soi Ju Muu",
-        price: 150,
-        currency: "Baht",
-        category: ["Pork"],
-        ingredients: [],
-        isAvailable: true,
-      },
-    ] as IMenuItem[],
-    history: [
-      {
-        id: "h1",
-        menuIdDisplay: "10/03/2025",
-        title: "Wagyu Steak",
-        imgUrl: "https://images.unsplash.com/photo-1546241072-48010ad28c2c",
-        action: "New",
-        date: "10/03/2025",
-        time: "18:00",
-      },
-      {
-        id: "h2",
-        menuIdDisplay: "Menu # 000121",
-        title: "Sea Bass Steak",
-        imgUrl: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2",
-        action: "Edited",
-        date: "10/03/2025",
-        time: "17:48",
-      },
-      {
-        id: "h3",
-        menuIdDisplay: "Menu # 000052",
-        title: "Wine",
-        imgUrl: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3",
-        action: "Deleted",
-        date: "08/03/2025",
-        time: "07:19",
-      },
-    ] as MenuHistoryItem[],
-  };
-};
 
 export default function MenuRender() {
   const [menuItems, setMenuItems] = useState<IMenuItem[]>([]);
@@ -220,21 +139,52 @@ export default function MenuRender() {
     await fetchTagsData(); // Refresh dropdown
   };
 
+  const fetchMenusData = async () => {
+    try {
+      const res = await getMenus();
+
+      if (res && res.data && Array.isArray(res.data)) {
+        const apiData: IMenuApiResponse[] = res.data;
+
+        // แปลงข้อมูลจาก API ให้เข้ากับหน้าบ้าน (UI)
+        const mappedMenus: IMenuItem[] = apiData.map((item) => ({
+          id: item.id.toString(), // แปลง number เป็น string
+          title: item.name,
+          price: item.price,
+          currency: "บาท", // Hardcode ตาม requirement
+          imgUrl: item.image_url === "string" ? null : item.image_url, // เช็คถ้าเป็นค่า default "string" ให้เป็น null
+
+          // Map Tags Object -> String Array
+          category: item.tags ? item.tags.map((t) => t.name) : [],
+
+          // Map Ingredients
+          // หมายเหตุ: API ให้มาแค่ ingredient_id ไม่มีชื่อ เลยต้องใส่ ID แทนไปก่อน
+          ingredients: item.ingredients
+            ? item.ingredients.map((ing) => ({
+                title: `Ingredient #${ing.ingredient_id}`,
+                amount: ing.amount,
+              }))
+            : [],
+
+          // Map Status (สมมติว่า 1 = Available/Open, 0 = Unavailable/Closed)
+          isAvailable: item.status === 0,
+        }));
+
+        setMenuItems(mappedMenus);
+      }
+    } catch (error) {
+      console.error("Error fetching menus:", error);
+    }
+  };
+
   // --- API Fetching ---
   useEffect(() => {
     const initData = async () => {
       try {
         setIsLoading(true);
-        // เรียก Stock Data และ Tags พร้อมกัน
-        const [stockData] = await Promise.all([
-          fetchMenuData(),
-          fetchTagsData(), // เรียกฟังก์ชันที่แยกออกมา
-        ]);
-
-        setMenuItems(stockData.items);
-        setHistoryItems(stockData.history);
+        await Promise.all([fetchMenusData(), fetchTagsData()]);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error initializing data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -351,6 +301,7 @@ export default function MenuRender() {
 
         {/* Right Side: History Component */}
         <div>
+          {/* History Data ยังเป็น Mock หรือว่างไว้ก่อน เพราะ API เส้นนี้ไม่มี History */}
           <MenuHistory historyItems={historyItems} />
         </div>
       </div>
@@ -370,7 +321,7 @@ export default function MenuRender() {
       />
 
       {/* Edit Tag Drawer */}
-      <MenuAddTagDrawer
+      <MenuEditTagDrawer
         isOpen={isEditTagDrawerOpen}
         onClose={() => setIsEditTagDrawerOpen(false)}
         onSuccess={handleTagUpdated}

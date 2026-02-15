@@ -7,7 +7,7 @@ import {
   deleteStockTag,
   getStockTags,
   updateStockTag,
-} from "@/services/stock/stockTagApi"; // นำเข้า deleteStockTag
+} from "@/services/stock/stockTagApi";
 import { IStockTag } from "@/types/stockType";
 
 interface StockEditTagDrawerProps {
@@ -24,7 +24,7 @@ export const StockEditTagDrawer = ({
   const [tags, setTags] = useState<IStockTag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false); // State สำหรับการลบ
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<IStockTag | null>(null);
@@ -32,7 +32,7 @@ export const StockEditTagDrawer = ({
 
   const [editName, setEditName] = useState("");
   const [error, setError] = useState("");
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false); // ควบคุมการแสดงปุ่มยืนยันลบ
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,7 +73,7 @@ export const StockEditTagDrawer = ({
     setSearchQuery(tag.name);
     setEditName(tag.name);
     setIsDropdownOpen(false);
-    setShowConfirmDelete(false); // Reset confirmation if switching tags
+    setShowConfirmDelete(false);
   };
 
   // --- Logic สำหรับแก้ไข ---
@@ -146,17 +146,17 @@ export const StockEditTagDrawer = ({
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
                 placeholder="Search category..."
-                className="w-full px-4 py-3 rounded-lg border border-gray-300"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-orange-main focus:border-transparent transition-all"
               />
             </div>
 
             {isDropdownOpen && filteredTags.length > 0 && (
-              <ul className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border rounded-lg shadow-lg z-10">
+              <ul className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white rounded-lg shadow-lg z-10">
                 {filteredTags.map((tag) => (
                   <li
                     key={tag.id}
                     onClick={() => handleSelectTag(tag)}
-                    className="px-4 py-3 hover:bg-orange-50 cursor-pointer border-b last:border-0"
+                    className="px-4 py-3 hover:bg-orange-50 cursor-pointer"
                   >
                     {tag.name}
                   </li>
@@ -176,7 +176,7 @@ export const StockEditTagDrawer = ({
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-orange-main focus:border-transparent transition-all"
                 />
               </div>
 

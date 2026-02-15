@@ -10,21 +10,21 @@ import {
 } from "@/services/menu/menuTagApi";
 import { IMenuTag } from "@/types/menuType";
 
-interface StockEditTagDrawerProps {
+interface MenuEditTagDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export const StockEditTagDrawer = ({
+export const MenuEditTagDrawer = ({
   isOpen,
   onClose,
   onSuccess,
-}: StockEditTagDrawerProps) => {
+}: MenuEditTagDrawerProps) => {
   const [tags, setTags] = useState<IMenuTag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false); // State สำหรับการลบ
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<IMenuTag | null>(null);
@@ -32,7 +32,7 @@ export const StockEditTagDrawer = ({
 
   const [editName, setEditName] = useState("");
   const [error, setError] = useState("");
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false); // ควบคุมการแสดงปุ่มยืนยันลบ
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -73,7 +73,7 @@ export const StockEditTagDrawer = ({
     setSearchQuery(tag.name);
     setEditName(tag.name);
     setIsDropdownOpen(false);
-    setShowConfirmDelete(false); // Reset confirmation if switching tags
+    setShowConfirmDelete(false);
   };
 
   // --- Logic สำหรับแก้ไข ---
@@ -149,7 +149,7 @@ export const StockEditTagDrawer = ({
                 className="w-full px-4 py-3 rounded-lg border border-gray-300"
               />
             </div>
-
+            
             {isDropdownOpen && filteredTags.length > 0 && (
               <ul className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border rounded-lg shadow-lg z-10">
                 {filteredTags.map((tag) => (

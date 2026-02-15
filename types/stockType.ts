@@ -6,11 +6,33 @@ export interface IStockTag {
   name: string;
 }
 
-export interface IStockIngredientResponse {
+export interface IIngredientResponse {
   id: number;
-  tags: { id: number; name: string }[]; // เดา structure ของ tag จากการใช้งานทั่วไป
+  restaurant_id: string;
   name: string;
-  description: string;
-  unit: string;
+  tags: {
+    tag_id: number;
+    name: string;
+  }[];
   stock: number;
+  unit: string;
+  description: string;
+  image_url: string;
+  status: number;
+}
+
+export interface ICreateIngredientRequest {
+  name: string;
+  stock: number;
+  tags: { tag_id: number }[];
+  unit: string;
+  description: string;
+}
+
+export interface IUpdateIngredientRequest {
+  name: string;
+  stock: number;
+  tags: { tag_id: number }[];
+  unit: string;
+  description: string;
 }
