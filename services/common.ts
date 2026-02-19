@@ -11,6 +11,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const handleResponse = async (res: Response) => {
   try {
+    // เช็คก่อนเลยว่าถ้าเป็น 204 No Content (สำเร็จแต่ไม่มีเนื้อหา) ให้ return success
+    if (res.status === 204) {
+      return {
+        statusCode: 204,
+        message: { th: "Deleted", en: "Deleted" },
+        data: null,
+      };
+    }
+    // -------------------------
+
     const contentType = res.headers.get("content-type");
 
     if (contentType && contentType.includes("application/json")) {
@@ -23,13 +33,21 @@ const handleResponse = async (res: Response) => {
         data: await res.json(),
       };
     } else {
+      // เพิ่มการเช็ค res.ok อีกชั้น เพื่อความชัวร์
+      if (res.ok) {
+        return {
+          statusCode: res.status,
+          message: { th: "Success", en: "Success" },
+          data: null, // หรือ await res.text() ถ้าอยากได้ text
+        };
+      }
+
       const text = await res.text();
       throw new Error(text);
     }
   } catch (error: any) {
-    // แก้จาก JSON.stringify เป็นการดึง message ออกมา
     const errorMessage = error?.message || JSON.stringify(error);
-    console.error("API Error Detail:", errorMessage); // log ดูเอง
+    console.error("API Error Detail:", errorMessage);
     throw new Error(errorMessage);
   }
 };

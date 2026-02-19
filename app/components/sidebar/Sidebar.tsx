@@ -27,8 +27,9 @@ export const Sidebar = () => {
   ];
 
   const handleLogout = () => {
-    // 1. ลบ Token ออกจาก Cookie
+    // 1. ลบ Token, restaurant_id ออกจาก Cookie
     removeCookie("access_token");
+    removeCookie("restaurant_id");
 
     // 2. (Optional) ถ้ามี API Logout ฝั่ง Backend ให้เรียกตรงนี้ด้วย
     // await apiPost('/auth/logout');
