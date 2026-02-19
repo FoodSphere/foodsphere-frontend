@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-import { MenuModal } from "@/app/features/main/menu/components/MenuModal";
+import { MenuDrawer } from "@/app/features/main/menu/components/MenuDrawer";
 import { Icons } from "@/app/icons";
-import { getMenus } from "@/services/menu/menuApi";
+import { createMenuWithImage, deleteMenu, getMenus, updateMenuWithImage } from "@/services/menu/menuApi";
 import { getMenuTags } from "@/services/menu/menuTagApi";
-import { IMenuApiResponse } from "@/types/menuType";
+import { getIngredients } from "@/services/stock/stockApi";
+import { IMenuResponse } from "@/types/menuType";
 
 import { MenuAddTagDrawer } from "./components/MenuAddTagDrawer";
 import { MenuCard } from "./components/MenuCard";
@@ -15,18 +16,19 @@ import { MenuHistory, MenuHistoryItem } from "./components/MenuHistory";
 
 // --- Types ---
 export interface Ingredient {
-  title: string;
+  name: string;
   amount: number;
+  unit: string;
 }
 export interface IMenuItem {
-  id: string;
-  imgUrl: string | null;
-  title: string;
+  id: number;
+  image_url: string | null;
+  name: string;
   price: number;
   currency: string;
   ingredients: Ingredient[];
-  category: string[];
-  isAvailable: boolean;
+  tags: { tag_id: number; name: string }[];
+  status: number;
 }
 
 export default function MenuRender() {
@@ -51,11 +53,17 @@ export default function MenuRender() {
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const categoryMenuRef = useRef<HTMLDivElement>(null);
 
+  // State สำหรับเก็บ Master Data ไว้ map ID
+  const [stockIngredients, setStockIngredients] = useState<any[]>([]);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+
   // --- Filtering Logic ---
   const filteredItems =
     selectedCategory === ALL_CATEGORY
       ? menuItems
-      : menuItems.filter((item) => item.category.includes(selectedCategory));
+      : menuItems.filter((item) =>
+          item.tags.some((tag) => tag.name === selectedCategory)
+        );
 
   // --- Event Handlers ---
   // เปิด Modal สำหรับเพิ่มใหม่
@@ -71,42 +79,91 @@ export default function MenuRender() {
   };
 
   // ฟังก์ชันสำหรับเปิด-ปิดสถานะ
-  const handleToggleStatus = (id: string) => {
+  const handleToggleStatus = (id: number) => {
     setMenuItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
+        item.id === id
+          ? { ...item, status: item.status === 0 ? 1 : 0 } // สมมติ 0=Open, 1=Closed
+          : item
       )
     );
 
     // ตรงนี้อาจจะไปเรียก API เพื่อ Update Database จริงๆ ด้วย
     const item = menuItems.find((i) => i.id === id);
-    console.log(
-      `${item?.title} is now ${!item?.isAvailable ? "Open" : "Closed"}`
-    );
+    // Logic เรียก API update status (ถ้ามี)
+    console.log(`Toggled status for ${item?.name}`);
   };
 
-  const handleSaveMenu = (formData: any) => {
-    if (editingItem) {
-      // Logic สำหรับ Update (Edit)
-      setMenuItems((prev) =>
-        prev.map((item) =>
-          item.id === editingItem.id ? { ...item, ...formData } : item
-        )
-      );
-      console.log("Updated item:", formData);
-    } else {
-      // Logic สำหรับ Insert (Add)
-      const newItem: IMenuItem = {
-        ...formData,
-        id: Math.random().toString(36).substr(2, 9), // Mock ID
-        isAvailable: true,
-        category: "Others", // หรือรับค่าจาก Modal ถ้ามี
+  const handleSaveMenu = async (formData: any, file: File | null) => {
+    try {
+      // --- 1. เตรียมข้อมูล Payload (ใช้ร่วมกันทั้ง Create และ Update) ---
+
+      // Map Tags
+      const mappedTags = formData.tags
+        .map((tagName: string) => {
+          const foundTag = availableTags.find((t) => t.name === tagName);
+          return foundTag ? { tag_id: foundTag.id } : null;
+        })
+        .filter(Boolean);
+
+      // Map Ingredients
+      const mappedIngredients = formData.ingredients
+        .map((ing: any) => {
+          const foundIng = stockIngredients.find((s) => s.name === ing.name);
+          return foundIng
+            ? { ingredient_id: foundIng.id, amount: Number(ing.amount) }
+            : null;
+        })
+        .filter(Boolean);
+
+      // สร้าง Payload ตาม Interface IUpdateMenuRequest / ICreateMenuRequest
+      const apiPayload = {
+        name: formData.name,
+        price: Number(formData.amount),
+        ingredients: mappedIngredients,
+        tags: mappedTags,
+        display_name: formData.name,
+        description: "รายละเอียดเมนู",
       };
-      setMenuItems((prev) => [newItem, ...prev]);
-      console.log("Added new item:", newItem);
+
+      // --- 2. เช็คว่าเป็น Update หรือ Create ---
+      if (editingItem) {
+        // --- Logic Update ---
+        // เรียก Service Update พร้อมส่ง ID ของเมนูที่กำลังแก้ไขไป
+        await updateMenuWithImage(editingItem.id, apiPayload, file);
+      } else {
+        // --- Logic Create ---
+        await createMenuWithImage(apiPayload, file);
+      }
+
+      // --- 3. Refresh Data หลังจาก Save/Update สำเร็จ ---
+      await fetchMenusData();
+    } catch (error) {
+      console.error("Failed to save menu", error);
+      alert("Failed to save menu");
     }
+
     setIsModalOpen(false);
   };
+
+  const handleDeleteMenu = async (id: number) => {
+      try {
+        // เรียก Service
+        await deleteMenu(id);
+  
+        console.log("Deleted successfully");
+  
+        // Update UI: ลบออกจาก State ทันทีไม่ต้องรอ fetch ใหม่ (Optimistic update)
+        setMenuItems((prev) => prev.filter((item) => item.id !== id));
+  
+        // ปิด Modal (เผื่อไว้ กรณีเรียกจากที่อื่น)
+        setIsModalOpen(false);
+        setEditingItem(null);
+      } catch (error) {
+        console.error("Failed to delete menu", error);
+        alert("Failed to delete menu");
+      }
+    };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -127,11 +184,23 @@ export default function MenuRender() {
     try {
       const tagsData = await getMenuTags();
       if (tagsData && Array.isArray(tagsData)) {
+        setAvailableTags(tagsData); // <-- เก็บ Master Data ไว้ส่งให้ Drawer
         const tagNames = tagsData.map((tag: any) => tag.name);
         setCategories([ALL_CATEGORY, ...tagNames]);
       }
     } catch (error) {
       console.error("Error fetching tags:", error);
+    }
+  };
+
+  const fetchIngredientsData = async () => {
+    try {
+      const res: any = await getIngredients();
+      if (res && res.data && Array.isArray(res.data)) {
+        setStockIngredients(res.data); // <-- เก็บ Master Data ไว้ส่งให้ Drawer
+      }
+    } catch (error) {
+      console.error("Error fetching ingredients:", error);
     }
   };
 
@@ -144,30 +213,26 @@ export default function MenuRender() {
       const res = await getMenus();
 
       if (res && res.data && Array.isArray(res.data)) {
-        const apiData: IMenuApiResponse[] = res.data;
+        const apiData: IMenuResponse[] = res.data;
 
         // แปลงข้อมูลจาก API ให้เข้ากับหน้าบ้าน (UI)
         const mappedMenus: IMenuItem[] = apiData.map((item) => ({
-          id: item.id.toString(), // แปลง number เป็น string
-          title: item.name,
+          id: item.id,
+          image_url: item.image_url === "string" ? null : item.image_url, // เช็คถ้าเป็นค่า default "string" ให้เป็น null
+          name: item.name,
           price: item.price,
-          currency: "บาท", // Hardcode ตาม requirement
-          imgUrl: item.image_url === "string" ? null : item.image_url, // เช็คถ้าเป็นค่า default "string" ให้เป็น null
-
-          // Map Tags Object -> String Array
-          category: item.tags ? item.tags.map((t) => t.name) : [],
-
+          currency: "บาท",
           // Map Ingredients
-          // หมายเหตุ: API ให้มาแค่ ingredient_id ไม่มีชื่อ เลยต้องใส่ ID แทนไปก่อน
           ingredients: item.ingredients
             ? item.ingredients.map((ing) => ({
-                title: `Ingredient #${ing.ingredient_id}`,
+                name: ing.ingredient.name,
                 amount: ing.amount,
+                unit: ing.ingredient.unit,
               }))
             : [],
-
-          // Map Status (สมมติว่า 1 = Available/Open, 0 = Unavailable/Closed)
-          isAvailable: item.status === 0,
+          // API ส่ง tags: {tag_id, name}[] เราใช้ตามนั้นเลย
+          tags: item.tags || [],
+          status: item.status, // ใช้ status ตรงๆ (0, 1)
         }));
 
         setMenuItems(mappedMenus);
@@ -182,14 +247,17 @@ export default function MenuRender() {
     const initData = async () => {
       try {
         setIsLoading(true);
-        await Promise.all([fetchMenusData(), fetchTagsData()]);
+        await Promise.all([
+          fetchMenusData(),
+          fetchTagsData(),
+          fetchIngredientsData(),
+        ]);
       } catch (error) {
         console.error("Error initializing data:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
     initData();
   }, []);
 
@@ -275,16 +343,17 @@ export default function MenuRender() {
               Loading...
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 place-items-center sm:place-items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
               {filteredItems.map((item) => (
                 <MenuCard
                   key={item.id}
-                  imgUrl={item.imgUrl}
-                  title={item.title}
+                  id={item.id}
+                  name={item.name}
+                  image_url={item.image_url}
                   price={item.price}
                   currency={item.currency}
                   ingredients={item.ingredients}
-                  isAvailable={item.isAvailable}
+                  status={item.status === 0}
                   onEdit={() => handleOpenEdit(item)}
                   onToggleStatus={() => handleToggleStatus(item.id)}
                 />
@@ -306,11 +375,14 @@ export default function MenuRender() {
         </div>
       </div>
 
-      <MenuModal
+      <MenuDrawer
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        menuItem={editingItem}
+        menuItem={editingItem as any}
         onSave={handleSaveMenu}
+        onDelete={handleDeleteMenu}
+        availableTags={availableTags}
+        availableIngredients={stockIngredients}
       />
 
       {/* Add Tag Drawer */}

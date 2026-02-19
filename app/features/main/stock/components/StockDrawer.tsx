@@ -26,8 +26,9 @@ interface StockItem {
 interface StockDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  stockItem?: StockItem | null; // เปลี่ยนจาก any เป็น StockItem
+  stockItem?: StockItem | null;
   onSave: (data: any, file: File | null) => void;
+  onDelete?: (id: number) => void;
   availableTags: TagOption[];
 }
 
@@ -36,6 +37,7 @@ export const StockDrawer = ({
   onClose,
   stockItem,
   onSave,
+  onDelete,
   availableTags = [],
 }: StockDrawerProps) => {
   // Form States
@@ -180,6 +182,17 @@ export const StockDrawer = ({
     }
   };
 
+  const handleDeleteClick = () => {
+    if (stockItem && onDelete) {
+      // อาจจะใส่ confirm dialog ตรงนี้ หรือให้ parent จัดการก็ได้
+      // ในที่นี้ใส่ confirm แบบ simple ไว้ก่อนครับ
+      if (confirm("Are you sure you want to delete this ingredient?")) {
+        onDelete(stockItem.id);
+        onClose();
+      }
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -319,7 +332,7 @@ export const StockDrawer = ({
                   {selectedTags.map((tag) => (
                     <Badge
                       key={tag.id}
-                      className="bg-orange-100 text-orange-800 px-3 py-1.5 rounded-lg border-none flex items-center gap-1"
+                      className="bg-primary-orange-main/80 text-white px-3 py-1.5 rounded-lg border-none flex items-center gap-1"
                     >
                       {tag.name}
                       <button
@@ -372,19 +385,36 @@ export const StockDrawer = ({
         </div>
 
         {/* Footer */}
-        <div className="p-8 bg-white border-t border-gray-200 flex justify-end gap-4">
-          <button
-            onClick={onClose}
-            className="px-8 py-3 rounded-xl text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-10 py-3 bg-[#FF5C39] hover:bg-[#E64A26] text-white font-bold rounded-xl shadow-lg transition-all"
-          >
-            {isEditMode ? "Save Changes" : "Create Ingredient"}
-          </button>
+        <div className="p-8 bg-white border-t border-gray-200 flex justify-between gap-4">
+          {/* ส่วนปุ่ม Delete (แสดงเฉพาะตอน Edit) */}
+          <div>
+            {isEditMode && (
+              <button
+                onClick={handleDeleteClick}
+                className="px-4 py-3 rounded-xl border-2 border-red-100 text-red-500 hover:bg-red-50 font-bold transition-colors flex items-center gap-2"
+              >
+                <Icons name="TrashIcon" className="w-5 h-5" />{" "}
+                {/* สมมติว่ามี Icon */}
+                Delete
+              </button>
+            )}
+          </div>
+
+          {/* ส่วนปุ่ม Cancel & Save */}
+          <div className="flex gap-4">
+            <button
+              onClick={onClose}
+              className="px-8 py-3 rounded-xl text-gray-600 font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-10 py-3 bg-primary-orange-main hover:bg-[#E64A26] text-white font-bold rounded-xl shadow-lg transition-all"
+            >
+              {isEditMode ? "Save Changes" : "Create Ingredient"}
+            </button>
+          </div>
         </div>
       </div>
     </>

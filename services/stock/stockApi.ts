@@ -15,12 +15,9 @@ const getRestaurantId = () => {
   return restaurantId;
 };
 
-// เรียก ingredient 
+// เรียก ingredient
 export const getIngredients = async () => {
   const restaurantId = getRestaurantId();
-  if (!restaurantId) {
-    throw new Error("Restaurant ID not found");
-  }
 
   return await apiGet(`/s/restaurants/${restaurantId}/ingredients`);
 };
@@ -28,6 +25,7 @@ export const getIngredients = async () => {
 // สร้าง Ingredient
 export const createIngredient = async (payload: ICreateIngredientRequest) => {
   const restaurantId = getRestaurantId();
+
   return await apiPost(`/s/restaurants/${restaurantId}/ingredients`, payload);
 };
 
@@ -49,7 +47,10 @@ export const uploadIngredientImage = async (
 };
 
 // แก้ไข ingredient
-export const updateIngredient = async (ingredientId: number, payload: IUpdateIngredientRequest) => {
+export const updateIngredient = async (
+  ingredientId: number,
+  payload: IUpdateIngredientRequest
+) => {
   const restaurantId = getRestaurantId();
   return await apiPut(
     `/s/restaurants/${restaurantId}/ingredients/${ingredientId}`,
@@ -80,7 +81,7 @@ export const createIngredientWithImage = async (
       return createRes;
     }
   } catch (error) {
-    console.error("Error creating ingredient chain:", error);
+    console.error("Error creating ingredient:", error);
     throw error;
   }
 };
@@ -96,7 +97,6 @@ export const updateIngredientWithImage = async (
 
     // เช็คว่า update ข้อมูลสำเร็จไหม (PUT มักจะ return 200 หรือ 204)
     if (updateRes?.statusCode === 200 || updateRes?.statusCode === 204) {
-      
       // 2. ถ้ามีไฟล์รูปภาพใหม่ ให้เรียก API Upload Image ทับของเดิม
       if (imageFile) {
         await uploadIngredientImage(id, imageFile);
@@ -110,4 +110,12 @@ export const updateIngredientWithImage = async (
     console.error("Error updating ingredient chain:", error);
     throw error;
   }
+};
+
+// ลบ ingredient
+export const deleteIngredient = async (ingredientId: number) => {
+  const restaurantId = getRestaurantId();
+
+  const path = `/restaurants/${restaurantId}/ingredients/${ingredientId}`;
+  return await apiDelete(path);
 };

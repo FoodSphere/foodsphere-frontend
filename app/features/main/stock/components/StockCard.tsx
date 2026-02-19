@@ -49,7 +49,7 @@ export const StockCard = ({
       </div>
 
       {/* Content Area */}
-      <div className="flex flex-col items-center p-4 pt-3 flex-1 justify-between">
+      <div className="flex flex-col items-center p-4 pt-3 flex-1 justify-between border-t-3 border-primary-orange-main">
         <div className={`w-full text-center ${!status ? "text-gray-400" : ""}`}>
           <h3 className="text-lg font-bold mb-1 truncate" title={name}>
             {name}

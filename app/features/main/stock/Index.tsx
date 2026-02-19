@@ -5,6 +5,7 @@ import { StockDrawer } from "@/app/features/main/stock/components/StockDrawer";
 import { Icons } from "@/app/icons";
 import {
   createIngredientWithImage,
+  deleteIngredient,
   getIngredients,
   updateIngredientWithImage,
 } from "@/services/stock/stockApi";
@@ -22,14 +23,14 @@ import { StockHistory, StockHistoryItem } from "./components/StockHistory";
 
 // --- Type Definition (ปรับให้ตรงกับ Backend) ---
 interface StockItem {
-  id: number; 
-  image_url: string | null; 
-  name: string; 
-  stock: number; 
+  id: number;
+  image_url: string | null;
+  name: string;
+  stock: number;
   unit: string;
   description?: string;
-  tags: { tag_id: number; name: string }[]; 
-  status: number; 
+  tags: { tag_id: number; name: string }[];
+  status: number;
 }
 
 const StockRender = () => {
@@ -140,6 +141,26 @@ const StockRender = () => {
     }
 
     setIsModalOpen(false);
+  };
+
+  const handleDeleteIngredient = async (id: number) => {
+    try {
+      // เรียก Service
+      await deleteIngredient(id);
+
+      console.log("Deleted successfully");
+
+      // Update UI: ลบออกจาก State ทันทีไม่ต้องรอ fetch ใหม่ (Optimistic update)
+      // หรือจะเรียก fetchIngredientsData() อีกรอบก็ได้ครับ
+      setStockItems((prev) => prev.filter((item) => item.id !== id));
+
+      // ปิด Modal (เผื่อไว้ กรณีเรียกจากที่อื่น)
+      setIsModalOpen(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error("Failed to delete ingredient", error);
+      alert("Failed to delete ingredient");
+    }
   };
 
   useEffect(() => {
@@ -321,10 +342,9 @@ const StockRender = () => {
       <StockDrawer
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        // ตรงนี้ StockDrawer อาจจะบ่นเรื่อง Type ไม่ตรง ถ้าภายใน Drawer define type ไว้แน่น
-        // คุณอาจจะต้องแก้ Interface ใน StockDrawer ให้ตรงกันด้วยครับ
         stockItem={editingItem as any}
         onSave={handleSaveStock}
+        onDelete={handleDeleteIngredient}
         availableTags={allTags}
       />
 
