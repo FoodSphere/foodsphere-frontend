@@ -54,13 +54,13 @@ export const MenuAddTagDrawer = ({
       {/* Drawer Panel */}
       <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-50 shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Add Category</h2>
+        <div className="flex items-center justify-between p-6 border-b-2">
+          <h2 className="text-2xl font-bold">Add Category</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-red-100 rounded-full transition-colors"
           >
-            <Icons name="CloseIcon" className="w-6 h-6 text-gray-500" />
+            <Icons name="CloseIcon" className="w-6 h-6 text-red-500" />
           </button>
         </div>
 
@@ -100,7 +100,7 @@ export const MenuAddTagDrawer = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl transition-all"
+              className="w-full bg-white border border-primary-orange-main text-primary-orange-main hover:bg-orange-50 font-bold py-3 rounded-xl transition-all"
             >
               Cancel
             </button>

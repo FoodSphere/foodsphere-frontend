@@ -255,20 +255,23 @@ const StockRender = () => {
           <div className="relative" ref={categoryMenuRef}>
             <button
               onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
-              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-all"
+              className="bg-white border border-primary-orange-main text-primary-orange-main hover:bg-orange-50 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-all"
             >
-              <Icons name="SettingIcon" className="w-5 h-5 text-gray-600" />
+              <Icons
+                name="SettingIcon"
+                className="w-5 h-5 text-primary-orange-main"
+              />
               Manage Category
               <Icons
                 name="ArrowDownIcon"
-                className={`w-4 h-4 transition-transform ${
+                className={`w-5 h-5 text-primary-orange-main transition-transform ${
                   isCategoryMenuOpen ? "rotate-180" : ""
                 }`}
               />
             </button>
 
             {isCategoryMenuOpen && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <button
                   onClick={() => {
                     setIsTagDrawerOpen(true);
@@ -276,7 +279,10 @@ const StockRender = () => {
                   }}
                   className="w-full text-left px-4 py-3 hover:bg-orange-50 text-gray-700 font-medium flex items-center gap-2"
                 >
-                  <Icons name="PlusIcon" className="w-4 h-4" />
+                  <Icons
+                    name="PlusIcon"
+                    className="w-4 h-4 text-primary-orange-main"
+                  />
                   New Category
                 </button>
                 <div className="h-px bg-gray-100 mx-2" />
@@ -287,7 +293,10 @@ const StockRender = () => {
                   }}
                   className="w-full text-left px-4 py-3 hover:bg-orange-50 text-gray-700 font-medium flex items-center gap-2"
                 >
-                  <Icons name="PencilIcon" className="w-4 h-4" />
+                  <Icons
+                    name="PencilIcon"
+                    className="w-4 h-4 text-primary-orange-main"
+                  />
                   Edit Category
                 </button>
               </div>

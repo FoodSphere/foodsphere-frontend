@@ -1,9 +1,17 @@
 "use client";
 
 import React from "react";
+
 import { Icons } from "@/app/icons";
+
 import { Button } from "../ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 
@@ -42,7 +50,7 @@ export function TableOrderAddSidebarComponent({
           Table{tableId} Order
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent className="flex-1 overflow-hidden px-2 pb-2">
         <ScrollArea className="h-full w-full bg-white rounded-lg border p-1">
           <div className="p-3 space-y-4">
@@ -58,7 +66,7 @@ export function TableOrderAddSidebarComponent({
                     <div className="flex-shrink-0">
                       {item.imageUrl ? (
                         <div className="relative w-16 h-16 rounded-md overflow-hidden">
-                           {/* Using img for simplicity and robustness against external domains not in next.config */}
+                          {/* Using img for simplicity and robustness against external domains not in next.config */}
                           <img
                             src={item.imageUrl}
                             alt={item.name}
@@ -75,10 +83,15 @@ export function TableOrderAddSidebarComponent({
                     {/* Content */}
                     <div className="flex-grow min-w-0 flex flex-col justify-between min-h-[64px]">
                       <div className="flex justify-between items-start">
-                         <p className="font-semibold text-gray-900 text-sm truncate pr-2" title={item.name}>
-                          {item.name.length > 20 ? item.name.slice(0, 20) + "..." : item.name}
+                        <p
+                          className="font-semibold text-gray-900 text-sm truncate pr-2"
+                          title={item.name}
+                        >
+                          {item.name.length > 20
+                            ? item.name.slice(0, 20) + "..."
+                            : item.name}
                         </p>
-                         <button
+                        <button
                           onClick={() => onRemoveItem(item.id)}
                           className="text-red-500 hover:text-red-700 transition-colors"
                         >
@@ -88,24 +101,30 @@ export function TableOrderAddSidebarComponent({
 
                       {/* Controls */}
                       <div className="flex items-center justify-end space-x-2 mt-2">
-                         <div className="flex items-center bg-gray-100 rounded-md">
-                            <button 
-                                onClick={() => onDecreaseQuantity(item.id)}
-                                className="p-1 hover:bg-gray-200 rounded-l-md transition-colors"
-                                disabled={item.quantity <= 1}
-                            >
-                                <Icons name="MinusIcon" className="w-3 h-3 text-gray-600" />
-                            </button>
-                            <span className="w-8 text-center text-sm font-medium text-gray-800">
-                                {item.quantity}
-                            </span>
-                             <button 
-                                onClick={() => onIncreaseQuantity(item.id)}
-                                className="p-1 hover:bg-gray-200 rounded-r-md transition-colors"
-                            >
-                                <Icons name="PlusIcon" className="w-3 h-3 text-gray-600" />
-                            </button>
-                         </div>
+                        <div className="flex items-center bg-gray-100 rounded-md">
+                          <button
+                            onClick={() => onDecreaseQuantity(item.id)}
+                            className="p-1 hover:bg-gray-200 rounded-l-md transition-colors"
+                            disabled={item.quantity <= 1}
+                          >
+                            <Icons
+                              name="MinusIcon"
+                              className="w-3 h-3 text-gray-600"
+                            />
+                          </button>
+                          <span className="w-8 text-center text-sm font-medium text-gray-800">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => onIncreaseQuantity(item.id)}
+                            className="p-1 hover:bg-gray-200 rounded-r-md transition-colors"
+                          >
+                            <Icons
+                              name="PlusIcon"
+                              className="w-3 h-3 text-gray-600"
+                            />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -120,19 +139,19 @@ export function TableOrderAddSidebarComponent({
       </CardContent>
 
       <CardFooter className="flex flex-col space-y-3 pt-2 pb-6 px-6 bg-gray-50 rounded-b-xl">
-        <Button 
-            onClick={onConfirmOrder}
-            className="cursor-pointer w-full bg-primary-orange-main hover:bg-orange-600 disabled:opacity-40 disabled:text-white text-white font-bold py-6 rounded-xl text-lg transition"
-            disabled={orderItems.length === 0}
+        <Button
+          onClick={onConfirmOrder}
+          className="cursor-pointer w-full bg-primary-orange-main hover:bg-orange-600 disabled:opacity-40 disabled:text-white text-white font-bold py-6 rounded-xl text-lg transition"
+          disabled={orderItems.length === 0}
         >
-            <Icons name="SendIcon" className="w-5 h-5 mr-2" />
-            Confirm
+          <Icons name="SendIcon" className="w-5 h-5 mr-2" />
+          Confirm
         </Button>
-        <button 
-            onClick={onCancelOrder}
-            className="text-gray-500 hover:text-gray-700 underline text-sm transition-colors"
+        <button
+          onClick={onCancelOrder}
+          className="text-gray-500 hover:text-gray-700 underline text-sm transition-colors"
         >
-            Cancel
+          Cancel
         </button>
       </CardFooter>
     </Card>

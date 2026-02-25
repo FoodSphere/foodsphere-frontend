@@ -1,58 +1,73 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
 import { TableOrderModal } from "@/app/components/featureComponents/TableOrderModal";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
+import { createTable, deleteTable, getTables } from "@/services/table/tableApi";
+import { ITableResponse } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
-
-interface TableData {
-  id: string;
-  hasCustomers: boolean;
-}
-
-const Tables: TableData[] = [
-  { id: "01", hasCustomers: false },
-  { id: "02", hasCustomers: false },
-  { id: "03", hasCustomers: true },
-  { id: "04", hasCustomers: false },
-  { id: "05", hasCustomers: false },
-  { id: "06", hasCustomers: false },
-  { id: "07", hasCustomers: true },
-  { id: "08", hasCustomers: false },
-  { id: "09", hasCustomers: true },
-];
+import { TableAddDrawer } from "./components/TableAddDrawer";
+import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 
 const TableRender = () => {
   const router = useRouter();
-  const [tables, setTables] = useState<TableData[]>(Tables);
+
+  const [tables, setTables] = useState<TableData[]>([]);
 
   const [currentTable, setCurrentTable] = useState<TableData | null>(null);
 
   const [showConfirmOpenBillModal, setShowConfirmOpenBillModal] =
     useState<Boolean>(false);
 
-  const [showConfirmAddTableModal, setShowConfirmAddTableModal] =
-    useState<Boolean>(false);
+  const [showTableAddDrawer, setShowTableAddDrawer] = useState<boolean>(false);
+  const [showTableDeleteDrawer, setShowTableDeleteDrawer] =
+    useState<boolean>(false);
 
-  const [showConfirmRemoveTableModal, setShowConfirmRemoveTableModal] =
-    useState<Boolean>(false);
-
-  const [showTableOrderModal, setShowTableOrderModal] = useState<boolean>(false);
+  const [showTableOrderModal, setShowTableOrderModal] =
+    useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
-  const [showConfirmCashPayment, setShowConfirmCashPayment] = useState<boolean>(false);
-  const [showConfirmQRPayment, setShowConfirmQRPayment] = useState<boolean>(false);
+  const [showConfirmCashPayment, setShowConfirmCashPayment] =
+    useState<boolean>(false);
+  const [showConfirmQRPayment, setShowConfirmQRPayment] =
+    useState<boolean>(false);
 
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] =
     useState<Boolean>(false);
 
   let [guests, setGuests] = useState<number>(0);
+
+  // ==========================================
+  // 1. Fetch ข้อมูลจาก API เมื่อโหลด Component
+  // ==========================================
+  const fetchTables = async () => {
+    try {
+      const response = await getTables();
+      if (response && response.data) {
+        // Map ข้อมูลจาก API เข้ากับ State ของหน้าจอ
+        const mappedTables = response.data.map((t: ITableResponse) => ({
+          id: t.id.toString(), // ID ของ Database
+          name: t.name, // ชื่อโต๊ะ
+          hasCustomers: t.status !== 0, // สมมติว่า status 0 คือว่างเปล่า (ไม่มีลูกค้า)
+        }));
+        setTables(mappedTables);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tables:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTables();
+  }, []);
+
+  // ==========================================
 
   function openTable(table: TableData): void {
     if (!table.hasCustomers) {
@@ -67,43 +82,19 @@ const TableRender = () => {
   function handleGuests(operation: "+" | "-"): void {
     switch (operation) {
       case "+":
-        setGuests(++guests);
+        setGuests(guests + 1);
         break;
       case "-":
         if (guests > 0) {
-          setGuests(--guests);
-        }
-        break;
-    }
-  }
-
-  function handleTables(operation: "+" | "-"): void {
-    console.log(operation)
-    switch (operation) {
-      case "+":
-        // Get the highest table ID and add 1 to create a new table
-        const highestId = Math.max(
-          ...tables.map((table) => parseInt(table.id))
-        );
-        const newId = (highestId + 1).toString().padStart(2, "0");
-
-        setTables((prevTables) => [
-          ...prevTables,
-          { id: newId, hasCustomers: false },
-        ]);
-        break;
-
-      case "-":
-        // Remove the last table if it has no customers
-        const lastTable = tables[tables.length - 1];
-        if (!lastTable.hasCustomers) {
-          setTables((prevTables) => prevTables.slice(0, -1));
+          setGuests(guests - 1);
         }
         break;
     }
   }
 
   function handleOpenBillConfirm(id: string): void {
+    // ตรงนี้อาจจะต้องต่อ API สำหรับการเปิดบิล (Open Bill) ในอนาคต
+    // ชั่วคราว: อัปเดต State ล่วงหน้าไปก่อน
     setTables((prevTables) =>
       prevTables.map((table) =>
         table.id === id
@@ -118,21 +109,11 @@ const TableRender = () => {
     reset();
   }
 
-  function handleAddTableConfirm(): void {
-    handleTables("+");
-    setShowConfirmAddTableModal(false);
-  }
-
-  function handleRemoveTableConfirm(): void {
-    handleTables("-");
-    setShowConfirmRemoveTableModal(false);
-  }
-
   function handleConfirmPayment(): void {
-   console.log("Payment Successful!")
-   setShowPaymentSuccessModal(true);
-   setShowConfirmCashPayment(false);
-   setShowConfirmQRPayment(false);
+    console.log("Payment Successful!");
+    setShowPaymentSuccessModal(true);
+    setShowConfirmCashPayment(false);
+    setShowConfirmQRPayment(false);
   }
 
   function reset(): void {
@@ -146,57 +127,51 @@ const TableRender = () => {
 
   return (
     <div className="p-8 flex flex-col gap-6">
-      {/* Header */}
       <Header totalTable={tables.length} />
 
-      {/* Tables Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
         {tables.map((table) => (
           <Table
             key={table.id}
-            id={table.id}
+            id={table.name}
             hasCustomers={table.hasCustomers}
             onClick={() => openTable(table)}
           />
         ))}
       </div>
 
-      {/* Edit Table Button Group */}
       <div className="fixed bottom-8 right-8">
         <EditButtonGroup
-          onAdd={() => setShowConfirmAddTableModal(!showConfirmAddTableModal)}
-          onRemove={() =>
-            setShowConfirmRemoveTableModal(!showConfirmRemoveTableModal)
-          }
+          onAdd={() => setShowTableAddDrawer(true)}
+          onRemove={() => setShowTableDeleteDrawer(true)}
         />
       </div>
+
+      {/* Drawer สำหรับสร้างโต๊ะ */}
+      <TableAddDrawer
+        isOpen={showTableAddDrawer}
+        onClose={() => setShowTableAddDrawer(false)}
+        onSuccess={fetchTables}
+      />
+
+      {/* เรียกใช้งาน Drawer สำหรับลบโต๊ะ */}
+      <TableEditDrawer
+        isOpen={showTableDeleteDrawer}
+        onClose={() => setShowTableDeleteDrawer(false)}
+        onSuccess={fetchTables} // เมื่อลบสำเร็จให้โหลดข้อมูลโต๊ะใหม่
+        tables={tables} // โยนข้อมูลโต๊ะเข้าไปให้ Dropdown ค้นหา
+      />
 
       {showConfirmOpenBillModal && currentTable && (
         <ConfirmModalComponent
           id={currentTable.id}
           confirmType={ConfirmTypeEnum.OpenBill}
-          itemName={`Table ${currentTable.id}`}
+          itemName={`Table ${currentTable.name}`}
           onConfirm={() => handleOpenBillConfirm(currentTable.id)}
           onCancel={handleOpenBillCancel}
           guests={guests}
           onMinus={() => handleGuests("-")}
           onPlus={() => handleGuests("+")}
-        />
-      )}
-
-      {showConfirmAddTableModal && (
-        <ConfirmModalComponent
-          confirmType={ConfirmTypeEnum.AddTable}
-          onConfirm={handleAddTableConfirm}
-          onCancel={() => setShowConfirmAddTableModal(false)}
-        />
-      )}
-
-      {showConfirmRemoveTableModal && (
-        <ConfirmModalComponent
-          confirmType={ConfirmTypeEnum.DeleteTable}
-          onConfirm={handleRemoveTableConfirm}
-          onCancel={() => setShowConfirmRemoveTableModal(false)}
         />
       )}
 
@@ -243,7 +218,10 @@ const TableRender = () => {
       {showPaymentSuccessModal && (
         <ConfirmModalComponent
           confirmType={ConfirmTypeEnum.PaymentSuccess}
-          onConfirm={() => setShowPaymentSuccessModal(false)}
+          onConfirm={() => {
+            setShowPaymentSuccessModal(false);
+            fetchTables();
+          }}
           onCancel={() => setShowPaymentSuccessModal(false)}
         />
       )}

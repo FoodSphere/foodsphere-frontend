@@ -119,13 +119,13 @@ export const MenuEditTagDrawer = ({
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
 
       <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-50 shadow-2xl flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Edit Category</h2>
+        <div className="flex items-center justify-between p-6 border-b-2">
+          <h2 className="text-2xl font-bold">Edit Category</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="p-2 hover:bg-red-100 rounded-full"
           >
-            <Icons name="CloseIcon" className="w-6 h-6 text-gray-500" />
+            <Icons name="CloseIcon" className="w-6 h-6 text-red-500" />
           </button>
         </div>
 
@@ -146,17 +146,17 @@ export const MenuEditTagDrawer = ({
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
                 placeholder="Search category..."
-                className="w-full px-4 py-3 rounded-lg border border-gray-300"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-orange-main focus:border-transparent transition-all"
               />
             </div>
-            
+
             {isDropdownOpen && filteredTags.length > 0 && (
-              <ul className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border rounded-lg shadow-lg z-10">
+              <ul className="absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white rounded-lg shadow-lg z-10">
                 {filteredTags.map((tag) => (
                   <li
                     key={tag.id}
                     onClick={() => handleSelectTag(tag)}
-                    className="px-4 py-3 hover:bg-orange-50 cursor-pointer border-b last:border-0"
+                    className="px-4 py-3 hover:bg-orange-50 cursor-pointer"
                   >
                     {tag.name}
                   </li>
@@ -232,7 +232,7 @@ export const MenuEditTagDrawer = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-xl"
+              className="w-full bg-white border border-primary-orange-main text-primary-orange-main hover:bg-orange-50 font-bold py-3 rounded-xl"
             >
               Cancel
             </button>

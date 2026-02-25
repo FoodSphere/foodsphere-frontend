@@ -3,7 +3,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { MenuDrawer } from "@/app/features/main/menu/components/MenuDrawer";
 import { Icons } from "@/app/icons";
-import { createMenuWithImage, deleteMenu, getMenus, updateMenuWithImage } from "@/services/menu/menuApi";
+import {
+  createMenuWithImage,
+  deleteMenu,
+  getMenus,
+  updateMenuWithImage,
+} from "@/services/menu/menuApi";
 import { getMenuTags } from "@/services/menu/menuTagApi";
 import { getIngredients } from "@/services/stock/stockApi";
 import { IMenuResponse } from "@/types/menuType";
@@ -147,23 +152,23 @@ export default function MenuRender() {
   };
 
   const handleDeleteMenu = async (id: number) => {
-      try {
-        // เรียก Service
-        await deleteMenu(id);
-  
-        console.log("Deleted successfully");
-  
-        // Update UI: ลบออกจาก State ทันทีไม่ต้องรอ fetch ใหม่ (Optimistic update)
-        setMenuItems((prev) => prev.filter((item) => item.id !== id));
-  
-        // ปิด Modal (เผื่อไว้ กรณีเรียกจากที่อื่น)
-        setIsModalOpen(false);
-        setEditingItem(null);
-      } catch (error) {
-        console.error("Failed to delete menu", error);
-        alert("Failed to delete menu");
-      }
-    };
+    try {
+      // เรียก Service
+      await deleteMenu(id);
+
+      console.log("Deleted successfully");
+
+      // Update UI: ลบออกจาก State ทันทีไม่ต้องรอ fetch ใหม่ (Optimistic update)
+      setMenuItems((prev) => prev.filter((item) => item.id !== id));
+
+      // ปิด Modal (เผื่อไว้ กรณีเรียกจากที่อื่น)
+      setIsModalOpen(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error("Failed to delete menu", error);
+      alert("Failed to delete menu");
+    }
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -277,19 +282,22 @@ export default function MenuRender() {
           <div className="relative" ref={categoryMenuRef}>
             <button
               onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
-              className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-all"
+              className="bg-white border border-primary-orange-main text-primary-orange-main hover:bg-orange-50 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-all"
             >
-              <Icons name="SettingIcon" className="w-5 h-5 text-gray-600" />
+              <Icons
+                name="SettingIcon"
+                className="w-5 h-5 text-primary-orange-main"
+              />
               Manage Category
               <Icons
                 name="ArrowDownIcon"
-                className={`w-4 h-4 transition-transform ${isCategoryMenuOpen ? "rotate-180" : ""}`}
+                className={`w-5 h-5 text-primary-orange-main transition-transform ${isCategoryMenuOpen ? "rotate-180" : ""}`}
               />
             </button>
 
             {/* Dropdown Menu */}
             {isCategoryMenuOpen && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <button
                   onClick={() => {
                     setIsTagDrawerOpen(true);
@@ -297,7 +305,10 @@ export default function MenuRender() {
                   }}
                   className="w-full text-left px-4 py-3 hover:bg-orange-50 text-gray-700 font-medium flex items-center gap-2"
                 >
-                  <Icons name="PlusIcon" className="w-4 h-4" />
+                  <Icons
+                    name="PlusIcon"
+                    className="w-4 h-4 text-primary-orange-main"
+                  />
                   New Category
                 </button>
                 <div className="h-px bg-gray-100 mx-2" />
@@ -308,7 +319,7 @@ export default function MenuRender() {
                   }}
                   className="w-full text-left px-4 py-3 hover:bg-orange-50 text-gray-700 font-medium flex items-center gap-2"
                 >
-                  <Icons name="PencilIcon" className="w-4 h-4" />
+                  <Icons name="PencilIcon" className="w-4 h-4 text-primary-orange-main" />
                   Edit Category
                 </button>
               </div>
