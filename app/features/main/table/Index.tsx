@@ -6,7 +6,8 @@ import { ConfirmModalComponent } from "@/app/components/featureComponents/Confir
 import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
 import { TableOrderModal } from "@/app/components/featureComponents/TableOrderModal";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
-import { createTable, deleteTable, getTables } from "@/services/table/tableApi";
+import { createBill } from "@/services/bill/billApi";
+import { getTables } from "@/services/table/tableApi";
 import { ITableResponse } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
@@ -14,6 +15,7 @@ import { Header } from "./components/Header";
 import { Table } from "./components/Table";
 import { TableAddDrawer } from "./components/TableAddDrawer";
 import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
+import { TableOpenBillModal } from "./components/TableOpenBillModal";
 
 const TableRender = () => {
   const router = useRouter();
@@ -41,8 +43,6 @@ const TableRender = () => {
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] =
     useState<Boolean>(false);
 
-  let [guests, setGuests] = useState<number>(0);
-
   // ==========================================
   // 1. Fetch ข้อมูลจาก API เมื่อโหลด Component
   // ==========================================
@@ -54,7 +54,7 @@ const TableRender = () => {
         const mappedTables = response.data.map((t: ITableResponse) => ({
           id: t.id.toString(), // ID ของ Database
           name: t.name, // ชื่อโต๊ะ
-          hasCustomers: t.status !== 0, // สมมติว่า status 0 คือว่างเปล่า (ไม่มีลูกค้า)
+          hasCustomers: t.status !== 0, // status 0 คือไม่มีลูกค้า
         }));
         setTables(mappedTables);
       }
@@ -79,34 +79,34 @@ const TableRender = () => {
     }
   }
 
-  function handleGuests(operation: "+" | "-"): void {
-    switch (operation) {
-      case "+":
-        setGuests(guests + 1);
-        break;
-      case "-":
-        if (guests > 0) {
-          setGuests(guests - 1);
-        }
-        break;
+  // ปรับฟังก์ชัน handleOpenBillConfirm ให้เป็น async
+  async function handleOpenBillConfirm(
+    id: string,
+    guests: number
+  ): Promise<void> {
+    try {
+      const payload = {
+        table_id: Number(id),
+        pax: guests,
+      };
+
+      // ยิง API
+      console.log(
+        `Sending API to create bill for table ${id} with ${guests} guests`
+      );
+      const response = await createBill(payload);
+
+      // จัดการผลลัพธ์
+      if (response && response.statusCode === 201) {
+        // เมื่อสร้างบิลสำเร็จ ให้เรียก fetchTables ใหม่เพื่ออัปเดตสถานะโต๊ะ (hasCustomers)
+        await fetchTables();
+
+        // ปิด Modal ต่างๆ
+        reset();
+      }
+    } catch (error) {
+      console.error("Failed to create bill:", error);
     }
-  }
-
-  function handleOpenBillConfirm(id: string): void {
-    // ตรงนี้อาจจะต้องต่อ API สำหรับการเปิดบิล (Open Bill) ในอนาคต
-    // ชั่วคราว: อัปเดต State ล่วงหน้าไปก่อน
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === id
-          ? { ...table, hasCustomers: !table.hasCustomers }
-          : table
-      )
-    );
-    reset();
-  }
-
-  function handleOpenBillCancel(): void {
-    reset();
   }
 
   function handleConfirmPayment(): void {
@@ -119,7 +119,6 @@ const TableRender = () => {
   function reset(): void {
     setShowTableOrderModal(false);
     setShowPaymentModal(false);
-    setGuests(0);
     setCurrentTable(null);
     setShowConfirmOpenBillModal(false);
     setShowPaymentSuccessModal(false);
@@ -162,16 +161,14 @@ const TableRender = () => {
         tables={tables} // โยนข้อมูลโต๊ะเข้าไปให้ Dropdown ค้นหา
       />
 
+      {/* Open Bill Table */}
       {showConfirmOpenBillModal && currentTable && (
-        <ConfirmModalComponent
-          id={currentTable.id}
-          confirmType={ConfirmTypeEnum.OpenBill}
-          itemName={`Table ${currentTable.name}`}
-          onConfirm={() => handleOpenBillConfirm(currentTable.id)}
-          onCancel={handleOpenBillCancel}
-          guests={guests}
-          onMinus={() => handleGuests("-")}
-          onPlus={() => handleGuests("+")}
+        <TableOpenBillModal
+          isOpen={!!showConfirmOpenBillModal}
+          tableId={currentTable.id}
+          tableName={currentTable.name}
+          onClose={() => setShowConfirmOpenBillModal(false)}
+          onConfirm={handleOpenBillConfirm}
         />
       )}
 
