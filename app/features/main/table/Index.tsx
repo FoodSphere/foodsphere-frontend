@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
-import { TableOrderModal } from "@/app/components/featureComponents/TableOrderModal";
+import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
-import { createBill } from "@/services/bill/billApi";
+import { createBill, getActiveBillByTableId } from "@/services/bill/billApi";
 import { getTables } from "@/services/table/tableApi";
+import { IBillResponse } from "@/types/billType";
 import { ITableResponse } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
@@ -21,17 +22,20 @@ const TableRender = () => {
   const router = useRouter();
 
   const [tables, setTables] = useState<TableData[]>([]);
-
   const [currentTable, setCurrentTable] = useState<TableData | null>(null);
-
-  const [showConfirmOpenBillModal, setShowConfirmOpenBillModal] =
-    useState<Boolean>(false);
 
   const [showTableAddDrawer, setShowTableAddDrawer] = useState<boolean>(false);
   const [showTableDeleteDrawer, setShowTableDeleteDrawer] =
     useState<boolean>(false);
 
-  const [showTableOrderModal, setShowTableOrderModal] =
+  const [showConfirmOpenBillModal, setShowConfirmOpenBillModal] =
+    useState<Boolean>(false);
+
+  const [activeBillData, setActiveBillData] = useState<IBillResponse | null>(
+    null
+  );
+
+  const [showTableBillDrawer, setShowTableBillDrawer] =
     useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
@@ -69,13 +73,29 @@ const TableRender = () => {
 
   // ==========================================
 
-  function openTable(table: TableData): void {
+  async function openTable(table: TableData): Promise<void> {
     if (!table.hasCustomers) {
       setCurrentTable(table);
       setShowConfirmOpenBillModal(true);
     } else {
       setCurrentTable(table);
-      setShowTableOrderModal(true);
+
+      try {
+        // Fetch หา Bill ของโต๊ะนี้
+        const billResponse = await getActiveBillByTableId(Number(table.id));
+
+        if (billResponse && billResponse.data) {
+          setActiveBillData(billResponse.data); // เก็บข้อมูล Bill ใส่ State
+        } else {
+          setActiveBillData(null);
+        }
+
+        setShowTableBillDrawer(true); // เปิด Drawer หลัง Fetch เสร็จ
+      } catch (error) {
+        console.error("Failed to fetch bill for table:", error);
+        // ถ้า Fetch พลาด อาจจะเปิด Drawer เปล่าๆ หรือทำ Alert แจ้ง Error
+        setShowTableBillDrawer(true);
+      }
     }
   }
 
@@ -117,7 +137,7 @@ const TableRender = () => {
   }
 
   function reset(): void {
-    setShowTableOrderModal(false);
+    setShowTableBillDrawer(false);
     setShowPaymentModal(false);
     setCurrentTable(null);
     setShowConfirmOpenBillModal(false);
@@ -172,11 +192,13 @@ const TableRender = () => {
         />
       )}
 
-      {showTableOrderModal && currentTable && (
-        <TableOrderModal
-          isOpen={showTableOrderModal}
-          onClose={() => setShowTableOrderModal(false)}
-          tableId={currentTable.id}
+      {/* TableBillDrawer */}
+      {showTableBillDrawer && currentTable && (
+        <TableBillDrawer
+          isOpen={showTableBillDrawer}
+          onClose={() => setShowTableBillDrawer(false)}
+          tableName={currentTable.name}
+          billData={activeBillData} // โยนข้อมูลที่ดึงมาเข้าไป
           onCheckBill={() => setShowPaymentModal(true)}
           onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
           onEditOrder={() => router.push(`/table/${currentTable.id}/edit`)}

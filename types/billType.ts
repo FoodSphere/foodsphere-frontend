@@ -4,8 +4,29 @@ export interface ICreateBillRequest {
   consumer_id?: string | null;
 }
 
-// 2. กำหนด Interface สำหรับ Response (อ้างอิงจากตัวอย่างที่คุณให้มา)
-export interface ICreateBillResponse {
+export interface IBillItem {
+  id: number;
+  create_time: string;
+  update_time: string;
+  bill_id: string;
+  order_id: number;
+  restaurant_id: string;
+  menu_id: number;
+  price_snapshot: number;
+  quantity: number;
+  note: string;
+}
+
+export interface IBillOrder {
+  id: number;
+  create_time: string;
+  update_time: string;
+  bill_id: string;
+  items: IBillItem[];
+  status: number;
+}
+
+export interface IBillResponse {
   id: string;
   create_time: string;
   update_time: string;
@@ -13,7 +34,7 @@ export interface ICreateBillResponse {
   branch_id: number;
   table_id: number;
   consumer_id: string | null;
-  orders: any[]; // ใส่ any[] ไว้ก่อน หรือจะสร้าง Interface ย่อยสำหรับ Order ก็ได้ครับ
+  orders: IBillOrder[];
   pax: number;
   status: number;
 }
