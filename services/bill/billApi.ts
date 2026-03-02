@@ -1,5 +1,9 @@
 import { getCookie } from "@/libs/cookie";
-import { IBillResponse, ICreateBillRequest } from "@/types/billType";
+import {
+  IBillResponse,
+  ICreateBillRequest,
+  ICreateOrderRequest,
+} from "@/types/billType";
 
 import { apiGet, apiPost } from "../common";
 
@@ -56,4 +60,16 @@ export const getActiveBillByTableId = async (tableId: number) => {
   }
 
   return null; // ถ้าไม่เจอบิลที่เปิดอยู่เลย
+};
+
+// 5. สร้าง Order ใหม่ให้กับ Bill นั้นๆ
+export const createOrder = async (
+  billId: string,
+  payload: ICreateOrderRequest
+) => {
+  const restaurantId = getRestaurantId();
+  const path = `/restaurants/${restaurantId}/bills/${billId}/orders`;
+
+  const response = await apiPost(path, payload);
+  return response;
 };
