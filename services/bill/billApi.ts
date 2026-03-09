@@ -73,3 +73,12 @@ export const createOrder = async (
   const response = await apiPost(path, payload);
   return response;
 };
+
+// 6. ดึง Order ทั้งหมดของ Bill
+export const getOrdersByBillId = async (billId: string) => {
+  const restaurantId = getRestaurantId();
+  const path = `/restaurants/${restaurantId}/bills/${billId}/orders`;
+
+  const response = await apiGet(path);
+  return response;
+};

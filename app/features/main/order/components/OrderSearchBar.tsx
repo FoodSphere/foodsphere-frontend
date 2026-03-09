@@ -26,9 +26,9 @@ export const OrderSearchBar = ({
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
-          strokeWidth={2} // Thicker stroke
+          strokeWidth={2}
           stroke="currentColor"
-          className="w-6 h-6 text-gray-400" // Larger icon
+          className="w-6 h-6 text-gray-400"
         >
           <path
             strokeLinecap="round"

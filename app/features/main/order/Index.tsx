@@ -4,65 +4,36 @@ import { useMemo, useState } from "react";
 import clsx from "clsx";
 
 // Import Components
-import { OrderCardComponent } from "@/app/components/featureComponents/OrderCardComponent";
+import { OrderCardComponent } from "@/app/features/main/order/components/OrderCardComponent";
 
 import { FilterStatus, OrderFilterBar } from "./components/OrderFilterBar";
 import { OrderSearchBar } from "./components/OrderSearchBar";
 
 // Types
-interface IOrder {
-  id: number;
+export interface IOrder {
+  id: string; 
   img?: string | null;
   foodName: string;
   table: string;
   additionalDetail?: string;
   quantity: string;
   order_at: string;
-  status: "Not Done" | "Cooking" | "Completed" | "Cancel";
+  status: string;
 }
 
 // Mock Data
 const MOCK_ORDERS: IOrder[] = [
   {
-    id: 1,
-    img: "/padkrapao.jpg", // ใส่ path รูปจริง
+    id: "1", // เปลี่ยนเป็น string
+    img: "/padkrapao.jpg",
     foodName: "Pad Kra Pao Minced Pork",
     table: "01",
     additionalDetail: "Fried egg, Less spicy",
     quantity: "1",
     order_at: "10/03/2025 11:57",
-    status: "Not Done",
+    status: "Pending", // เปลี่ยนจาก Not Done เป็น Pending
   },
-  {
-    id: 2,
-    img: "/curry.jpg",
-    foodName: "Pa-nang Curry",
-    table: "01",
-    additionalDetail: "Extra, No spicy",
-    quantity: "2",
-    order_at: "10/03/2025 11:45",
-    status: "Cooking",
-  },
-  {
-    id: 3,
-    img: "/paella.jpg",
-    foodName: "Paella",
-    table: "02",
-    additionalDetail: "Less salty",
-    quantity: "1",
-    order_at: "10/03/2025 11:40",
-    status: "Not Done",
-  },
-  {
-    id: 4,
-    img: "/paella.jpg",
-    foodName: "Paella",
-    table: "03",
-    additionalDetail: "-",
-    quantity: "1",
-    order_at: "10/03/2025 11:39",
-    status: "Not Done",
-  },
+  // ... อัปเดต Mock ตัวอื่นๆ ด้วยวิธีเดียวกัน
 ];
 
 const OrderRender = () => {
@@ -76,7 +47,7 @@ const OrderRender = () => {
     setOrders((prev) =>
       prev.map((order) => {
         if (order.id === id) {
-          if (order.status === "Not Done")
+          if (order.status === "Pending")
             return { ...order, status: "Cooking" };
           if (order.status === "Cooking")
             return { ...order, status: "Completed" };

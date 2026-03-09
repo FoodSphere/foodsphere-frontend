@@ -19,7 +19,6 @@ import { StockAddTagDrawer } from "./components/StockAddTagDrawer";
 import { StockCard } from "./components/StockCard";
 import { StockEditTagDrawer } from "./components/StockEditTagDrawer";
 import { StockFilterBar } from "./components/StockFilterBar";
-import { StockHistory, StockHistoryItem } from "./components/StockHistory";
 
 // --- Type Definition (ปรับให้ตรงกับ Backend) ---
 interface StockItem {
@@ -35,7 +34,6 @@ interface StockItem {
 
 const StockRender = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
-  const [historyItems, setHistoryItems] = useState<StockHistoryItem[]>([]);
 
   const ALL_CATEGORY = "All ingredient";
   const [categories, setCategories] = useState<string[]>([ALL_CATEGORY]);
@@ -326,7 +324,7 @@ const StockRender = () => {
               Loading...
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-6">
               {filteredItems.map((item) => (
                 <StockCard
                   key={item.id}
@@ -345,7 +343,6 @@ const StockRender = () => {
             </div>
           )}
         </div>
-        <StockHistory historyItems={historyItems} />
       </div>
 
       <StockDrawer

@@ -190,7 +190,7 @@ export const TableBillDrawer = ({
               <h2 className="text-2xl font-bold text-black">Order</h2>
               {isLoadingOrders && (
                 <span className="text-sm text-gray-400 flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-[#FF5C39] border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-primary-orange-main border-t-transparent rounded-full animate-spin"></div>
                   Loading menus...
                 </span>
               )}

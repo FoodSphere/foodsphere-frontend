@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { MenuCard } from "@/app/features/main/menu/components/MenuCard";
@@ -28,6 +28,7 @@ export default function TableAddOrderRender() {
   const [menuItems, setMenuItems] = useState<IMenuResponse[]>([]);
   const [categories, setCategories] = useState<string[]>([ALL_CATEGORY]);
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
+  const [tableName, setTableName] = useState<string>(`Table ${tableId}`); // เก็บชื่อโต๊ะ
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,12 +36,26 @@ export default function TableAddOrderRender() {
   useEffect(() => {
     const fetchAllData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchTagsData(), fetchMenusData()]);
+      // เพิ่มการดึงข้อมูล Table Info เข้าไปใน Promise.all
+      await Promise.all([fetchTagsData(), fetchMenusData(), fetchTableInfo()]);
       setIsLoading(false);
     };
 
     fetchAllData();
   }, []);
+
+  const fetchTableInfo = async () => {
+    try {
+      const res = await getActiveBillByTableId(Number(tableId));
+      if (res && res.data) {
+        const name =
+          res.data.table_name || res.data.table?.name || `Table ${tableId}`;
+        setTableName(name);
+      }
+    } catch (error) {
+      console.error("Error fetching table info:", error);
+    }
+  };
 
   const fetchTagsData = async () => {
     try {
@@ -97,7 +112,7 @@ export default function TableAddOrderRender() {
             price: menuItem.price,
             quantity: 1,
             imageUrl: imageUrl,
-            note: "", // เริ่มต้น Note เป็นค่าว่าง
+            note: "",
           },
         ];
       }
@@ -132,14 +147,12 @@ export default function TableAddOrderRender() {
     );
   };
 
-  // --- ฟังก์ชัน Confirm ยิง API ทีละรายการ (แบบ Sequential ป้องกัน Duplicate Key) ---
   const handleConfirmOrder = async () => {
     if (orderItems.length === 0) return;
 
     try {
       setIsSubmitting(true);
 
-      // 1. หา Bill ปัจจุบันของโต๊ะนี้ก่อน เพื่อเอา bill_id
       const activeBillResponse = await getActiveBillByTableId(Number(tableId));
 
       if (!activeBillResponse || !activeBillResponse.data) {
@@ -150,26 +163,22 @@ export default function TableAddOrderRender() {
 
       const billId = activeBillResponse.data.id;
 
-      // 2. ใช้ for...of ในการ await เพื่อให้ระบบยิง API ให้เสร็จทีละ 1 Order
-      // ป้องกันปัญหา Race Condition ที่ทำให้ Backend Gen ID ชนกัน
       for (const item of orderItems) {
         const payload = {
           items: [
             {
               menu_id: Number(item.menuId),
               quantity: item.quantity,
-              note: item.note || "", // ส่ง note ไปด้วย
+              note: item.note || "",
             },
           ],
           status: 0,
         };
 
-        // รอจนกว่า Order นี้จะบันทึกสำเร็จ ค่อยขยับไป Order ถัดไป
         await createOrder(billId, payload);
       }
 
-      // 3. เคลียร์ตะกร้าและกลับหน้าหลัก
-      alert("Order Confirmed Successfully!");
+      // --- ลบ Alert ออกตามที่ต้องการ ---
       setOrderItems([]);
       router.back();
     } catch (error) {
@@ -197,8 +206,8 @@ export default function TableAddOrderRender() {
         <div>
           <h1 className="text-3xl font-extrabold text-black tracking-tight flex items-center gap-3">
             Order Menu
-            <span className="bg-primary-orange-main text-white px-3 py-1 rounded-lg text-xl font-bold">
-              Table {tableId}
+            <span className="bg-primary-orange-main text-white px-4 py-2 rounded-lg text-2xl font-bold">
+              {tableName}
             </span>
           </h1>
         </div>
@@ -207,8 +216,6 @@ export default function TableAddOrderRender() {
       {/* 2. Main Content */}
       <div className="flex-1 flex flex-col p-6 gap-6 overflow-hidden">
         <h2 className="text-xl font-medium text-gray-600 mt-1">Categories</h2>
-
-        {/* Categories Filter */}
         {!isLoading && (
           <MenuFilterBar
             categories={categories}
@@ -217,7 +224,6 @@ export default function TableAddOrderRender() {
           />
         )}
 
-        {/* Menu Grid */}
         <div className="flex-1 overflow-y-auto no-scrollbar pb-6">
           {isLoading ? (
             <div className="flex items-center justify-center h-40 text-gray-400">
@@ -254,15 +260,15 @@ export default function TableAddOrderRender() {
       <div className="w-[400px] bg-white h-full fixed right-0 top-0 z-20">
         <div className="h-full p-4">
           <TableAddOrderListSidebar
-            tableId={tableId}
+            tableName={tableName} // ส่ง tableName ไปแทน
             orderItems={orderItems}
             onIncreaseQuantity={handleIncreaseQuantity}
             onDecreaseQuantity={handleDecreaseQuantity}
             onRemoveItem={handleRemoveItem}
-            onUpdateNote={handleUpdateNote} // ส่งฟังก์ชันไปให้พิมพ์ Note ได้
-            onConfirmOrder={handleConfirmOrder} // ส่งฟังก์ชัน API Confirm
+            onUpdateNote={handleUpdateNote}
+            onConfirmOrder={handleConfirmOrder}
             onCancelOrder={handleCancel}
-            isSubmitting={isSubmitting} // ส่งสถานะโหลด
+            isSubmitting={isSubmitting}
           />
         </div>
       </div>

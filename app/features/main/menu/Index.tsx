@@ -17,7 +17,6 @@ import { MenuAddTagDrawer } from "./components/MenuAddTagDrawer";
 import { MenuCard } from "./components/MenuCard";
 import { MenuEditTagDrawer } from "./components/MenuEditTagDrawer";
 import { MenuFilterBar } from "./components/MenuFilterBar";
-import { MenuHistory, MenuHistoryItem } from "./components/MenuHistory";
 
 // --- Types ---
 export interface Ingredient {
@@ -38,7 +37,6 @@ export interface IMenuItem {
 
 export default function MenuRender() {
   const [menuItems, setMenuItems] = useState<IMenuItem[]>([]);
-  const [historyItems, setHistoryItems] = useState<MenuHistoryItem[]>([]);
 
   const ALL_CATEGORY = "All menu";
   const [categories, setCategories] = useState<string[]>([ALL_CATEGORY]);
@@ -319,7 +317,10 @@ export default function MenuRender() {
                   }}
                   className="w-full text-left px-4 py-3 hover:bg-orange-50 text-gray-700 font-medium flex items-center gap-2"
                 >
-                  <Icons name="PencilIcon" className="w-4 h-4 text-primary-orange-main" />
+                  <Icons
+                    name="PencilIcon"
+                    className="w-4 h-4 text-primary-orange-main"
+                  />
                   Edit Category
                 </button>
               </div>
@@ -354,7 +355,7 @@ export default function MenuRender() {
               Loading...
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-6">
               {filteredItems.map((item) => (
                 <MenuCard
                   key={item.id}
@@ -377,12 +378,6 @@ export default function MenuRender() {
               )}
             </div>
           )}
-        </div>
-
-        {/* Right Side: History Component */}
-        <div>
-          {/* History Data ยังเป็น Mock หรือว่างไว้ก่อน เพราะ API เส้นนี้ไม่มี History */}
-          <MenuHistory historyItems={historyItems} />
         </div>
       </div>
 

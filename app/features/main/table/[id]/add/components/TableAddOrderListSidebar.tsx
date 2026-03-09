@@ -2,7 +2,7 @@
 import { Icons } from "@/app/icons";
 
 export interface OrderItem {
-  id: string; // Unique ID
+  id: string;
   menuId: string;
   name: string;
   price: number;
@@ -12,7 +12,7 @@ export interface OrderItem {
 }
 
 interface TableOrderAddSidebarProps {
-  tableId: string;
+  tableName: string;
   orderItems: OrderItem[];
   onIncreaseQuantity: (id: string) => void;
   onDecreaseQuantity: (id: string) => void;
@@ -24,7 +24,7 @@ interface TableOrderAddSidebarProps {
 }
 
 export function TableAddOrderListSidebar({
-  tableId,
+  tableName,
   orderItems,
   onIncreaseQuantity,
   onDecreaseQuantity,
@@ -34,7 +34,6 @@ export function TableAddOrderListSidebar({
   onCancelOrder,
   isSubmitting = false,
 }: TableOrderAddSidebarProps) {
-  // คำนวณราคารวมของออเดอร์
   const totalPrice = orderItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -45,7 +44,7 @@ export function TableAddOrderListSidebar({
       {/* --- Header --- */}
       <div className="px-6 py-5 bg-gray-50/50 border-b-2 border-primary-orange-main flex-shrink-0">
         <h2 className="text-2xl font-extrabold text-primary-orange-main tracking-tight">
-          Table {tableId}
+          Table {tableName}
         </h2>
         <p className="text-sm font-medium text-gray-500 mt-1">
           Current Order Summary

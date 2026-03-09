@@ -1,13 +1,11 @@
 import clsx from "clsx";
-import Image from "next/image";
 
 import { Icons } from "@/app/icons";
-import { imageToUrl } from "@/app/utils/imgToUrl";
 
-import { Button } from "../ui/button";
+import { Button } from "../../../../components/ui/button";
 
 interface OrderCardComponentProps {
-  id: number;
+  id: string;
   img?: string | null;
   foodName: string;
   table: string;
@@ -15,8 +13,8 @@ interface OrderCardComponentProps {
   quantity: string;
   order_at: string;
   status: string;
-  onUpdate: (id: number) => void;
-  onCancel: (id: number) => void;
+  onUpdate: (id: string) => void;
+  onCancel: (id: string) => void;
 }
 
 export const OrderCardComponent = ({
@@ -35,13 +33,7 @@ export const OrderCardComponent = ({
     <div className="w-full flex flex-row border-b-2 border-primary-orange-main">
       {/* img section */}
       {img ? (
-        <Image
-          src={imageToUrl(img)}
-          alt={foodName}
-          width={280}
-          height={200}
-          className="w-[25%] bg-amber-500"
-        />
+        <img src={img} alt={foodName} className="w-[25%] h-[150px]" />
       ) : (
         <div className="w-[25%] bg-gray-100 flex items-center justify-center text-xs text-gray-400 flex-shrink-0">
           No Image
@@ -68,7 +60,7 @@ export const OrderCardComponent = ({
             <div
               className={clsx(
                 "w-fit h-fit px-4 py-1 text-black flex justify-center items-center rounded-md",
-                { "bg-notdone-01": status === "Not Done" },
+                { "bg-notdone-01": status === "Pending" },
                 { "bg-cooking-01": status === "Cooking" },
                 { "bg-complete-01": status === "Completed" },
                 { "bg-fail-01": status === "Cancel" }
@@ -91,7 +83,7 @@ export const OrderCardComponent = ({
       </div>
       {/* button section */}
       <div className="w-[20%] flex flex-col p-5 border-l-[1px] border-black/40">
-        {status === "Not Done" && (
+        {status === "Pending" && (
           <div className="h-full flex flex-col items-center justify-between">
             <Button variant="outline" onClick={() => onCancel(id)}>
               <Icons className="w-5" name="TrashIcon" />

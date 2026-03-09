@@ -5,14 +5,14 @@ const nextConfig = {
   devIndicators: false,
 
   // หากคุณต้องใช้รูปภาพจาก Domain ภายนอก ให้เปิดส่วนนี้
-  // images: {
-  //   remotePatterns: [
-  //     {
-  //       protocol: "https",
-  //       hostname: "bucket-sahapan.s3.amazonaws.com",
-  //     },
-  //   ],
-  // },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "foodsphere.sgp1.digitaloceanspaces.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
