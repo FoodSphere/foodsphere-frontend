@@ -22,6 +22,15 @@ export const getMenus = async () => {
   return await apiGet(`/restaurants/${restaurantId}/menus`);
 };
 
+// GET Menu By ID
+export const getMenuById = async (menuId: number) => {
+  const restaurantId = getRestaurantId();
+  const path = `/restaurants/${restaurantId}/menus/${menuId}`;
+
+  const response = await apiGet(path);
+  return response;
+};
+
 // Create Menu (สร้างเมนูเปล่า)
 export const createMenu = async (payload: ICreateMenuRequest) => {
   const restaurantId = getRestaurantId();

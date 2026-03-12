@@ -76,8 +76,9 @@ const LoginRender = () => {
             // Auto-Select ร้านแรก
             const firstRestaurant = restaurants[0];
 
-            // เก็บ ID ร้านค้าลง Cookie เพื่อใช้ในหน้าอื่นๆ (เช่นตอนดึง Order, Menu)
-            setCookie("restaurant_id", firstRestaurant.restaurant_id);
+            // เก็บ ID ร้านค้าลง Cookie
+            console.log(firstRestaurant.id)
+            setCookie("restaurant_id", firstRestaurant.id);
 
             console.log("Auto-selected restaurant:", firstRestaurant.name);
           } else {

@@ -4,14 +4,14 @@ import clsx from "clsx";
 
 export type FilterStatus =
   | "All"
-  | "Not Done"
+  | "Pending"
   | "Cooking"
   | "Completed"
   | "Cancel";
 
 const filterButtons: { label: string; value: FilterStatus }[] = [
   { label: "All menu", value: "All" },
-  { label: "Not Done", value: "Not Done" },
+  { label: "Pending", value: "Pending" },
   { label: "Cooking", value: "Cooking" },
   { label: "Completed", value: "Completed" },
   { label: "Canceled", value: "Cancel" },
@@ -38,7 +38,7 @@ export const OrderFilterBar = ({
               // Increased padding (px-6 py-2.5) and font size (text-base)
               "px-6 py-2.5 rounded-lg text-base font-medium transition-all duration-200 whitespace-nowrap",
               {
-                "bg-[#F26E4F] text-white shadow-md transform scale-105":
+                "bg-primary-orange-main text-white shadow-md transform scale-105":
                   currentFilter === button.value,
                 "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-200/50":
                   currentFilter !== button.value,

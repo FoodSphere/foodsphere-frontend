@@ -1,210 +1,248 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
-import { TableOrderModal } from "@/app/components/featureComponents/TableOrderModal";
+import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
+import {
+  createBill,
+  createOrderingPortal,
+  getActiveBillByTableId,
+  getPortalsByBillId,
+} from "@/services/bill/billApi";
+import { getTables } from "@/services/table/tableApi";
+import { IBillResponse } from "@/types/billType";
+import { ITableResponse } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
-
-interface TableData {
-  id: string;
-  hasCustomers: boolean;
-}
-
-const Tables: TableData[] = [
-  { id: "01", hasCustomers: false },
-  { id: "02", hasCustomers: false },
-  { id: "03", hasCustomers: true },
-  { id: "04", hasCustomers: false },
-  { id: "05", hasCustomers: false },
-  { id: "06", hasCustomers: false },
-  { id: "07", hasCustomers: true },
-  { id: "08", hasCustomers: false },
-  { id: "09", hasCustomers: true },
-];
+import { TableAddDrawer } from "./components/TableAddDrawer";
+import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
+import { TableOpenBillModal } from "./components/TableOpenBillModal";
 
 const TableRender = () => {
   const router = useRouter();
-  const [tables, setTables] = useState<TableData[]>(Tables);
 
+  const [tables, setTables] = useState<TableData[]>([]);
   const [currentTable, setCurrentTable] = useState<TableData | null>(null);
+
+  const [showTableAddDrawer, setShowTableAddDrawer] = useState<boolean>(false);
+  const [showTableDeleteDrawer, setShowTableDeleteDrawer] =
+    useState<boolean>(false);
 
   const [showConfirmOpenBillModal, setShowConfirmOpenBillModal] =
     useState<Boolean>(false);
 
-  const [showConfirmAddTableModal, setShowConfirmAddTableModal] =
-    useState<Boolean>(false);
+  const [activeBillData, setActiveBillData] = useState<IBillResponse | null>(
+    null
+  );
 
-  const [showConfirmRemoveTableModal, setShowConfirmRemoveTableModal] =
-    useState<Boolean>(false);
+  const [showTableBillDrawer, setShowTableBillDrawer] =
+    useState<boolean>(false);
+  const [qrData, setQrData] = useState<string>("");
 
-  const [showTableOrderModal, setShowTableOrderModal] = useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
-  const [showConfirmCashPayment, setShowConfirmCashPayment] = useState<boolean>(false);
-  const [showConfirmQRPayment, setShowConfirmQRPayment] = useState<boolean>(false);
+  const [showConfirmCashPayment, setShowConfirmCashPayment] =
+    useState<boolean>(false);
+  const [showConfirmQRPayment, setShowConfirmQRPayment] =
+    useState<boolean>(false);
 
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] =
     useState<Boolean>(false);
 
-  let [guests, setGuests] = useState<number>(0);
+  // ==========================================
+  // 1. Fetch ข้อมูลจาก API เมื่อโหลด Component
+  // ==========================================
+  const fetchTables = async () => {
+    try {
+      const response = await getTables();
+      if (response && response.data) {
+        // Map ข้อมูลจาก API เข้ากับ State ของหน้าจอ
+        const mappedTables = response.data.map((t: ITableResponse) => ({
+          id: t.id.toString(), // ID ของ Database
+          name: t.name, // ชื่อโต๊ะ
+          hasCustomers: t.status !== 0, // status 0 คือไม่มีลูกค้า
+        }));
+        setTables(mappedTables);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tables:", error);
+    }
+  };
 
-  function openTable(table: TableData): void {
+  useEffect(() => {
+    fetchTables();
+  }, []);
+
+  // ==========================================
+
+  async function openTable(table: TableData): Promise<void> {
+    setQrData("");
+
     if (!table.hasCustomers) {
       setCurrentTable(table);
       setShowConfirmOpenBillModal(true);
     } else {
       setCurrentTable(table);
-      setShowTableOrderModal(true);
-    }
-  }
 
-  function handleGuests(operation: "+" | "-"): void {
-    switch (operation) {
-      case "+":
-        setGuests(++guests);
-        break;
-      case "-":
-        if (guests > 0) {
-          setGuests(--guests);
+      try {
+        // Fetch หา Bill ของโต๊ะนี้
+        const billResponse = await getActiveBillByTableId(Number(table.id));
+
+        if (billResponse && billResponse.data) {
+          const activeBill = billResponse.data;
+          setActiveBillData(activeBill); // เก็บข้อมูล Bill ใส่ State
+
+          // ดึงข้อมูล Portals ของ Bill นี้
+          try {
+            const portalsRes = await getPortalsByBillId(activeBill.id);
+            if (portalsRes && portalsRes.data && portalsRes.data.length > 0) {
+              const activePortal = portalsRes.data[0]; // ดึงตัวแรกมาใช้งาน
+              console.log(activePortal.id)
+              const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
+              const url = `${customerBaseUrl}/portals/${activePortal.id}`;
+              setQrData(url);
+            }
+          } catch (portalError) {
+            console.error("Failed to fetch portals:", portalError);
+          }
+        } else {
+          setActiveBillData(null);
         }
-        break;
+
+        setShowTableBillDrawer(true); // เปิด Drawer หลัง Fetch เสร็จ
+      } catch (error) {
+        console.error("Failed to fetch bill for table:", error);
+        setShowTableBillDrawer(true);
+      }
     }
   }
 
-  function handleTables(operation: "+" | "-"): void {
-    console.log(operation)
-    switch (operation) {
-      case "+":
-        // Get the highest table ID and add 1 to create a new table
-        const highestId = Math.max(
-          ...tables.map((table) => parseInt(table.id))
-        );
-        const newId = (highestId + 1).toString().padStart(2, "0");
+  async function handleOpenBillConfirm(
+    id: string,
+    guests: number
+  ): Promise<void> {
+    try {
+      const payload = {
+        table_id: Number(id),
+        pax: guests,
+      };
 
-        setTables((prevTables) => [
-          ...prevTables,
-          { id: newId, hasCustomers: false },
-        ]);
-        break;
+      // ยิง API สร้างบิล
+      const response = await createBill(payload);
 
-      case "-":
-        // Remove the last table if it has no customers
-        const lastTable = tables[tables.length - 1];
-        if (!lastTable.hasCustomers) {
-          setTables((prevTables) => prevTables.slice(0, -1));
+      if (
+        response &&
+        (response.statusCode === 201 || response.statusCode === 200)
+      ) {
+        // สมมติว่า Backend คืนข้อมูลบิลที่สร้างสำเร็จมาใน response.data
+        const newBillId = response.data.id;
+
+        // ยิง API สร้าง Portal ต่อทันที
+        const portalPayload = { max_usage: guests, valid_duration: null };
+        const portalRes = await createOrderingPortal(newBillId, portalPayload);
+
+        if (portalRes && portalRes.data) {
+          // สร้าง URL สำหรับให้ลูกค้าแสกน (เปลี่ยน BASE_URL เป็น Domain หน้าบ้านลูกค้าของคุณ)
+          const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
+          const url = `${customerBaseUrl}/portals/${portalRes.data.id}`;
+          setQrData(url);
         }
-        break;
+
+        await fetchTables();
+
+        // ปิดแค่ Modal Open Bill แล้วเปิด Drawer ของโต๊ะนี้ขึ้นมาแทน
+        setShowConfirmOpenBillModal(false);
+
+        // จำลองการกดโต๊ะซ้ำเพื่อเปิด Drawer
+        const currentTableData = tables.find((t) => t.id === id) || {
+          id,
+          name: currentTable?.name || "",
+          hasCustomers: true,
+        };
+        openTable(currentTableData);
+      }
+    } catch (error) {
+      console.error("Failed to create bill or portal:", error);
     }
-  }
-
-  function handleOpenBillConfirm(id: string): void {
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === id
-          ? { ...table, hasCustomers: !table.hasCustomers }
-          : table
-      )
-    );
-    reset();
-  }
-
-  function handleOpenBillCancel(): void {
-    reset();
-  }
-
-  function handleAddTableConfirm(): void {
-    handleTables("+");
-    setShowConfirmAddTableModal(false);
-  }
-
-  function handleRemoveTableConfirm(): void {
-    handleTables("-");
-    setShowConfirmRemoveTableModal(false);
   }
 
   function handleConfirmPayment(): void {
-   console.log("Payment Successful!")
-   setShowPaymentSuccessModal(true);
-   setShowConfirmCashPayment(false);
-   setShowConfirmQRPayment(false);
+    console.log("Payment Successful!");
+    setShowPaymentSuccessModal(true);
+    setShowConfirmCashPayment(false);
+    setShowConfirmQRPayment(false);
   }
 
   function reset(): void {
-    setShowTableOrderModal(false);
+    setShowTableBillDrawer(false);
     setShowPaymentModal(false);
-    setGuests(0);
     setCurrentTable(null);
     setShowConfirmOpenBillModal(false);
     setShowPaymentSuccessModal(false);
+    setQrData(""); // รีเซ็ต QR ด้วย
   }
 
   return (
     <div className="p-8 flex flex-col gap-6">
-      {/* Header */}
       <Header totalTable={tables.length} />
 
-      {/* Tables Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
         {tables.map((table) => (
           <Table
             key={table.id}
-            id={table.id}
+            id={table.name}
             hasCustomers={table.hasCustomers}
             onClick={() => openTable(table)}
           />
         ))}
       </div>
 
-      {/* Edit Table Button Group */}
       <div className="fixed bottom-8 right-8">
         <EditButtonGroup
-          onAdd={() => setShowConfirmAddTableModal(!showConfirmAddTableModal)}
-          onRemove={() =>
-            setShowConfirmRemoveTableModal(!showConfirmRemoveTableModal)
-          }
+          onAdd={() => setShowTableAddDrawer(true)}
+          onRemove={() => setShowTableDeleteDrawer(true)}
         />
       </div>
 
+      {/* Drawer สำหรับสร้างโต๊ะ */}
+      <TableAddDrawer
+        isOpen={showTableAddDrawer}
+        onClose={() => setShowTableAddDrawer(false)}
+        onSuccess={fetchTables}
+      />
+
+      {/* เรียกใช้งาน Drawer สำหรับลบโต๊ะ */}
+      <TableEditDrawer
+        isOpen={showTableDeleteDrawer}
+        onClose={() => setShowTableDeleteDrawer(false)}
+        onSuccess={fetchTables} // เมื่อลบสำเร็จให้โหลดข้อมูลโต๊ะใหม่
+        tables={tables} // โยนข้อมูลโต๊ะเข้าไปให้ Dropdown ค้นหา
+      />
+
+      {/* Open Bill Table */}
       {showConfirmOpenBillModal && currentTable && (
-        <ConfirmModalComponent
-          id={currentTable.id}
-          confirmType={ConfirmTypeEnum.OpenBill}
-          itemName={`Table ${currentTable.id}`}
-          onConfirm={() => handleOpenBillConfirm(currentTable.id)}
-          onCancel={handleOpenBillCancel}
-          guests={guests}
-          onMinus={() => handleGuests("-")}
-          onPlus={() => handleGuests("+")}
-        />
-      )}
-
-      {showConfirmAddTableModal && (
-        <ConfirmModalComponent
-          confirmType={ConfirmTypeEnum.AddTable}
-          onConfirm={handleAddTableConfirm}
-          onCancel={() => setShowConfirmAddTableModal(false)}
-        />
-      )}
-
-      {showConfirmRemoveTableModal && (
-        <ConfirmModalComponent
-          confirmType={ConfirmTypeEnum.DeleteTable}
-          onConfirm={handleRemoveTableConfirm}
-          onCancel={() => setShowConfirmRemoveTableModal(false)}
-        />
-      )}
-
-      {showTableOrderModal && currentTable && (
-        <TableOrderModal
-          isOpen={showTableOrderModal}
-          onClose={() => setShowTableOrderModal(false)}
+        <TableOpenBillModal
+          isOpen={!!showConfirmOpenBillModal}
           tableId={currentTable.id}
+          tableName={currentTable.name}
+          onClose={() => setShowConfirmOpenBillModal(false)}
+          onConfirm={handleOpenBillConfirm}
+        />
+      )}
+
+      {/* TableBillDrawer */}
+      {showTableBillDrawer && currentTable && (
+        <TableBillDrawer
+          isOpen={showTableBillDrawer}
+          onClose={() => setShowTableBillDrawer(false)}
+          tableName={currentTable.name}
+          billData={activeBillData}
+          qrUrl={qrData}
           onCheckBill={() => setShowPaymentModal(true)}
           onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
           onEditOrder={() => router.push(`/table/${currentTable.id}/edit`)}
@@ -243,7 +281,10 @@ const TableRender = () => {
       {showPaymentSuccessModal && (
         <ConfirmModalComponent
           confirmType={ConfirmTypeEnum.PaymentSuccess}
-          onConfirm={() => setShowPaymentSuccessModal(false)}
+          onConfirm={() => {
+            setShowPaymentSuccessModal(false);
+            fetchTables();
+          }}
           onCancel={() => setShowPaymentSuccessModal(false)}
         />
       )}

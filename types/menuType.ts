@@ -1,4 +1,3 @@
-import { Ingredient } from "./../app/features/main/menu/Index";
 export interface IMenuTag {
   id: number;
   create_time: string;

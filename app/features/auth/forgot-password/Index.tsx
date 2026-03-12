@@ -39,7 +39,7 @@ const ForgotPasswordRender = () => {
         </h1>
 
         <p className="mb-8 text-center text-slate-600">
-          Please enter the email address you'd like your password reset
+          Please enter the email address you&apos;d like your password reset
           information sent to
         </p>
 

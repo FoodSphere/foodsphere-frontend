@@ -1,61 +1,36 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 
 // Import Components
 import { OrderCard } from "@/app/features/main/order/components/OrderCard";
+import { getActiveBillByTableId } from "@/services/bill/billApi";
 import { getMenuById } from "@/services/menu/menuApi";
-import { getAllOrders, updateOrderStatus } from "@/services/order/orderApi";
+import {
+  getOrdersByBillId,
+  updateOrderStatus,
+} from "@/services/order/orderApi";
 import { getTables } from "@/services/table/tableApi";
 
-import { FilterStatus, OrderFilterBar } from "./components/OrderFilterBar";
-import { OrderSearchBar } from "./components/OrderSearchBar";
-import { OrderUpdateStatusConfirmModal } from "./components/OrderUpdateStatusConfirmModal";
+import {
+  FilterStatus,
+  OrderFilterBar,
+} from "../../../order/components/OrderFilterBar";
+import { OrderSearchBar } from "../../../order/components/OrderSearchBar";
+import { OrderUpdateStatusConfirmModal } from "../../../order/components/OrderUpdateStatusConfirmModal";
+import { IOrder, mapOrderStatus, ModalConfig } from "../../../order/Index";
 
-// Types
-export interface IOrder {
-  id: string;
-  originalOrderId?: number;
-  billId: string;
-  img?: string | null;
-  foodName: string;
-  table: string;
-  additionalDetail?: string;
-  quantity: string;
-  order_at: string;
-  status: string;
-}
-
-export interface ModalConfig {
-  isOpen: boolean;
-  orderId: string;
-  originalOrderId: number;
-  billId: string;
-  action: "update" | "cancel" | null;
-  targetStatus: number | null;
-}
-
-export const mapOrderStatus = (statusNum: number): string => {
-  switch (statusNum) {
-    case 1:
-      return "Pending";
-    case 2:
-      return "Cooking";
-    case 3:
-      return "Completed";
-    case 4:
-      return "Cancel";
-    default:
-      return "Pending";
-  }
-};
-
-const OrderRender = () => {
-  // --- State ---
+export default function TableEditOrderRender() {
   const [orders, setOrders] = useState<IOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentFilter, setCurrentFilter] = useState<FilterStatus>("All");
   const [searchTerm, setSearchTerm] = useState("");
+
+  const params = useParams();
+  const tableId = (params?.id as string) || "1";
+  const [tableName, setTableName] = useState<string>(`Loading...`); // เปลี่ยนค่าเริ่มต้น
+  const [activeBillId, setActiveBillId] = useState<string | null>(null);
 
   // --- Modal States ---
   const [modalConfig, setModalConfig] = useState<ModalConfig>({
@@ -68,17 +43,34 @@ const OrderRender = () => {
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // ==============================================================
-  // Fetch All Orders & Tables
-  // ==============================================================
   const fetchOrdersData = async () => {
     setIsLoading(true);
     try {
-      // *** ดึงข้อมูล Orders และ Tables พร้อมกันเพื่อลดระยะเวลาโหลด ***
-      const [ordersRes, tablesRes] = await Promise.all([
-        getAllOrders(),
+      // *** ดึงข้อมูล Bill ปัจจุบัน และ รายการโต๊ะ พร้อมกัน ***
+      const [activeBillRes, tablesRes] = await Promise.all([
+        getActiveBillByTableId(Number(tableId)),
         getTables(),
       ]);
+
+      // --- จัดการเรื่องชื่อโต๊ะ ---
+      const tablesList = tablesRes?.data || [];
+      const matchedTable = tablesList.find(
+        (t: any) => String(t.id) === String(tableId)
+      );
+      // ถ้าเจอชื่อให้ใช้ชื่อ ถ้าไม่เจอให้ fallback กลับไปใช้ id
+      const resolvedTableName = matchedTable ? matchedTable.name : tableId;
+      setTableName(resolvedTableName); // อัปเดตชื่อโต๊ะเพื่อแสดงบน Header
+
+      if (!activeBillRes || !activeBillRes.data) {
+        setOrders([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const billId = activeBillRes.data.id;
+      setActiveBillId(billId);
+
+      const ordersRes = await getOrdersByBillId(billId);
 
       if (!ordersRes || !ordersRes.data || ordersRes.data.length === 0) {
         setOrders([]);
@@ -87,10 +79,9 @@ const OrderRender = () => {
       }
 
       const rawOrders = ordersRes.data;
-      const tablesList = tablesRes?.data || []; // รับข้อมูลโต๊ะมาเก็บไว้
 
       const allItemsPromises = rawOrders.flatMap((order: any) => {
-        // เพิ่ม index เข้ามาใน map เพื่อเอาไปสร้าง ID ไม่ให้ซ้ำกัน
+        // แนะนำให้ใส่ index มาด้วยแบบหน้า Order รวม เพื่อป้องกัน React Duplicate Key Warning
         return order.items.map(async (item: any, index: number) => {
           let menuName = "Unknown Menu";
           let imgUrl = "";
@@ -108,30 +99,13 @@ const OrderRender = () => {
           const dateObj = new Date(order.create_time);
           const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 
-          // 1. ลอง console.log ดูว่ามีค่า table_id ส่งมาจริงไหม และใช้ชื่อ key ว่าอะไร
-          console.log("Order Data:", order); 
-          
-          // 2. ดึงค่า table id (ดักเผื่อกรณี backend ส่งมาเป็น camelCase)
-          const targetTableId = order.table_id || order.tableId;
-
-          // 3. แปลงเป็น String ทั้งคู่ก่อนเทียบกันเพื่อแก้ปัญหา Type Mismatch
-          const matchedTable = tablesList.find(
-            (t: any) => String(t.id) === String(targetTableId)
-          );
-          const tableName = matchedTable
-            ? matchedTable.name
-            : order.table_id
-              ? String(order.table_id)
-              : "-";
-
           return {
-            // *** แก้ไขการสร้าง ID ให้การันตีว่าไม่ซ้ำ (billId-orderId-index) ***
-            id: `${order.bill_id}-${order.id}-${index}`,
+            id: `${billId}-${order.id}-${index}`, // สร้าง ID ให้ Unique เหมือนหน้ารวม
             originalOrderId: order.id,
-            billId: order.bill_id,
+            billId: billId, // เก็บเพิ่มไว้เผื่อใช้
             img: imgUrl,
             foodName: menuName,
-            table: tableName, // ส่งชื่อโต๊ะเข้าไปแทน ID โต๊ะ
+            table: resolvedTableName, // *** ส่งชื่อโต๊ะจริงเข้าไปแทน tableId ***
             additionalDetail: item.note || "-",
             quantity: item.quantity.toString(),
             order_at: formattedDate,
@@ -141,15 +115,9 @@ const OrderRender = () => {
       });
 
       const resolvedOrders = await Promise.all(allItemsPromises);
-
-      resolvedOrders.sort(
-        (a, b) =>
-          new Date(b.order_at).getTime() - new Date(a.order_at).getTime()
-      );
-
       setOrders(resolvedOrders);
     } catch (error) {
-      console.error("Error fetching all orders details:", error);
+      console.error("Error fetching order details:", error);
     } finally {
       setIsLoading(false);
     }
@@ -157,11 +125,9 @@ const OrderRender = () => {
 
   useEffect(() => {
     fetchOrdersData();
-  }, []);
+  }, [tableId]);
 
-  // ==============================================================
-  // Handlers
-  // ==============================================================
+  // --- Handlers: เปิด Modal ยืนยัน ---
   const handleUpdateStatusClick = (id: string) => {
     const orderToUpdate = orders.find((o) => o.id === id);
 
@@ -195,9 +161,10 @@ const OrderRender = () => {
     });
   };
 
+  // --- Handler: กดยืนยันใน Modal เพื่อยิง API ---
   const confirmAction = async () => {
     if (
-      !modalConfig.billId ||
+      !activeBillId ||
       !modalConfig.targetStatus ||
       !modalConfig.originalOrderId
     )
@@ -206,7 +173,7 @@ const OrderRender = () => {
     setIsUpdating(true);
     try {
       await updateOrderStatus(
-        modalConfig.billId,
+        activeBillId,
         modalConfig.originalOrderId.toString(),
         modalConfig.targetStatus
       );
@@ -231,9 +198,6 @@ const OrderRender = () => {
     }
   };
 
-  // ==============================================================
-  // Filters
-  // ==============================================================
   const filteredOrders = useMemo(() => {
     let result = orders;
     if (currentFilter !== "All") {
@@ -256,12 +220,15 @@ const OrderRender = () => {
         {/* Header Title */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-2">
-            <span>All Orders</span>
+            <span>Order Table</span>
+            <span className="bg-primary-orange-main text-white px-4 py-2 rounded-lg text-2xl font-bold">
+              {tableName}
+            </span>
           </h1>
           {isLoading && (
             <span className="text-gray-500 flex items-center gap-2">
               <div className="w-5 h-5 border-2 border-primary-orange-main border-t-transparent rounded-full animate-spin"></div>
-              Loading orders...
+              Loading...
             </span>
           )}
         </div>
@@ -295,16 +262,16 @@ const OrderRender = () => {
             ))
           ) : !isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-200 text-gray-400 gap-4 mt-8">
-              <p className="text-lg font-medium">No active orders found</p>
+              <p className="text-lg font-medium">No orders found</p>
               <p className="text-sm">
-                Orders from all active tables will appear here.
+                Try adjusting your search or filters, or add a new order.
               </p>
             </div>
           ) : null}
         </div>
       </div>
 
-      {/* Modal ยืนยันการกระทำ */}
+      {/* --- Modal ยืนยันการกระทำ --- */}
       <OrderUpdateStatusConfirmModal
         isOpen={modalConfig.isOpen}
         title={
@@ -327,6 +294,4 @@ const OrderRender = () => {
       />
     </div>
   );
-};
-
-export default OrderRender;
+}

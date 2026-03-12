@@ -119,13 +119,13 @@ export const StockEditTagDrawer = ({
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
 
       <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-50 shadow-2xl flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">Edit Category</h2>
+        <div className="flex items-center justify-between p-6 border-b-2">
+          <h2 className="text-2xl font-bold">Edit Category</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="p-2 hover:bg-red-100 rounded-full"
           >
-            <Icons name="CloseIcon" className="w-6 h-6 text-gray-500" />
+            <Icons name="CloseIcon" className="w-6 h-6 text-red-500" />
           </button>
         </div>
 
@@ -181,7 +181,7 @@ export const StockEditTagDrawer = ({
               </div>
 
               {/* Delete Button Area */}
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t-2">
                 {!showConfirmDelete ? (
                   <button
                     type="button"
@@ -232,7 +232,7 @@ export const StockEditTagDrawer = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-full bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-xl"
+              className="w-full bg-white border border-primary-orange-main text-primary-orange-main hover:bg-orange-50 font-bold py-3 rounded-xl"
             >
               Cancel
             </button>
