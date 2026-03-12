@@ -3,8 +3,8 @@ import { useState } from "react";
 
 import { ButtonGroup, ViewType } from "./components/ButtonGroup";
 import { ManageEmployeesView } from "./components/ManageEmployees";
-import { ManageRolesView } from "./components/ManageRoles";
 import { ManagePromotionView } from "./components/ManagePromotion";
+import { ManageRolesView } from "./components/ManageRoles";
 import { MyRestaurantView } from "./components/MyRestaurant";
 
 const RestaurantRender = () => {
@@ -18,7 +18,7 @@ const RestaurantRender = () => {
         return <ManageEmployeesView />;
       case "manage-roles":
         return <ManageRolesView />;
-      case "manage-discount":
+      case "manage-promotion":
         return <ManagePromotionView />;
       default:
         return <MyRestaurantView />;

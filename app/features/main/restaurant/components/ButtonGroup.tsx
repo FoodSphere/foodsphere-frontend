@@ -1,7 +1,11 @@
 "use client";
-import { Store, TicketPercent, Users, Lock } from "lucide-react";
+import { Lock, Store, TicketPercent, Users } from "lucide-react";
 
-export type ViewType = "my-restaurant" | "manage-employees" | "manage-roles" | "manage-discount";
+export type ViewType =
+  | "my-restaurant"
+  | "manage-employees"
+  | "manage-roles"
+  | "manage-promotion";
 
 interface ButtonGroupProps {
   activeView: ViewType;
@@ -25,8 +29,8 @@ const navItems = [
     icon: <Lock className="w-5 h-5" />,
   },
   {
-    id: "manage-discount",
-    label: "Manage Discount",
+    id: "manage-promotion",
+    label: "Manage Promotion",
     icon: <TicketPercent className="w-5 h-5" />,
   },
 ];
