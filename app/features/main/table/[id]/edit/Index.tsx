@@ -4,36 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
 // Import Components
-import { OrderCardComponent } from "@/app/features/main/order/components/OrderCardComponent";
-import { Icons } from "@/app/icons";
-import {
-  getActiveBillByTableId,
-  getOrdersByBillId,
-} from "@/services/bill/billApi";
+import { OrderCard } from "@/app/features/main/order/components/OrderCard";
+import { getActiveBillByTableId } from "@/services/bill/billApi";
 import { getMenuById } from "@/services/menu/menuApi";
+import {
+  getOrdersByBillId,
+  updateOrderStatus,
+} from "@/services/order/orderApi";
+import { getTables } from "@/services/table/tableApi";
 
 import {
   FilterStatus,
   OrderFilterBar,
 } from "../../../order/components/OrderFilterBar";
 import { OrderSearchBar } from "../../../order/components/OrderSearchBar";
-import { IOrder } from "../../../order/Index";
-
-// แก้ไขคำว่า Pending เป็น Not Done เพื่อให้ตรงกับ Type ของ IOrder
-const mapOrderStatus = (statusNum: number): string => {
-  switch (statusNum) {
-    case 1:
-      return "Not Done";
-    case 2:
-      return "Cooking";
-    case 3:
-      return "Completed";
-    case 4:
-      return "Cancel";
-    default:
-      return "Not Done";
-  }
-};
+import { OrderUpdateStatusConfirmModal } from "../../../order/components/OrderUpdateStatusConfirmModal";
+import { IOrder, mapOrderStatus, ModalConfig } from "../../../order/Index";
 
 export default function TableEditOrderRender() {
   const [orders, setOrders] = useState<IOrder[]>([]);
@@ -43,108 +29,180 @@ export default function TableEditOrderRender() {
 
   const params = useParams();
   const tableId = (params?.id as string) || "1";
-  const [tableName, setTableName] = useState<string>(`Table ${tableId}`);
+  const [tableName, setTableName] = useState<string>(`Loading...`); // เปลี่ยนค่าเริ่มต้น
+  const [activeBillId, setActiveBillId] = useState<string | null>(null);
+
+  // --- Modal States ---
+  const [modalConfig, setModalConfig] = useState<ModalConfig>({
+    isOpen: false,
+    orderId: "",
+    originalOrderId: 0,
+    billId: "",
+    action: null,
+    targetStatus: null,
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const fetchOrdersData = async () => {
+    setIsLoading(true);
+    try {
+      // *** ดึงข้อมูล Bill ปัจจุบัน และ รายการโต๊ะ พร้อมกัน ***
+      const [activeBillRes, tablesRes] = await Promise.all([
+        getActiveBillByTableId(Number(tableId)),
+        getTables(),
+      ]);
+
+      // --- จัดการเรื่องชื่อโต๊ะ ---
+      const tablesList = tablesRes?.data || [];
+      const matchedTable = tablesList.find(
+        (t: any) => String(t.id) === String(tableId)
+      );
+      // ถ้าเจอชื่อให้ใช้ชื่อ ถ้าไม่เจอให้ fallback กลับไปใช้ id
+      const resolvedTableName = matchedTable ? matchedTable.name : tableId;
+      setTableName(resolvedTableName); // อัปเดตชื่อโต๊ะเพื่อแสดงบน Header
+
+      if (!activeBillRes || !activeBillRes.data) {
+        setOrders([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const billId = activeBillRes.data.id;
+      setActiveBillId(billId);
+
+      const ordersRes = await getOrdersByBillId(billId);
+
+      if (!ordersRes || !ordersRes.data || ordersRes.data.length === 0) {
+        setOrders([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const rawOrders = ordersRes.data;
+
+      const allItemsPromises = rawOrders.flatMap((order: any) => {
+        // แนะนำให้ใส่ index มาด้วยแบบหน้า Order รวม เพื่อป้องกัน React Duplicate Key Warning
+        return order.items.map(async (item: any, index: number) => {
+          let menuName = "Unknown Menu";
+          let imgUrl = "";
+
+          try {
+            const menuRes = await getMenuById(item.menu_id);
+            if (menuRes && menuRes.data) {
+              menuName = menuRes.data.name;
+              imgUrl = menuRes.data.image_url || imgUrl;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch menu ID ${item.menu_id}`, error);
+          }
+
+          const dateObj = new Date(order.create_time);
+          const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+
+          return {
+            id: `${billId}-${order.id}-${index}`, // สร้าง ID ให้ Unique เหมือนหน้ารวม
+            originalOrderId: order.id,
+            billId: billId, // เก็บเพิ่มไว้เผื่อใช้
+            img: imgUrl,
+            foodName: menuName,
+            table: resolvedTableName, // *** ส่งชื่อโต๊ะจริงเข้าไปแทน tableId ***
+            additionalDetail: item.note || "-",
+            quantity: item.quantity.toString(),
+            order_at: formattedDate,
+            status: mapOrderStatus(order.status) as any,
+          } as IOrder;
+        });
+      });
+
+      const resolvedOrders = await Promise.all(allItemsPromises);
+      setOrders(resolvedOrders);
+    } catch (error) {
+      console.error("Error fetching order details:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchOrdersData = async () => {
-      setIsLoading(true);
-      try {
-        const activeBillRes = await getActiveBillByTableId(Number(tableId));
-
-        if (!activeBillRes || !activeBillRes.data) {
-          setOrders([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const billId = activeBillRes.data.id;
-        const ordersRes = await getOrdersByBillId(billId);
-
-        if (!ordersRes || !ordersRes.data || ordersRes.data.length === 0) {
-          setOrders([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const rawOrders = ordersRes.data;
-
-        const allItemsPromises = rawOrders.flatMap((order: any) => {
-          return order.items.map(async (item: any) => {
-            let menuName = "Unknown Menu";
-            let imgUrl = "";
-
-            try {
-              const menuRes = await getMenuById(item.menu_id);
-              if (menuRes && menuRes.data) {
-                menuName = menuRes.data.name;
-                imgUrl = menuRes.data.image_url || imgUrl;
-              }
-            } catch (error) {
-              console.error(`Failed to fetch menu ID ${item.menu_id}`, error);
-            }
-
-            const dateObj = new Date(order.create_time);
-            const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
-
-            return {
-              id: `${order.id}-${item.id}`,
-              img: imgUrl,
-              foodName: menuName,
-              table: tableId,
-              additionalDetail: item.note || "-",
-              quantity: item.quantity.toString(),
-              order_at: formattedDate,
-              status: mapOrderStatus(order.status) as any,
-            } as IOrder;
-          });
-        });
-
-        const resolvedOrders = await Promise.all(allItemsPromises);
-        setOrders(resolvedOrders);
-      } catch (error) {
-        console.error("Error fetching order details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchOrdersData();
   }, [tableId]);
 
-  const handleUpdateStatus = (id: number | string) => {
-    // TODO: ต่อ API Update Status ตรงนี้ในอนาคต
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id === id) {
-          if (order.status === "Pending")
-            // ตอนนี้ทำงานร่วมกับ Type ใหม่ได้แล้ว
-            return { ...order, status: "Cooking" };
-          if (order.status === "Cooking")
-            return { ...order, status: "Completed" };
-        }
-        return order;
-      })
-    );
+  // --- Handlers: เปิด Modal ยืนยัน ---
+  const handleUpdateStatusClick = (id: string) => {
+    const orderToUpdate = orders.find((o) => o.id === id);
+
+    if (!orderToUpdate || orderToUpdate.originalOrderId === undefined) return;
+
+    let nextStatusNum = 2; // Pending -> Cooking
+    if (orderToUpdate.status === "Cooking") nextStatusNum = 3; // Cooking -> Completed
+
+    setModalConfig({
+      isOpen: true,
+      orderId: id,
+      originalOrderId: orderToUpdate.originalOrderId,
+      billId: orderToUpdate.billId,
+      action: "update",
+      targetStatus: nextStatusNum,
+    });
   };
 
-  const handleCancelOrder = (id: number | string) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === id ? { ...order, status: "Cancel" as any } : order
-      )
-    );
+  const handleCancelOrderClick = (id: string) => {
+    const orderToCancel = orders.find((o) => o.id === id);
+
+    if (!orderToCancel || orderToCancel.originalOrderId === undefined) return;
+
+    setModalConfig({
+      isOpen: true,
+      orderId: id,
+      originalOrderId: orderToCancel.originalOrderId,
+      billId: orderToCancel.billId,
+      action: "cancel",
+      targetStatus: 4,
+    });
+  };
+
+  // --- Handler: กดยืนยันใน Modal เพื่อยิง API ---
+  const confirmAction = async () => {
+    if (
+      !activeBillId ||
+      !modalConfig.targetStatus ||
+      !modalConfig.originalOrderId
+    )
+      return;
+
+    setIsUpdating(true);
+    try {
+      await updateOrderStatus(
+        activeBillId,
+        modalConfig.originalOrderId.toString(),
+        modalConfig.targetStatus
+      );
+
+      setOrders((prev) =>
+        prev.map((order) => {
+          if (order.id === modalConfig.orderId) {
+            return {
+              ...order,
+              status: mapOrderStatus(modalConfig.targetStatus as number) as any,
+            };
+          }
+          return order;
+        })
+      );
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      alert("Failed to update order status. Please try again.");
+    } finally {
+      setIsUpdating(false);
+      setModalConfig({ ...modalConfig, isOpen: false });
+    }
   };
 
   const filteredOrders = useMemo(() => {
     let result = orders;
-
     if (currentFilter !== "All") {
-      // จับคู่คำว่า "Pending" จากปุ่ม Filter เข้ากับคำว่า "Not Done" ใน Data
-      const targetStatus =
-        currentFilter === "Pending" ? "Not Done" : currentFilter;
-      result = result.filter((order) => order.status === targetStatus);
+      result = result.filter((order) => order.status === currentFilter);
     }
-
     if (searchTerm.trim() !== "") {
       const lowerTerm = searchTerm.toLowerCase();
       result = result.filter(
@@ -162,7 +220,7 @@ export default function TableEditOrderRender() {
         {/* Header Title */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-2">
-            <span>Order</span>
+            <span>Order Table</span>
             <span className="bg-primary-orange-main text-white px-4 py-2 rounded-lg text-2xl font-bold">
               {tableName}
             </span>
@@ -170,7 +228,7 @@ export default function TableEditOrderRender() {
           {isLoading && (
             <span className="text-gray-500 flex items-center gap-2">
               <div className="w-5 h-5 border-2 border-primary-orange-main border-t-transparent rounded-full animate-spin"></div>
-              Loading orders...
+              Loading...
             </span>
           )}
         </div>
@@ -183,7 +241,6 @@ export default function TableEditOrderRender() {
               onFilterChange={setCurrentFilter}
             />
           </div>
-
           <div className="w-full lg:w-auto">
             <OrderSearchBar
               searchTerm={searchTerm}
@@ -196,11 +253,11 @@ export default function TableEditOrderRender() {
         <div className="flex flex-col gap-4 w-full">
           {!isLoading && filteredOrders.length > 0 ? (
             filteredOrders.map((order) => (
-              <OrderCardComponent
+              <OrderCard
                 key={order.id}
                 {...order}
-                onUpdate={handleUpdateStatus}
-                onCancel={handleCancelOrder}
+                onUpdate={handleUpdateStatusClick}
+                onCancel={handleCancelOrderClick}
               />
             ))
           ) : !isLoading ? (
@@ -213,6 +270,28 @@ export default function TableEditOrderRender() {
           ) : null}
         </div>
       </div>
+
+      {/* --- Modal ยืนยันการกระทำ --- */}
+      <OrderUpdateStatusConfirmModal
+        isOpen={modalConfig.isOpen}
+        title={
+          modalConfig.action === "update"
+            ? "Update Order Status"
+            : "Cancel Order"
+        }
+        message={
+          modalConfig.action === "update"
+            ? "Are you sure you want to update this order's status?"
+            : "Are you sure you want to cancel this order? This action cannot be undone."
+        }
+        confirmText={
+          modalConfig.action === "update" ? "Yes, Update" : "Yes, Cancel It"
+        }
+        isDestructive={modalConfig.action === "cancel"}
+        isLoading={isUpdating}
+        onConfirm={confirmAction}
+        onCancel={() => setModalConfig({ ...modalConfig, isOpen: false })}
+      />
     </div>
   );
 }

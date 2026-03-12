@@ -6,9 +6,10 @@ import { useParams, useRouter } from "next/navigation";
 import { MenuCard } from "@/app/features/main/menu/components/MenuCard";
 import { MenuFilterBar } from "@/app/features/main/menu/components/MenuFilterBar";
 import { Icons } from "@/app/icons";
-import { createOrder, getActiveBillByTableId } from "@/services/bill/billApi";
+import { getActiveBillByTableId } from "@/services/bill/billApi";
 import { getMenus } from "@/services/menu/menuApi";
 import { getMenuTags } from "@/services/menu/menuTagApi";
+import { createOrder } from "@/services/order/orderApi";
 import { IMenuResponse } from "@/types/menuType";
 
 import {

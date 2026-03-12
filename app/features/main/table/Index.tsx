@@ -6,7 +6,12 @@ import { ConfirmModalComponent } from "@/app/components/featureComponents/Confir
 import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
 import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
-import { createBill, getActiveBillByTableId } from "@/services/bill/billApi";
+import {
+  createBill,
+  createOrderingPortal,
+  getActiveBillByTableId,
+  getPortalsByBillId,
+} from "@/services/bill/billApi";
 import { getTables } from "@/services/table/tableApi";
 import { IBillResponse } from "@/types/billType";
 import { ITableResponse } from "@/types/tableType";
@@ -37,6 +42,8 @@ const TableRender = () => {
 
   const [showTableBillDrawer, setShowTableBillDrawer] =
     useState<boolean>(false);
+  const [qrData, setQrData] = useState<string>("");
+
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
   const [showConfirmCashPayment, setShowConfirmCashPayment] =
@@ -74,6 +81,8 @@ const TableRender = () => {
   // ==========================================
 
   async function openTable(table: TableData): Promise<void> {
+    setQrData("");
+
     if (!table.hasCustomers) {
       setCurrentTable(table);
       setShowConfirmOpenBillModal(true);
@@ -85,7 +94,22 @@ const TableRender = () => {
         const billResponse = await getActiveBillByTableId(Number(table.id));
 
         if (billResponse && billResponse.data) {
-          setActiveBillData(billResponse.data); // เก็บข้อมูล Bill ใส่ State
+          const activeBill = billResponse.data;
+          setActiveBillData(activeBill); // เก็บข้อมูล Bill ใส่ State
+
+          // ดึงข้อมูล Portals ของ Bill นี้
+          try {
+            const portalsRes = await getPortalsByBillId(activeBill.id);
+            if (portalsRes && portalsRes.data && portalsRes.data.length > 0) {
+              const activePortal = portalsRes.data[0]; // ดึงตัวแรกมาใช้งาน
+              console.log(activePortal.id)
+              const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
+              const url = `${customerBaseUrl}/portals/${activePortal.id}`;
+              setQrData(url);
+            }
+          } catch (portalError) {
+            console.error("Failed to fetch portals:", portalError);
+          }
         } else {
           setActiveBillData(null);
         }
@@ -93,13 +117,11 @@ const TableRender = () => {
         setShowTableBillDrawer(true); // เปิด Drawer หลัง Fetch เสร็จ
       } catch (error) {
         console.error("Failed to fetch bill for table:", error);
-        // ถ้า Fetch พลาด อาจจะเปิด Drawer เปล่าๆ หรือทำ Alert แจ้ง Error
         setShowTableBillDrawer(true);
       }
     }
   }
 
-  // ปรับฟังก์ชัน handleOpenBillConfirm ให้เป็น async
   async function handleOpenBillConfirm(
     id: string,
     guests: number
@@ -110,22 +132,42 @@ const TableRender = () => {
         pax: guests,
       };
 
-      // ยิง API
-      console.log(
-        `Sending API to create bill for table ${id} with ${guests} guests`
-      );
+      // ยิง API สร้างบิล
       const response = await createBill(payload);
 
-      // จัดการผลลัพธ์
-      if (response && response.statusCode === 201) {
-        // เมื่อสร้างบิลสำเร็จ ให้เรียก fetchTables ใหม่เพื่ออัปเดตสถานะโต๊ะ (hasCustomers)
+      if (
+        response &&
+        (response.statusCode === 201 || response.statusCode === 200)
+      ) {
+        // สมมติว่า Backend คืนข้อมูลบิลที่สร้างสำเร็จมาใน response.data
+        const newBillId = response.data.id;
+
+        // ยิง API สร้าง Portal ต่อทันที
+        const portalPayload = { max_usage: guests, valid_duration: null };
+        const portalRes = await createOrderingPortal(newBillId, portalPayload);
+
+        if (portalRes && portalRes.data) {
+          // สร้าง URL สำหรับให้ลูกค้าแสกน (เปลี่ยน BASE_URL เป็น Domain หน้าบ้านลูกค้าของคุณ)
+          const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
+          const url = `${customerBaseUrl}/portals/${portalRes.data.id}`;
+          setQrData(url);
+        }
+
         await fetchTables();
 
-        // ปิด Modal ต่างๆ
-        reset();
+        // ปิดแค่ Modal Open Bill แล้วเปิด Drawer ของโต๊ะนี้ขึ้นมาแทน
+        setShowConfirmOpenBillModal(false);
+
+        // จำลองการกดโต๊ะซ้ำเพื่อเปิด Drawer
+        const currentTableData = tables.find((t) => t.id === id) || {
+          id,
+          name: currentTable?.name || "",
+          hasCustomers: true,
+        };
+        openTable(currentTableData);
       }
     } catch (error) {
-      console.error("Failed to create bill:", error);
+      console.error("Failed to create bill or portal:", error);
     }
   }
 
@@ -142,6 +184,7 @@ const TableRender = () => {
     setCurrentTable(null);
     setShowConfirmOpenBillModal(false);
     setShowPaymentSuccessModal(false);
+    setQrData(""); // รีเซ็ต QR ด้วย
   }
 
   return (
@@ -198,7 +241,8 @@ const TableRender = () => {
           isOpen={showTableBillDrawer}
           onClose={() => setShowTableBillDrawer(false)}
           tableName={currentTable.name}
-          billData={activeBillData} // โยนข้อมูลที่ดึงมาเข้าไป
+          billData={activeBillData}
+          qrUrl={qrData}
           onCheckBill={() => setShowPaymentModal(true)}
           onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
           onEditOrder={() => router.push(`/table/${currentTable.id}/edit`)}

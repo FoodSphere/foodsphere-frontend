@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { QrCode } from "@/app/components/featureComponents/QrCode";
 import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { Icons } from "@/app/icons";
 import { getMenuById } from "@/services/menu/menuApi";
@@ -10,7 +11,7 @@ interface EnrichedOrderItem {
   name: string;
   price: number;
   quantity: number;
-  status: "Completed" | "Pending";
+  status: string;
   imgUrl: string | null;
 }
 
@@ -18,27 +19,59 @@ interface TableBillDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   tableName: string;
-  billData?: IBillResponse | null; // เพิ่ม Prop สำหรับรับข้อมูล Bill จริง
+  billData?: IBillResponse | null;
+  qrUrl?: string;
   onCheckBill?: () => void;
   onAddOrder?: () => void;
   onEditOrder?: () => void;
 }
+
+// 1. ฟังก์ชันช่วยแปลงตัวเลข Status เป็นข้อความ
+const mapOrderStatus = (statusNum: number): string => {
+  switch (statusNum) {
+    case 1:
+      return "Pending";
+    case 2:
+      return "Cooking";
+    case 3:
+      return "Completed";
+    case 4:
+      return "Canceled";
+    default:
+      return "Pending";
+  }
+};
+
+// 2. ฟังก์ชันช่วยเลือกสีของ Badge ตามสถานะ
+const getStatusColor = (status: string): string => {
+  switch (status) {
+    case "Pending":
+      return "bg-yellow-100 text-yellow-700";
+    case "Cooking":
+      return "bg-blue-100 text-blue-700";
+    case "Completed":
+      return "bg-green-100 text-green-700";
+    case "Canceled":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-gray-100 text-gray-700";
+  }
+};
 
 export const TableBillDrawer = ({
   isOpen,
   onClose,
   tableName,
   billData,
+  qrUrl,
   onCheckBill,
   onAddOrder,
   onEditOrder,
 }: TableBillDrawerProps) => {
-  // State สำหรับเก็บข้อมูลที่พร้อมแสดงผล
   const [displayOrders, setDisplayOrders] = useState<EnrichedOrderItem[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
   useEffect(() => {
-    // ฟังก์ชันสำหรับแปลงข้อมูล billData เป็นข้อมูลพร้อมแสดงผล
     const loadOrderDetails = async () => {
       if (!billData || !billData.orders || billData.orders.length === 0) {
         setDisplayOrders([]);
@@ -48,17 +81,14 @@ export const TableBillDrawer = ({
       setIsLoadingOrders(true);
 
       try {
-        // 1. ดึง items ทั้งหมดที่อยู่ใน orders ของบิลนี้ออกมากองรวมกัน
         const allItems = billData.orders.flatMap((order) => {
           return order.items.map((item) => ({
             ...item,
-            // เพิ่มบรรทัดนี้: สร้าง Key ใหม่โดยเอา Order ID มาต่อกับ Item ID
             unique_key: `${order.id}-${item.id}`,
-            orderStatus: order.status === 0 ? "Pending" : "Completed",
+            orderStatus: mapOrderStatus(order.status),
           }));
         });
 
-        // 2. วนลูปยิง API ไปขอชื่อเมนูและรูปภาพของแต่ละ item
         const enrichedItemsPromises = allItems.map(async (item) => {
           let menuName = "Unknown Menu";
           let imgUrl = null;
@@ -74,16 +104,15 @@ export const TableBillDrawer = ({
           }
 
           return {
-            id: item.unique_key, // <--- เปลี่ยนมาใช้ unique_key ที่เราสร้างไว้แทน
+            id: item.unique_key,
             name: menuName,
             price: item.price_snapshot,
             quantity: item.quantity,
-            status: item.orderStatus as "Pending" | "Completed",
+            status: item.orderStatus,
             imgUrl: imgUrl,
           };
         });
 
-        // รอจนกว่าจะดึงข้อมูลเมนูครบทุกอัน
         const resolvedItems = await Promise.all(enrichedItemsPromises);
         setDisplayOrders(resolvedItems);
       } catch (error) {
@@ -100,11 +129,11 @@ export const TableBillDrawer = ({
 
   if (!isOpen) return null;
 
-  // คำนวณราคารวมทั้งหมดจาก quantity * price_snapshot
-  const total = displayOrders.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0
-  );
+  // คำนวณราคารวม (ไม่เอา Status "Canceled" มาคิดเงิน)
+  const total = displayOrders.reduce((acc, item) => {
+    if (item.status === "Canceled") return acc;
+    return acc + item.price * item.quantity;
+  }, 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-[rgba(0,0,0,0.5)]">
@@ -127,7 +156,7 @@ export const TableBillDrawer = ({
         <div className="flex gap-8 flex-1 overflow-hidden px-8 pb-8">
           {/* Left Column */}
           <div className="w-[320px] flex flex-col gap-6 shrink-0">
-            {/* QR Section (Mockup) */}
+            {/* QR Section */}
             <div className="flex flex-col items-center gap-4">
               <p className="text-xl font-medium text-black">
                 QR{" "}
@@ -136,28 +165,27 @@ export const TableBillDrawer = ({
                 </span>{" "}
                 for Ordering
               </p>
-              <div className="bg-transparent p-2">
-                <div className="w-[200px] h-[200px] bg-black p-2 rounded-lg">
-                  <div className="w-full h-full bg-white flex flex-wrap content-center justify-center gap-1 p-2">
-                    {Array.from({ length: 100 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-3 h-3 ${Math.random() > 0.4 ? "bg-black" : "bg-white"}`}
-                      />
-                    ))}
+
+              {/* เปลี่ยนจาก div จุดดำๆ มาใช้ QrCode Component */}
+              <div className="bg-transparent p-2 min-h-[200px] flex items-center justify-center">
+                {qrUrl ? (
+                  <QrCode data={qrUrl} width={200} />
+                ) : (
+                  <div className="w-[200px] h-[200px] bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
+                    No QR Code Data
                   </div>
-                </div>
+                )}
               </div>
+
               <button className="bg-primary-orange-main hover:bg-[#ff451f] text-white px-10 py-3 rounded-xl font-bold text-lg shadow-md flex items-center gap-3 transition-colors">
                 Print <Icons name="PrintIcon" className="w-6 h-6" />
               </button>
             </div>
 
-            {/* Summary Section (อัปเดตเอา Vat กับ Discount ออก) */}
+            {/* Summary Section */}
             <div className="mt-auto">
               <h3 className="text-2xl font-bold mb-4 text-black">Summary</h3>
               <div className="space-y-2 text-lg bg-white p-4 rounded-xl shadow-sm">
-                {/* แสดงจำนวนลูกค้าด้วยถ้ามี */}
                 <div className="flex justify-between text-gray-500 font-medium text-sm mb-2 border-b border-gray-100 pb-2">
                   <span>Guests (Pax)</span>
                   <span>{billData?.pax || "-"} Persons</span>
@@ -208,7 +236,11 @@ export const TableBillDrawer = ({
                     {displayOrders.map((order) => (
                       <div
                         key={order.id}
-                        className="flex gap-4 items-start border-b border-gray-100 pb-4 last:border-0"
+                        className={`flex gap-4 items-start border-b border-gray-100 pb-4 last:border-0 ${
+                          order.status === "Canceled"
+                            ? "opacity-50 grayscale"
+                            : ""
+                        }`}
                       >
                         <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
                           {order.imgUrl ? (
@@ -225,15 +257,19 @@ export const TableBillDrawer = ({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-lg text-black truncate pr-2">
+                            <h4
+                              className={`font-bold text-lg text-black truncate pr-2 ${
+                                order.status === "Canceled"
+                                  ? "line-through"
+                                  : ""
+                              }`}
+                            >
                               {order.name}
                             </h4>
                             <span
-                              className={`text-white text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide shrink-0 ${
-                                order.status === "Completed"
-                                  ? "bg-[#4ADE80]"
-                                  : "bg-orange-400"
-                              }`}
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide shrink-0 ${getStatusColor(
+                                order.status
+                              )}`}
                             >
                               {order.status}
                             </span>

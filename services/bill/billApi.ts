@@ -2,7 +2,7 @@ import { getCookie } from "@/libs/cookie";
 import {
   IBillResponse,
   ICreateBillRequest,
-  ICreateOrderRequest,
+  IPortalCreateRequest,
 } from "@/types/billType";
 
 import { apiGet, apiPost } from "../common";
@@ -18,7 +18,7 @@ export const getRestaurantId = () => {
 // 1. สร้าง Bill
 export const createBill = async (payload: ICreateBillRequest) => {
   const restaurantId = getRestaurantId();
-  const path = `/restaurants/${restaurantId}/bills`;
+  const path = `/s/restaurants/${restaurantId}/bills`;
 
   const response = await apiPost(path, payload);
   return response;
@@ -27,7 +27,7 @@ export const createBill = async (payload: ICreateBillRequest) => {
 // 2. ดึงข้อมูล Bill ทั้งหมด
 export const getAllBills = async () => {
   const restaurantId = getRestaurantId();
-  const path = `/restaurants/${restaurantId}/bills`;
+  const path = `/s/restaurants/${restaurantId}/bills`;
 
   const response = await apiGet(path);
   return response;
@@ -36,7 +36,7 @@ export const getAllBills = async () => {
 // 3. ดึงข้อมูล Bill ราย ID
 export const getBillById = async (billId: string) => {
   const restaurantId = getRestaurantId();
-  const path = `/restaurants/${restaurantId}/bills/${billId}`;
+  const path = `/s/restaurants/${restaurantId}/bills/${billId}`;
 
   const response = await apiGet(path);
   return response;
@@ -62,22 +62,31 @@ export const getActiveBillByTableId = async (tableId: number) => {
   return null; // ถ้าไม่เจอบิลที่เปิดอยู่เลย
 };
 
-// 5. สร้าง Order ใหม่ให้กับ Bill นั้นๆ
-export const createOrder = async (
+// 5. สร้าง Ordering Portal สำหรับ Bill นั้นๆ
+export const createOrderingPortal = async (
   billId: string,
-  payload: ICreateOrderRequest
+  payload: IPortalCreateRequest
 ) => {
   const restaurantId = getRestaurantId();
-  const path = `/restaurants/${restaurantId}/bills/${billId}/orders`;
+  const path = `/s/restaurants/${restaurantId}/bills/${billId}/portals`;
 
   const response = await apiPost(path, payload);
   return response;
 };
 
-// 6. ดึง Order ทั้งหมดของ Bill
-export const getOrdersByBillId = async (billId: string) => {
+// 6. ฟังก์ชันสำหรับ List Ordering Portals ทั้งหมดของ Bill
+export const getPortalsByBillId = async (billId: string) => {
   const restaurantId = getRestaurantId();
-  const path = `/restaurants/${restaurantId}/bills/${billId}/orders`;
+  const path = `/s/restaurants/${restaurantId}/bills/${billId}/portals`;
+
+  const response = await apiGet(path);
+  return response;
+};
+
+// 7. ดึงข้อมูล Ordering Portal
+export const getOrderingPortal = async (billId: string, portalId: string) => {
+  const restaurantId = getRestaurantId();
+  const path = `/s/restaurants/${restaurantId}/bills/${billId}/portals/${portalId}`;
 
   const response = await apiGet(path);
   return response;

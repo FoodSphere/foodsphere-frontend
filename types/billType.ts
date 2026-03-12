@@ -39,11 +39,17 @@ export interface IBillResponse {
   status: number;
 }
 
-export interface ICreateOrderRequest {
-  items: {
-    menu_id: number;
-    quantity: number;
-    note: string;
-  }[];
-  status: number;
+export interface IPortalCreateRequest {
+  max_usage: number;
+  valid_duration: string | null;
+}
+
+export interface IPortalResponse {
+  id: string;
+  bill_id: string;
+  create_time: string;
+  update_time: string;
+  max_usage: number;
+  usage_count: number;
+  valid_duration: string;
 }
