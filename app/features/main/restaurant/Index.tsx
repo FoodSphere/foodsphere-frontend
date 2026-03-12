@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { ButtonGroup, ViewType } from "./components/ButtonGroup";
 import { ManageEmployeesView } from "./components/ManageEmployees";
+import { ManageRolesView } from "./components/ManageRoles";
 import { ManagePromotionView } from "./components/ManagePromotion";
 import { MyRestaurantView } from "./components/MyRestaurant";
 
@@ -15,6 +16,8 @@ const RestaurantRender = () => {
         return <MyRestaurantView />;
       case "manage-employees":
         return <ManageEmployeesView />;
+      case "manage-roles":
+        return <ManageRolesView />;
       case "manage-discount":
         return <ManagePromotionView />;
       default:
