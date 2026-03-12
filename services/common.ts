@@ -1,8 +1,6 @@
 "use client";
 
-import { signOut } from "next-auth/react";
-
-import { getCookie } from "@/libs/cookie";
+import { getCookie, setCookie } from "@/libs/cookie";
 
 import { useGlobalStore } from "../store/globalStore";
 import { EHttpStatusCode } from "../types/enum";
@@ -75,7 +73,7 @@ export const apiGet = async (path: string, query?: string) => {
       res.status === EHttpStatusCode.INVALID_TOKEN ||
       res.status === EHttpStatusCode.UNAUTHORIZED
     ) {
-      await signOut();
+      await logOut();
     }
     return await handleResponse(res);
   } catch (error) {
@@ -98,7 +96,7 @@ export const apiGetNoLoading = async (path: string, query?: string) => {
       res.status === EHttpStatusCode.INVALID_TOKEN ||
       res.status === EHttpStatusCode.UNAUTHORIZED
     ) {
-      await signOut();
+      await logOut();
     }
     return await handleResponse(res);
   } catch (error) {
@@ -132,7 +130,7 @@ export const apiPost = async (path: string, payload?: any) => {
       res.status === EHttpStatusCode.INVALID_TOKEN ||
       res.status === EHttpStatusCode.UNAUTHORIZED
     ) {
-      await signOut();
+      await logOut();
     }
     return await handleResponse(res);
   } catch (error) {
@@ -169,7 +167,7 @@ export const apiPut = async (path: string, payload?: any) => {
       res.status === EHttpStatusCode.INVALID_TOKEN ||
       res.status === EHttpStatusCode.UNAUTHORIZED
     ) {
-      await signOut();
+      await logOut();
     }
     return await handleResponse(res);
   } catch (error) {
@@ -211,7 +209,7 @@ export const apiPatch = async (
       res.status === EHttpStatusCode.INVALID_TOKEN ||
       res.status === EHttpStatusCode.UNAUTHORIZED
     ) {
-      await signOut();
+      await logOut();
     }
     return await handleResponse(res);
   } catch (error) {
@@ -238,7 +236,7 @@ export const apiDelete = async (path: string) => {
       res.status === EHttpStatusCode.INVALID_TOKEN ||
       res.status === EHttpStatusCode.UNAUTHORIZED
     ) {
-      await signOut();
+      await logOut();
     }
     return await handleResponse(res);
   } catch (error) {
@@ -248,3 +246,8 @@ export const apiDelete = async (path: string) => {
     useGlobalStore.getState().setLoading(false);
   }
 };
+
+function logOut() {
+  // signOut();
+  setCookie("access_token", "");
+}

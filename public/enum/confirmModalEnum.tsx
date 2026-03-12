@@ -18,4 +18,7 @@ export enum ConfirmTypeEnum {
   AddEmployee,
   EditEmployee,
   DeleteEmployee,
+  AddRole,
+  EditRole,
+  DeleteRole,
 }

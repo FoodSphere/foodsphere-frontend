@@ -1,18 +1,10 @@
 // src/components/restaurant/ManageEmployeesView.tsx
-import React, { useState } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-  Pencil,
-  Shield,
-  Trash2,
-  UserPlus,
-} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
 import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
-import { Checkbox } from "@/app/components/ui/checkbox";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import {
@@ -24,127 +16,36 @@ import {
 } from "@/app/components/ui/select";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 
-import { EmployeeSearchBar } from "./EmployeeSearchBar";
-
-// Types (คงเดิม)
-type PermissionKey =
-  | "dashboard"
-  | "order"
-  | "table"
-  | "stock"
-  | "menu"
-  | "restaurant";
+import { SearchBar } from "./SearchBar";
+import { IRoleMap, IRoleResponse, IRoleWithId } from "@/types/roleType";
+import {
+  IStaff,
+  IStaffResponse,
+  IStaffWithId,
+  IStaffWithMappedRole,
+} from "@/types/staffType";
+import {
+  createStaff,
+  deleteStaff,
+  getStaffs,
+  updateStaff,
+} from "@/services/staff/staffApi";
+import { getRoles } from "@/services/role/roleApi";
 
 interface FormData {
-  firstName: string;
-  lastName: string;
-  role: string;
-  password: string;
-}
-
-interface Role {
-  id: number;
   name: string;
+  roles: number[];
+  phone: string;
 }
-
-interface Employee {
-  id: number;
-  name: string;
-  role: string;
-  permissions: Record<PermissionKey, boolean>;
-}
-
-// Mock Data (คงเดิม)
-const roles: Role[] = [
-  { id: 1, name: "Manager" },
-  { id: 2, name: "Cashier" },
-  { id: 3, name: "Waiter" },
-];
-
-const employees: Employee[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    role: "Manager",
-    permissions: {
-      dashboard: true,
-      order: true,
-      table: true,
-      stock: true,
-      menu: true,
-      restaurant: true,
-    },
-  },
-  {
-    id: 2,
-    name: "Jane Mary",
-    role: "Cashier",
-    permissions: {
-      dashboard: false,
-      order: true,
-      table: true,
-      stock: false,
-      menu: true,
-      restaurant: false,
-    },
-  },
-  {
-    id: 3,
-    name: "Jack Kopenski",
-    role: "Waiter",
-    permissions: {
-      dashboard: false,
-      order: true,
-      table: true,
-      stock: false,
-      menu: false,
-      restaurant: false,
-    },
-  },
-  {
-    id: 4,
-    name: "Joe Timberland",
-    role: "Waiter",
-    permissions: {
-      dashboard: false,
-      order: true,
-      table: true,
-      stock: false,
-      menu: false,
-      restaurant: false,
-    },
-  },
-];
-
-const permissionGroups = [
-  {
-    title: "Management",
-    keys: ["dashboard", "restaurant"] as PermissionKey[],
-  },
-  {
-    title: "Service Operations",
-    keys: ["order", "table", "menu"] as PermissionKey[],
-  },
-  {
-    title: "Inventory",
-    keys: ["stock"] as PermissionKey[],
-  },
-];
-
-const permissionLabels: Record<PermissionKey, string> = {
-  dashboard: "Dashboard Access",
-  restaurant: "Restaurant Settings",
-  order: "Order Management",
-  table: "Table Management",
-  menu: "Menu Editing",
-  stock: "Stock Control",
-};
 
 export const ManageEmployeesView = () => {
-  const [addingStaff, setAddingStaff] = useState<Employee | null>(null);
-  const [editingStaff, setEditingStaff] = useState<Employee | null>(null);
-  const [deletingStaff, setDeletingStaff] = useState<Employee | null>(null);
+  const [roles, setRoles] = useState<IRoleMap>({});
+  const [staffs, setStaffs] = useState<IStaffWithMappedRole[]>([]);
+  const [addingStaff, setAddingStaff] = useState<IStaff | null>(null);
+  const [editingStaff, setEditingStaff] = useState<IStaffWithId | null>(null);
+  const [deletingStaff, setDeletingStaff] = useState<IStaffWithId | null>(null);
 
+  const [isStaffLoading, setIsStaffLoading] = useState<boolean>(true);
   const [isFormEmpty, setIsFormEmpty] = useState<boolean>(true);
   const [showConfirmAddStaff, setShowConfirmAddStaff] =
     useState<boolean>(false);
@@ -161,44 +62,41 @@ export const ManageEmployeesView = () => {
   const isEditing = editingStaff !== null;
 
   const [formData, setFormData] = useState<FormData>({
-    firstName: "",
-    lastName: "",
-    role: "",
-    password: "",
+    name: "",
+    roles: [],
+    phone: "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prevState) => {
       const newState = {
         ...prevState,
         [id]: value,
       };
-      const isEmpty =
-        newState.firstName === "" ||
-        newState.lastName === "" ||
-        newState.role === "" ||
-        newState.password === "";
+      const isEmpty = newState.name === "" || newState.roles.length === 0;
+      setIsFormEmpty(isEmpty);
+      return newState;
+    });
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prevState) => {
+      const newState = {
+        ...prevState,
+        roles: [parseInt(value)],
+      };
+      const isEmpty = newState.name === "" || newState.roles.length === 0;
       setIsFormEmpty(isEmpty);
       return newState;
     });
   };
 
   const handleAddEmployee = () => {
-    const defaultPermissions: Record<PermissionKey, boolean> = {
-      dashboard: false,
-      order: true,
-      table: true,
-      stock: false,
-      menu: false,
-      restaurant: false,
-    };
-
-    const staff: Employee = {
-      id: 999, // Should be generated
-      name: formData.firstName + " " + formData.lastName,
-      role: formData.role,
-      permissions: defaultPermissions,
+    const staff: IStaff = {
+      name: formData.name,
+      roles: formData.roles,
+      phone: formData.phone,
     };
 
     setAddingStaff(staff);
@@ -210,53 +108,111 @@ export const ManageEmployeesView = () => {
     }
   };
 
-  const handleStaffEdit = (staff: Employee) => {
+  const handleStaffEdit = (staff: IStaffWithId) => {
     setEditingStaff(staff);
-    const [firstName, ...rest] = staff.name.split(" ");
-    const lastName = rest.join(" ");
-
     setFormData({
-      firstName: firstName || "",
-      lastName: lastName || "",
-      role: staff.role,
-      password: "dummy-password",
+      name: staff.name || "",
+      roles: staff.roles,
+      phone: staff.phone,
     });
     setIsFormEmpty(false);
   };
 
-  const handleStaffDelete = (staff: Employee) => {
+  const handleStaffDelete = (staff: IStaffWithId) => {
     setDeletingStaff(staff);
     setShowConfirmDeleteStaff(true);
   };
 
-  const handleAddEmployeeConfirm = () => {
+  const handleAddEmployeeConfirm = async () => {
     console.log("Add Staff");
+    if (addingStaff) {
+      await createStaff(addingStaff);
+    }
     setShowConfirmAddStaff(false);
     handleCancel();
+    await fetchStaffData();
   };
 
-  const handleEditStaffConfirm = () => {
+  const handleEditStaffConfirm = async () => {
     console.log("Edit Staff");
+    if (editingStaff?.id) {
+      await updateStaff(editingStaff.id, formData);
+    }
     setShowConfirmEditStaff(false);
     handleCancel();
+    await fetchStaffData();
   };
 
-  const handleDeleteStaffConfirm = () => {
+  const handleDeleteStaffConfirm = async () => {
     console.log("Delete Staff");
-    setShowConfirmDeleteStaff(false);
-    if (deletingStaff?.id === editingStaff?.id) {
-      handleCancel();
+    if (deletingStaff?.id) {
+      await deleteStaff(deletingStaff.id);
     }
+    setShowConfirmDeleteStaff(false);
     handleCancel();
+    await fetchStaffData();
   };
 
   const handleCancel = () => {
     setEditingStaff(null);
     setAddingStaff(null);
     setDeletingStaff(null);
-    setFormData({ firstName: "", lastName: "", role: "", password: "" });
+    setFormData({ name: "", roles: [], phone: "" });
     setIsFormEmpty(true);
   };
+
+  const fetchStaffData = async () => {
+    try {
+      const res = await getStaffs();
+
+      if (res && res.data && Array.isArray(res.data)) {
+        const apiData: IStaffResponse[] = res.data;
+        const currentRoles = await fetchRolesData();
+        
+        // แปลงข้อมูลจาก API ให้เข้ากับหน้าบ้าน (UI)
+        const mappedStaffs: IStaffWithMappedRole[] = apiData.map((item) => ({
+          id: item.id,
+          name: item.name,
+          roles: item.roles,
+          role_name: currentRoles[item.roles[0]] || "Unknown",
+          phone: item.phone,
+        }));
+        setStaffs(mappedStaffs);
+      }
+    } catch (error) {
+      console.error("Error fetching staff:", error);
+    }
+  };
+
+  const fetchRolesData = async (): Promise<IRoleMap> => {
+    try {
+      const res = await getRoles();
+
+      if (res && res.data && Array.isArray(res.data)) {
+        const apiData: IRoleResponse[] = res.data;
+        // แปลงข้อมูลจาก API ให้เข้ากับหน้าบ้าน (UI)
+        const mappedRoles: IRoleMap = apiData.reduce((acc, item) => {
+          acc[item.id] = item.name;
+          return acc;
+        }, {} as IRoleMap);
+        setRoles(mappedRoles);
+        return mappedRoles;
+      }
+      return {};
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      return {};
+    }
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      setIsStaffLoading(true);
+      await fetchStaffData();
+      setIsStaffLoading(false);
+    };
+    init();
+  }, []);
 
   return (
     <div className="w-full bg-[#D9D9D9] rounded-[48px] p-8 shadow-sm relative min-h-[600px] isolate">
@@ -296,31 +252,16 @@ export const ManageEmployeesView = () => {
               <div className="space-y-5">
                 <div className="space-y-2">
                   <Label
-                    htmlFor="firstName"
+                    htmlFor="name"
                     className="text-gray-600 font-semibold ml-1"
                   >
-                    First Name
+                    Name
                   </Label>
                   <Input
-                    id="firstName"
-                    placeholder="e.g. John"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className="h-12 rounded-xl bg-gray-50 border-none focus-visible:ring-2 focus-visible:ring-[#FF5C39] px-4 text-base"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="lastName"
-                    className="text-gray-600 font-semibold ml-1"
-                  >
-                    Last Name
-                  </Label>
-                  <Input
-                    id="lastName"
-                    placeholder="e.g. Doe"
-                    value={formData.lastName}
-                    onChange={handleChange}
+                    id="name"
+                    placeholder="Enter staff name"
+                    value={formData.name}
+                    onChange={handleInputChange}
                     className="h-12 rounded-xl bg-gray-50 border-none focus-visible:ring-2 focus-visible:ring-[#FF5C39] px-4 text-base"
                   />
                 </div>
@@ -331,29 +272,23 @@ export const ManageEmployeesView = () => {
                   >
                     Role
                   </Label>
-                  <Input
-                    id="role"
-                    placeholder="e.g. Waiter"
-                    value={formData.role}
-                    onChange={handleChange}
-                    className="h-12 rounded-xl bg-gray-50 border-none focus-visible:ring-2 focus-visible:ring-[#FF5C39] px-4 text-base"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-gray-600 font-semibold ml-1"
+                  <Select
+                    value={formData.roles[0]?.toString() || ""}
+                    onValueChange={handleSelectChange}
                   >
-                    Password
-                  </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="h-12 rounded-xl bg-gray-50 border-none focus-visible:ring-2 focus-visible:ring-[#FF5C39] px-4 text-base"
-                  />
+                    <SelectTrigger
+                      className={`h-12 w-full rounded-xl bg-gray-50 border-none focus-visible:ring-2 focus-visible:ring-[#FF5C39] px-8 text-base ${formData.roles.length === 0 ? "text-gray-400" : "text-gray-900"}`}
+                    >
+                      <SelectValue placeholder="Select staff role" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full bg-white">
+                      {Object.entries(roles).map(([role_id, role_name]) => (
+                        <SelectItem key={role_id} value={role_id}>
+                          {role_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -361,7 +296,7 @@ export const ManageEmployeesView = () => {
                 <Button
                   disabled={isFormEmpty}
                   onClick={handleAddEmployee}
-                  className="w-full h-12 rounded-xl bg-[#FF5C39] hover:bg-orange-600 text-white text-lg font-bold shadow-md disabled:opacity-50 transition-transform active:scale-95"
+                  className="w-full h-12 rounded-xl bg-[#FF5C39] hover:bg-orange-600 text-white text-lg font-bold shadow-md disabled:opacity-50 disabled:text-white transition-transform active:scale-95"
                 >
                   {isEditing ? "Save Changes" : "Create Account"}
                 </Button>
@@ -386,7 +321,8 @@ export const ManageEmployeesView = () => {
           {/* แก้ไข 2: เพิ่ม z-20 และ relative เพื่อให้ Dropdown อยู่เหนือรายการ Cards ด้านล่าง */}
           <div className="relative z-20 flex flex-col md:flex-row gap-4 bg-white/50 p-4 rounded-[24px] backdrop-blur-sm shadow-sm">
             <div className="flex-1">
-              <EmployeeSearchBar
+              <SearchBar
+                placeholder="Search staff name..."
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
               />
@@ -404,13 +340,13 @@ export const ManageEmployeesView = () => {
                   >
                     All Roles
                   </SelectItem>
-                  {roles.map((role) => (
+                  {Object.entries(roles).map(([role_id, role_name]) => (
                     <SelectItem
-                      key={role.id}
-                      value={role.name}
+                      key={role_id}
+                      value={role_id}
                       className="cursor-pointer hover:bg-orange-50 focus:bg-orange-50"
                     >
-                      {role.name}
+                      {role_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -420,34 +356,41 @@ export const ManageEmployeesView = () => {
 
           {/* Cards Grid */}
           {/* ใช้ z-0 ปกติ เพื่อให้อยู่ใต้ Search Bar (ที่เป็น z-20) */}
-          <div className="grid grid-cols-1 gap-4 relative z-0">
-            {employees
-              .filter((employee) => {
-                const matchesSearch = employee.name
-                  .toLowerCase()
-                  .includes(searchTerm.toLowerCase());
-                const matchesRole =
-                  roleFilter === "All" || employee.role === roleFilter;
-                return matchesSearch && matchesRole;
-              })
-              .map((employee, index) => {
-                const isFocused = editingStaff?.id === employee.id;
-                return (
-                  <div
-                    key={index}
-                    // แก้ไข 1: ถ้าถูก Focus ให้ใช้ z-30 และ relative เพื่อลอยเหนือ Overlay
-                    className={`transition-all duration-300 ${isFocused ? "z-30 relative scale-[1.02]" : "hover:translate-x-1"}`}
-                  >
-                    <EmployeeCard
-                      employee={employee}
-                      handleStaffEdit={handleStaffEdit}
-                      handleStaffDelete={handleStaffDelete}
-                      handleCancel={handleCancel}
-                      isEditing={isFocused}
-                    />
-                  </div>
-                );
-              })}
+          <div className="grid grid-cols-1 gap-4 relative">
+            {isStaffLoading ? (
+              <div className="flex items-center justify-center">
+                <Loader2 className="animate-spin" />
+              </div>
+            ) : (
+              staffs
+                .filter((staff) => {
+                  const matchesSearch = staff.name
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase());
+                  const matchesRole =
+                    roleFilter === "All" ||
+                    staff.roles[0]?.toString() === roleFilter;
+                  return matchesSearch && matchesRole;
+                })
+                .map((staff, index) => {
+                  const isFocused = editingStaff?.id === staff.id;
+                  return (
+                    <div
+                      key={index}
+                      // แก้ไข 1: ถ้าถูก Focus ให้ใช้ z-30 และ relative เพื่อลอยเหนือ Overlay
+                      className={`transition-all duration-300 ${isFocused ? "z-30 relative scale-[1.02]" : "hover:translate-x-1"}`}
+                    >
+                      <StaffCard
+                        staff={staff}
+                        handleStaffEdit={handleStaffEdit}
+                        handleStaffDelete={handleStaffDelete}
+                        handleCancel={handleCancel}
+                        isEditing={isFocused}
+                      />
+                    </div>
+                  );
+                })
+            )}
           </div>
         </div>
 
@@ -481,24 +424,26 @@ export const ManageEmployeesView = () => {
   );
 };
 
-// ... (ส่วน EmployeeCard และ PermissionGroup ใช้โค้ดเดิมได้เลยครับ ไม่ต้องแก้เพราะ Logic อยู่ที่ Container หลักแล้ว) ...
-// แต่เพื่อความชัวร์ ผมใส่ EmployeeCard ไว้ให้ครบชุดด้านล่างครับ
-
-const EmployeeCard = ({
-  employee,
+const StaffCard = ({
+  staff,
   handleStaffEdit,
   handleStaffDelete,
   handleCancel,
   isEditing,
 }: {
-  employee: Employee;
-  handleStaffEdit: (staff: Employee) => void;
-  handleStaffDelete: (staff: Employee) => void;
+  staff: IStaffWithMappedRole;
+  handleStaffEdit: (staff: IStaffWithId) => void;
+  handleStaffDelete: (staff: IStaffWithId) => void;
   handleCancel: () => void;
   isEditing: boolean;
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [staff, setStaff] = useState(employee);
+  const handleEdit = () => {
+    handleStaffEdit(staff);
+  };
+
+  const handleDelete = () => {
+    handleStaffDelete(staff);
+  };
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -509,43 +454,6 @@ const EmployeeCard = ({
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
-  };
-
-  const handleEdit = () => {
-    handleStaffEdit(staff);
-  };
-
-  const handleDelete = () => {
-    handleStaffDelete(staff);
-  };
-
-  const onPermissionChange = (permissionKey: PermissionKey, value: boolean) => {
-    setStaff({
-      ...staff,
-      permissions: {
-        ...staff.permissions,
-        [permissionKey]: value,
-      },
-    });
-  };
-
-  const onPermissionAllCheck = (
-    permissionKeys: PermissionKey[],
-    value: boolean
-  ) => {
-    setStaff({
-      ...staff,
-      permissions: {
-        ...staff.permissions,
-        ...permissionKeys.reduce(
-          (acc, key) => {
-            acc[key] = value;
-            return acc;
-          },
-          {} as Record<PermissionKey, boolean>
-        ),
-      },
-    });
   };
 
   return (
@@ -560,19 +468,19 @@ const EmployeeCard = ({
         <div className="flex items-center gap-5">
           <div
             className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-sm ${
-              employee.role === "Manager" ? "bg-[#FF5C39]" : "bg-gray-400"
+              staff.role_name === "Manager" ? "bg-[#FF5C39]" : "bg-gray-400"
             }`}
           >
-            {employee.name.charAt(0)}
+            {staff.name.charAt(0)}
           </div>
           <div>
             <h3 className="text-xl font-bold text-gray-900 leading-tight">
-              {employee.name}
+              {staff.name}
             </h3>
             <span
-              className={`text-xs font-bold px-3 py-1 rounded-full border mt-1 inline-block ${getRoleBadgeColor(employee.role)}`}
+              className={`text-xs font-bold px-3 py-1 rounded-full border mt-1 inline-block ${getRoleBadgeColor(staff.role_name)}`}
             >
-              {employee.role}
+              {staff.role_name}
             </span>
           </div>
         </div>
@@ -593,96 +501,14 @@ const EmployeeCard = ({
                 variant="ghost"
                 className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-500"
                 onClick={handleDelete}
-                disabled={employee.role === "Manager"}
+                disabled={staff.role_name === "Manager"}
               >
                 <Trash2 className="h-5 w-5" />
               </Button>
             </>
           )}
-
-          <Button
-            variant="secondary"
-            className={`h-10 px-4 rounded-xl gap-2 font-semibold transition-colors ${isExpanded ? "bg-gray-200" : "bg-gray-100 hover:bg-gray-200"}`}
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Permissions</span>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
         </div>
       </div>
-
-      {isExpanded && (
-        <div className="bg-gray-50/80 border-t border-gray-100 p-5 animate-in slide-in-from-top-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {permissionGroups.map((group) => (
-              <div
-                key={group.title}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
-              >
-                <PermissionGroup
-                  group={group}
-                  permissions={staff.permissions}
-                  onPermissionChange={onPermissionChange}
-                  onPermissionAllCheck={onPermissionAllCheck}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </Card>
-  );
-};
-
-const PermissionGroup = ({
-  group,
-  permissions,
-  onPermissionChange,
-  onPermissionAllCheck,
-}: {
-  group: { title: string; keys: PermissionKey[] };
-  permissions: Record<PermissionKey, boolean>;
-  onPermissionChange: (key: PermissionKey, value: boolean) => void;
-  onPermissionAllCheck: (
-    permissionKeys: PermissionKey[],
-    value: boolean
-  ) => void;
-}) => {
-  const allChecked = group.keys.every((k) => permissions[k]);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-        <h4 className="font-bold text-sm text-gray-700">{group.title}</h4>
-        <Checkbox
-          checked={allChecked}
-          className="h-5 w-5 rounded-md border-gray-300 data-[state=checked]:bg-[#FF5C39] data-[state=checked]:border-[#FF5C39]"
-          onCheckedChange={(value) =>
-            onPermissionAllCheck(group.keys, Boolean(value))
-          }
-        />
-      </div>
-      <div className="space-y-2">
-        {group.keys.map((key) => (
-          <div key={key} className="flex items-center justify-between group">
-            <span className="text-sm text-gray-500 group-hover:text-gray-800 transition-colors">
-              {permissionLabels[key]}
-            </span>
-            <Checkbox
-              checked={permissions[key]}
-              className="h-4 w-4 rounded border-gray-300 data-[state=checked]:bg-[#FF5C39] data-[state=checked]:border-[#FF5C39]"
-              onCheckedChange={(value) =>
-                onPermissionChange(key, Boolean(value))
-              }
-            />
-          </div>
-        ))}
-      </div>
-    </div>
   );
 };
