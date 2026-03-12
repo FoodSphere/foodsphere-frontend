@@ -87,6 +87,9 @@ export const ConfirmModalComponent = ({
             ConfirmTypeEnum.AddEmployee,
             ConfirmTypeEnum.EditEmployee,
             ConfirmTypeEnum.DeleteEmployee,
+            ConfirmTypeEnum.AddRole,
+            ConfirmTypeEnum.EditRole,
+            ConfirmTypeEnum.DeleteRole,
           ].includes(confirmType) && <p>Confirmation</p>}
           {[ConfirmTypeEnum.AddTable].includes(confirmType) && (
             <p>Are you sure to add table?</p>
@@ -124,7 +127,7 @@ export const ConfirmModalComponent = ({
         }`}
       >
         <div className="text-black flex justify-center mt-8 mb-6">
-          {[ConfirmTypeEnum.AddMenu, ConfirmTypeEnum.AddStock, ConfirmTypeEnum.AddEmployee].includes(
+          {[ConfirmTypeEnum.AddMenu, ConfirmTypeEnum.AddStock, ConfirmTypeEnum.AddEmployee, ConfirmTypeEnum.AddRole].includes(
             confirmType
           ) &&
             itemName && (
@@ -138,11 +141,13 @@ export const ConfirmModalComponent = ({
                   ? "menu"
                   : [ConfirmTypeEnum.AddStock].includes(confirmType)
                   ? "stock"
-                  : "staff"}{" "}
+                  : [ConfirmTypeEnum.AddEmployee].includes(confirmType)
+                  ? "staff"
+                  : "role"}{" "}
                 list
               </p>
             )}
-          {[ConfirmTypeEnum.EditMenu, ConfirmTypeEnum.EditStock, ConfirmTypeEnum.EditEmployee].includes(
+          {[ConfirmTypeEnum.EditMenu, ConfirmTypeEnum.EditStock, ConfirmTypeEnum.EditEmployee, ConfirmTypeEnum.EditRole].includes(
             confirmType
           ) &&
             itemName && (
@@ -156,7 +161,11 @@ export const ConfirmModalComponent = ({
                   ? "menu"
                   : [ConfirmTypeEnum.EditStock].includes(confirmType)
                   ? "stock"
-                  : "staff"}{" "}
+                  : [ConfirmTypeEnum.EditEmployee].includes(confirmType)
+                  ? "staff"
+                  : [ConfirmTypeEnum.EditRole].includes(confirmType)
+                  ? "role"
+                  : ""}{" "}
                 list
               </p>
             )}
@@ -176,7 +185,7 @@ export const ConfirmModalComponent = ({
                 list
               </p>
             )}
-          {[ConfirmTypeEnum.DeleteMenu, ConfirmTypeEnum.DeleteStock, ConfirmTypeEnum.DeleteEmployee].includes(
+          {[ConfirmTypeEnum.DeleteMenu, ConfirmTypeEnum.DeleteStock, ConfirmTypeEnum.DeleteEmployee, ConfirmTypeEnum.DeleteRole].includes(
             confirmType
           ) &&
             itemName && (
@@ -190,7 +199,11 @@ export const ConfirmModalComponent = ({
                   ? "menu"
                   : [ConfirmTypeEnum.DeleteStock].includes(confirmType)
                   ? "stock"
-                  : "staff"}{" "}
+                  : [ConfirmTypeEnum.DeleteEmployee].includes(confirmType)
+                  ? "staff"
+                  : [ConfirmTypeEnum.DeleteRole].includes(confirmType)
+                  ? "role"
+                  : ""}{" "}
                 list
               </p>
             )}
