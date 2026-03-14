@@ -77,7 +77,6 @@ const LoginRender = () => {
             const firstRestaurant = restaurants[0];
 
             // เก็บ ID ร้านค้าลง Cookie
-            console.log(firstRestaurant.id)
             setCookie("restaurant_id", firstRestaurant.id);
 
             console.log("Auto-selected restaurant:", firstRestaurant.name);

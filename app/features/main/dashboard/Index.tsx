@@ -177,10 +177,6 @@ const DashboardRender = () => {
         />
       </div>
 
-      <div className="w-7xl">
-        <SalesChart />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <DataTable<Transaction>
           title="Latest Transaction"

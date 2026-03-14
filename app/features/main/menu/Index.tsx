@@ -6,6 +6,7 @@ import { Icons } from "@/app/icons";
 import {
   createMenuWithImage,
   deleteMenu,
+  getMenuById,
   getMenus,
   updateMenuWithImage,
 } from "@/services/menu/menuApi";
@@ -24,6 +25,11 @@ export interface Ingredient {
   amount: number;
   unit: string;
 }
+export interface MenuComponent {
+  menu_id: number;
+  quantity: number;
+  name?: string;
+}
 export interface IMenuItem {
   id: number;
   image_url: string | null;
@@ -31,6 +37,7 @@ export interface IMenuItem {
   price: number;
   currency: string;
   ingredients: Ingredient[];
+  components: MenuComponent[];
   tags: { tag_id: number; name: string }[];
   status: number;
 }
@@ -218,25 +225,65 @@ export default function MenuRender() {
       if (res && res.data && Array.isArray(res.data)) {
         const apiData: IMenuResponse[] = res.data;
 
-        // แปลงข้อมูลจาก API ให้เข้ากับหน้าบ้าน (UI)
-        const mappedMenus: IMenuItem[] = apiData.map((item) => ({
-          id: item.id,
-          image_url: item.image_url === "string" ? null : item.image_url, // เช็คถ้าเป็นค่า default "string" ให้เป็น null
-          name: item.name,
-          price: item.price,
-          currency: "บาท",
-          // Map Ingredients
-          ingredients: item.ingredients
-            ? item.ingredients.map((ing) => ({
-                name: ing.ingredient.name,
-                amount: ing.amount,
-                unit: ing.ingredient.unit,
-              }))
-            : [],
-          // API ส่ง tags: {tag_id, name}[] เราใช้ตามนั้นเลย
-          tags: item.tags || [],
-          status: item.status, // ใช้ status ตรงๆ (0, 1)
-        }));
+        // ใช้ Promise.all เพื่อรอให้ดึงชื่อย่อยเสร็จครบทุกตัวก่อนเซ็ตลง State
+        const mappedMenus: IMenuItem[] = await Promise.all(
+          apiData.map(async (item) => {
+            // Map ข้อมูล Components (เมนูย่อยของโปรโมชั่น)
+            const resolvedComponents = item.components
+              ? await Promise.all(
+                  item.components.map(async (comp) => {
+                    let componentName = `Menu ID: ${comp.menu_id}`; // ค่า Default
+
+                    // 1. ลองหาชื่อจาก apiData ที่มีอยู่แล้วก่อน (ช่วยลดจำนวนการยิง API ประหยัดเวลาโหลด)
+                    const foundInList = apiData.find(
+                      (m) => m.id === comp.menu_id
+                    );
+
+                    if (foundInList) {
+                      componentName = foundInList.name;
+                    } else {
+                      // 2. ถ้าไม่เจอ (เช่น เมนูย่อยอาจจะไม่ได้อยู่ใน List หรือถูกซ่อนไว้) ค่อยยิง API getMenuById
+                      try {
+                        const detail = await getMenuById(comp.menu_id);
+                        // หมายเหตุ: ปรับ .data.name ให้ตรงกับโครงสร้าง Response จาก Backend ของคุณนะครับ
+                        componentName =
+                          detail?.data?.name;
+                      } catch (error) {
+                        console.error(
+                          `Failed to fetch details for menu ID ${comp.menu_id}`,
+                          error
+                        );
+                      }
+                    }
+
+                    return {
+                      menu_id: comp.menu_id,
+                      quantity: comp.quantity,
+                      name: componentName, // ส่งชื่อเข้าไปแล้ว!
+                    };
+                  })
+                )
+              : [];
+
+            return {
+              id: item.id,
+              image_url: item.image_url === "string" ? null : item.image_url,
+              name: item.name,
+              price: item.price,
+              currency: "บาท",
+              ingredients: item.ingredients
+                ? item.ingredients.map((ing) => ({
+                    name: ing.ingredient.name,
+                    amount: ing.amount,
+                    unit: ing.ingredient.unit,
+                  }))
+                : [],
+              components: resolvedComponents, // ใช้ค่าที่ผูกชื่อสำเร็จแล้ว
+              tags: item.tags || [],
+              status: item.status,
+            };
+          })
+        );
 
         setMenuItems(mappedMenus);
       }
@@ -365,6 +412,7 @@ export default function MenuRender() {
                   price={item.price}
                   currency={item.currency}
                   ingredients={item.ingredients}
+                  components={item.components}
                   status={item.status === 0}
                   onEdit={() => handleOpenEdit(item)}
                   onToggleStatus={() => handleToggleStatus(item.id)}

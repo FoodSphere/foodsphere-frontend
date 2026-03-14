@@ -19,6 +19,14 @@ export const getTables = async () => {
   return response;
 };
 
+export const getTableById = async (tableId: string) => {
+  const restaurantId = getRestaurantId();
+  const path = `/s/restaurants/${restaurantId}/tables/${tableId}`;
+
+  const response = await apiGet(path);
+  return response;
+};
+
 // CREATE Table
 export const createTable = async (name: string) => {
   const restaurantId = getRestaurantId();
