@@ -31,63 +31,65 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-[24px] p-5 flex flex-col sm:flex-row gap-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 relative group overflow-hidden">
-      {/* Action Buttons (Edit & Delete) */}
-      <div className="absolute top-4 right-4 flex gap-2 z-10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+    <div className="bg-white rounded-[24px] flex flex-col sm:flex-row shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 relative group overflow-hidden">
+      {/* Action Buttons - ปรับตำแหน่งเล็กน้อยให้ลอยเหนือรูป/เนื้อหา */}
+      <div className="absolute top-3 right-3 flex gap-2 z-20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
         <button
           onClick={() => onEdit(promo)}
-          className="p-2.5 bg-white/90 backdrop-blur-sm hover:bg-orange-50 hover:text-primary-orange-main text-gray-500 rounded-full shadow-sm border border-gray-100 transition-all"
+          className="p-2 bg-white/90 backdrop-blur-md hover:bg-orange-50 hover:text-primary-orange-main text-gray-500 rounded-full shadow-md border border-gray-100 transition-all"
           title="Edit Promotion"
         >
           <Pencil className="w-4 h-4" />
         </button>
         <button
           onClick={handleDeleteClick}
-          className="p-2.5 bg-white/90 backdrop-blur-sm hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-full shadow-sm border border-gray-100 transition-all"
+          className="p-2 bg-white/90 backdrop-blur-md hover:bg-red-50 hover:text-red-500 text-gray-500 rounded-full shadow-md border border-gray-100 transition-all"
           title="Delete Promotion"
         >
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Image */}
-      <div className="w-full sm:w-44 h-36 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0 border border-gray-100 relative">
+      {/* Image Section - ปรับให้เต็มพื้นที่ฝั่งซ้าย */}
+      <div className="w-full sm:w-56 h-48 sm:h-auto bg-gray-50 shrink-0 relative overflow-hidden border-b sm:border-b-0 sm:border-r-2 border-primary-orange-main">
         {promo.image_url ? (
           <img
             src={promo.image_url}
             alt={promo.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
-            <ImageIcon className="w-8 h-8 mb-2" />
+            <ImageIcon className="w-10 h-10 mb-2" />
             <span className="text-xs font-medium">No Image</span>
           </div>
         )}
+
+        {/* Overlay ไล่เฉดสีเบาๆ ให้รูปดูมีมิติ (Optional) */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-50"></div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col justify-between py-1">
+      {/* Content Section - ใส่ Padding ที่นี่แทน */}
+      <div className="flex-1 flex flex-col justify-between p-6">
         <div>
-          <div className="flex justify-between items-start pr-16">
+          <div className="flex justify-between items-start pr-12 sm:pr-16">
             <div>
               <h3 className="text-xl font-bold text-gray-900 leading-tight">
                 {promo.name}
               </h3>
-              <p className="text-sm text-gray-500 line-clamp-2 mt-1 pr-4">
-                {promo.description}
+              <p className="text-sm text-gray-500 line-clamp-2 mt-1.5">
+                {promo.description || "No description provided."}
               </p>
             </div>
 
-            {/* Native Custom Badge */}
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+              className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
                 promo.status === 1
                   ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-500"
+                  : "bg-gray-100 text-gray-400"
               }`}
             >
-              {promo.status === 1 ? "ACTIVE" : "INACTIVE"}
+              {promo.status === 1 ? "Active" : "Inactive"}
             </span>
           </div>
 
@@ -96,9 +98,9 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
             {promo.items.map((item, idx) => (
               <span
                 key={idx}
-                className="text-xs bg-gray-50 border border-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg font-medium flex items-center gap-1.5"
+                className="text-xs bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded-lg font-medium flex items-center gap-2 shadow-sm"
               >
-                <span className="bg-white px-1.5 py-0.5 rounded text-gray-800 font-bold border border-gray-100 shadow-sm">
+                <span className="text-primary-orange-main font-bold">
                   {item.quantity}x
                 </span>
                 {item.name}
@@ -108,22 +110,28 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
         </div>
 
         {/* Pricing Section */}
-        <div className="mt-5 flex items-end justify-between sm:justify-end gap-6 pt-4 border-t border-gray-100 border-dashed">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">
+        <div className="mt-6 flex items-end justify-between border-t border-gray-100 border-dashed pt-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
               Total Value
             </span>
-            <span className="text-sm text-gray-400 line-through font-semibold">
+            <span className="text-sm text-gray-400 line-through font-medium">
               ฿{promo.originalPrice.toLocaleString()}
             </span>
           </div>
+
           <div className="flex flex-col items-end">
-            <span className="text-[10px] text-primary-orange-main uppercase font-bold tracking-wider mb-1">
+            <span className="text-[10px] text-primary-orange-main uppercase font-bold tracking-wider">
               Special Price
             </span>
-            <span className="text-3xl font-black text-primary-orange-main leading-none">
-              ฿{promo.specialPrice.toLocaleString()}
-            </span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-sm font-bold text-primary-orange-main">
+                ฿
+              </span>
+              <span className="text-3xl font-black text-primary-orange-main leading-none">
+                {promo.specialPrice.toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
       </div>

@@ -13,6 +13,10 @@ export interface IMenuResponse {
   restaurant_id: string;
   name: string;
   price: number;
+  components: {
+    menu_id: number;
+    quantity: number;
+  }[];
   ingredients: {
     ingredient: { id: number; name: string; unit: string; image_url: string };
     amount: number;

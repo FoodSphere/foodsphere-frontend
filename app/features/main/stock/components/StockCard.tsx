@@ -42,7 +42,7 @@ export const StockCard = ({
         {!status && (
           <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
             <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-              Unavailable
+              Close
             </span>
           </div>
         )}
@@ -62,21 +62,12 @@ export const StockCard = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 w-full mt-auto">
-          {/* ปุ่ม Edit: ปิดการใช้งาน (disabled) เมื่อ isAvailable เป็น false */}
+          {/* ปุ่ม Edit */}
           <button
             onClick={onEdit}
-            disabled={!status}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm
-              ${
-                !status
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-primary-orange-main hover:bg-orange-600 text-white"
-              }`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm bg-primary-orange-main hover:bg-orange-600 text-white`}
           >
-            <Icons
-              name="EditIcon"
-              className={`w-4 h-4 ${!status ? "text-gray-400" : "text-white"}`}
-            />
+            <Icons name="EditIcon" className={`w-4 h-4`} />
             Edit
           </button>
 

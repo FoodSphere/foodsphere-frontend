@@ -4,20 +4,25 @@ import { Icons } from "@/app/icons";
 
 import { Ingredient } from "../Index";
 
+export interface MenuComponent {
+  menu_id: number;
+  quantity: number;
+  name?: string; // เผื่ออนาคต Backend ส่งชื่อเมนูมาด้วย
+}
+
 interface MenuCardProps {
   id: number;
   name: string;
   image_url: string | null;
   price: number;
   currency: string;
-  ingredients?: Ingredient[]; // ทำให้เป็น Optional เพราะโหมด order ไม่จำเป็นต้องใช้
+  ingredients?: Ingredient[];
+  components?: MenuComponent[];
   status?: boolean;
-
-  // --- เพิ่ม Props ใหม่ ---
-  mode?: "manage" | "order"; // กำหนดโหมด (default เป็น manage)
-  onAdd?: () => void; // ฟังก์ชันสำหรับกดปุ่ม Add
-  onEdit?: () => void; // ทำให้เป็น Optional
-  onToggleStatus?: () => void; // ทำให้เป็น Optional
+  mode?: "manage" | "order";
+  onAdd?: () => void;
+  onEdit?: () => void;
+  onToggleStatus?: () => void;
 }
 
 export const MenuCard = ({
@@ -26,22 +31,28 @@ export const MenuCard = ({
   price,
   currency,
   ingredients = [],
+  components = [],
   status = true,
-  mode = "manage", // Default 
+  mode = "manage",
   onAdd,
   onEdit,
   onToggleStatus,
 }: MenuCardProps) => {
-  const [showIngredients, setShowIngredients] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  // เช็คว่าเป็น Promotion Menu หรือไม่ (มี components และไม่มี ingredients)
+  const isPromotion = components.length > 0;
+  // เช็คว่ามีข้อมูลให้กดดูรายละเอียดหรือไม่
+  const hasDetails = ingredients.length > 0 || components.length > 0;
 
   return (
     <div
       className={`flex flex-col bg-white rounded-xl shadow-md transition-all duration-300 overflow-hidden border border-gray-100 h-full ${
-        !status ? "opacity-70" : "hover:shadow-lg"
+        !status ? "opacity-70" : "hover:shadow-lg hover:-translate-y-1"
       }`}
     >
       {/* Image Area */}
-      <div className="h-[160px] w-full bg-gray-100 relative shrink-0">
+      <div className="h-[160px] w-full bg-gray-50 relative shrink-0">
         {image_url ? (
           <img
             src={image_url}
@@ -51,103 +62,140 @@ export const MenuCard = ({
             }`}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-            No Image
+          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+            <Icons name="EditIcon" className="w-8 h-8 mb-2 opacity-50" />
+            <span className="text-xs font-medium">No Image</span>
+          </div>
+        )}
+
+        {/* Badge สำหรับ Promotion Menu */}
+        {isPromotion && status && (
+          <div className="absolute top-2 left-2 bg-primary-orange-main text-white px-2.5 py-1 rounded-xl text-[12px] font-bold uppercase tracking-wide shadow-sm">
+            Promo Set
           </div>
         )}
 
         {/* Overlay เมื่อปิดใช้งาน */}
         {!status && (
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-            <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-              Unavailable
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-[1px]">
+            <span className="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+              Closed
             </span>
           </div>
         )}
       </div>
 
       {/* Content Area */}
-      <div className="flex flex-col items-center p-4 pt-3 flex-1 border-t-3 border-primary-orange-main">
+      <div className="flex flex-col items-center p-4 pt-3 flex-1 border-t-[3px] border-primary-orange-main">
         {/* Title & Price */}
-        <div className={`w-full text-center ${!status ? "text-gray-400" : ""}`}>
-          <h3 className="text-lg font-bold mb-1 truncate px-2" title={name}>
+        <div
+          className={`w-full text-center mb-3 ${!status ? "text-gray-400" : ""}`}
+        >
+          <h3
+            className="text-lg font-bold mb-1 truncate px-2 text-gray-800"
+            title={name}
+          >
             {name}
           </h3>
-          <p className="font-bold text-lg mb-2 text-primary-orange-main">
+          <p className="font-bold text-lg text-primary-orange-main">
             {price.toLocaleString()}{" "}
-            <span className="text-sm text-gray-500">{currency}</span>
+            <span className="text-xs text-gray-500 font-medium">
+              {currency}
+            </span>
           </p>
         </div>
 
         {/* --- แยกการแสดงผลตาม Mode --- */}
         {mode === "manage" ? (
           <>
-            {/* Ingredients Dropdown Section (โชว์เฉพาะ Manage) */}
+            {/* Details Dropdown Section (Ingredients / Components) */}
             <div className="w-full mb-4 flex flex-col items-center">
-              <button
-                className="text-sky-500 text-xs font-bold flex items-center gap-1 hover:underline transition-all"
-                onClick={() => setShowIngredients(!showIngredients)}
-              >
-                {showIngredients ? "Hide ingredients" : "See ingredients"}
-                <Icons
-                  name={
-                    showIngredients
-                      ? "ArrowUpDoubleIcon"
-                      : "ArrowDownDoubleIcon"
-                  }
-                  className="w-3 h-3"
-                />
-              </button>
+              {hasDetails && (
+                <button
+                  className={`text-xs font-bold flex items-center gap-1.5 transition-all px-3 py-1.5 rounded-full ${
+                    showDetails
+                      ? "bg-gray-50 text-blue-500"
+                      : "text-blue-500 hover:bg-gray-50"
+                  }`}
+                  onClick={() => setShowDetails(!showDetails)}
+                >
+                  {showDetails ? "Hide" : "View"}{" "}
+                  {isPromotion ? "Set Items" : "Ingredients"}
+                  <Icons
+                    name={showDetails ? "ArrowUpDoubleIcon" : "ArrowDownIcon"}
+                    className="w-3 h-3"
+                  />
+                </button>
+              )}
 
-              {showIngredients && ingredients.length > 0 && (
-                <ul className="w-full mt-2 pt-2 border-t border-dashed border-gray-200 space-y-1 bg-gray-50/50 p-2 rounded-lg">
-                  {ingredients.map((ing, i) => (
-                    <li
-                      key={i}
-                      className="flex justify-between text-xs text-gray-600 font-medium"
-                    >
-                      <span className="truncate pr-2">{ing.name}</span>
-                      <span className="whitespace-nowrap font-bold text-gray-800">
-                        {ing.amount} {ing.unit}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              {/* List Detail View */}
+              {showDetails && hasDetails && (
+                <div className="w-full mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="text-[10px] uppercase font-bold text-gray-400 mb-2 px-1 tracking-wider">
+                    {isPromotion ? "Items in this set" : "Recipe Ingredients"}
+                  </p>
+                  <ul className="w-full space-y-2">
+                    {/* Render Components สำหรับ Promotion */}
+                    {isPromotion &&
+                      components.map((comp, i) => (
+                        <li key={i} className="flex items-center text-xs">
+                          <span className="text-primary-orange-main font-medium truncate">
+                            {comp.name || `Menu ID: ${comp.menu_id}`}
+                          </span>
+                          <span className="flex-grow border-b border-dotted border-gray-300 mx-2"></span>
+                          <span className="whitespace-nowrap font-bold text-gray-800 bg-white px-1.5 py-0.5 rounded shadow-sm">
+                            x{comp.quantity}
+                          </span>
+                        </li>
+                      ))}
+
+                    {/* Render Ingredients สำหรับเมนูปกติ */}
+                    {!isPromotion &&
+                      ingredients.map((ing, i) => (
+                        <li key={i} className="flex items-center text-xs">
+                          <span className="text-gray-700 font-medium truncate">
+                            {ing.name}
+                          </span>
+                          <span className="flex-grow border-b border-dotted border-gray-300 mx-2"></span>
+                          <span className="whitespace-nowrap font-bold text-primary-orange-main">
+                            {ing.amount}{" "}
+                            <span className="text-[10px] text-gray-500">
+                              {ing.unit}
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
               )}
             </div>
 
-            {/* Action Buttons: Edit / Toggle Status (โชว์เฉพาะ Manage) */}
-            <div className="flex items-center gap-3 w-full mt-auto">
-              <button
-                onClick={onEdit}
-                disabled={!status}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm
-                  ${
-                    !status
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : "bg-primary-orange-main hover:bg-orange-600 text-white"
-                  }`}
-              >
-                <Icons
-                  name="EditIcon"
-                  className={`w-4 h-4 ${!status ? "text-gray-400" : "text-white"}`}
-                />
-                Edit
-              </button>
+            {/* Action Buttons: Edit / Toggle Status */}
+            <div className="flex items-center gap-2 w-full mt-auto">
+              {/* ซ่อนปุ่ม Edit ถ้าเป็น Promotion Menu */}
+              {!isPromotion && (
+                <button
+                  onClick={onEdit}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm bg-primary-orange-main hover:bg-orange-600 text-white"
+                >
+                  <Icons name="EditIcon" className="w-4 h-4" />
+                  Edit
+                </button>
+              )}
 
+              {/* ปุ่ม Open/Close (ถ้าไม่มีปุ่ม Edit จะขยายเต็มพื้นที่อัตโนมัติ) */}
               <button
                 onClick={onToggleStatus}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm border
+                className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm border
                   ${
                     !status
                       ? "bg-green-50 border-green-500 text-green-600 hover:bg-green-100"
                       : "bg-white border-primary-orange-main text-primary-orange-main hover:bg-orange-50"
-                  }`}
+                  } ${isPromotion ? "w-full" : "flex-1"}`}
               >
                 {status ? (
                   <>
-                    <Icons name="CloseIcon" className="w-4 h-4" />
-                    Close
+                    <Icons name="CloseIcon" className="w-4 h-4" /> Close
                   </>
                 ) : (
                   <>
@@ -158,7 +206,7 @@ export const MenuCard = ({
             </div>
           </>
         ) : (
-          /* โหมด Order (โชว์เฉพาะปุ่ม Add) */
+          /* โหมด Order */
           <div className="w-full mt-auto pt-2">
             <button
               onClick={onAdd}
@@ -166,12 +214,12 @@ export const MenuCard = ({
               className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm
                 ${
                   !status
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                     : "bg-primary-orange-main hover:bg-orange-600 text-white hover:shadow-md active:scale-95"
                 }`}
             >
               <Icons name="PlusIcon" className="w-4 h-4" />
-              Add
+              Add to Order
             </button>
           </div>
         )}

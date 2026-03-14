@@ -105,7 +105,7 @@ export const apiGetNoLoading = async (path: string, query?: string) => {
 };
 
 export const apiPost = async (path: string, payload?: any) => {
-  console.log("apiPost", path, payload);
+  console.log("apiPost", path);
   try {
     useGlobalStore.getState().setLoading(true);
 

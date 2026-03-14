@@ -2,10 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
-import { PaymentModal } from "@/app/components/featureComponents/PaymentModal";
 import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
-import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
+import { TableBillPaymentDrawer } from "@/app/features/main/table/components/TableBillPaymentDrawer";
 import {
   createBill,
   createOrderingPortal,
@@ -20,8 +18,10 @@ import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
 import { TableAddDrawer } from "./components/TableAddDrawer";
+import { PaymentMethod, TableBillConfirmPaymentModal } from "./components/TableBillConfirmPaymentModal";
 import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
+import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
 
 const TableRender = () => {
   const router = useRouter();
@@ -46,11 +46,11 @@ const TableRender = () => {
 
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
-  const [showConfirmCashPayment, setShowConfirmCashPayment] =
+  const [showConfirmPaymentModal, setShowConfirmPaymentModal] =
     useState<boolean>(false);
-  const [showConfirmQRPayment, setShowConfirmQRPayment] =
-    useState<boolean>(false);
-
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [paymentTotal, setPaymentTotal] = useState<number>(0);
+  const [paymentTableName, setPaymentTableName] = useState<string>("");
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] =
     useState<Boolean>(false);
 
@@ -102,7 +102,7 @@ const TableRender = () => {
             const portalsRes = await getPortalsByBillId(activeBill.id);
             if (portalsRes && portalsRes.data && portalsRes.data.length > 0) {
               const activePortal = portalsRes.data[0]; // ดึงตัวแรกมาใช้งาน
-              console.log(activePortal.id)
+              console.log(activePortal.id);
               const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
               const url = `${customerBaseUrl}/portals/${activePortal.id}`;
               setQrData(url);
@@ -132,35 +132,32 @@ const TableRender = () => {
         pax: guests,
       };
 
-      // ยิง API สร้างบิล
       const response = await createBill(payload);
 
       if (
         response &&
         (response.statusCode === 201 || response.statusCode === 200)
       ) {
-        // สมมติว่า Backend คืนข้อมูลบิลที่สร้างสำเร็จมาใน response.data
         const newBillId = response.data.id;
 
-        // ยิง API สร้าง Portal ต่อทันที
         const portalPayload = { max_usage: guests, valid_duration: null };
         const portalRes = await createOrderingPortal(newBillId, portalPayload);
 
         if (portalRes && portalRes.data) {
-          // สร้าง URL สำหรับให้ลูกค้าแสกน (เปลี่ยน BASE_URL เป็น Domain หน้าบ้านลูกค้าของคุณ)
           const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
           const url = `${customerBaseUrl}/portals/${portalRes.data.id}`;
           setQrData(url);
         }
 
-        await fetchTables();
-
-        // ปิดแค่ Modal Open Bill แล้วเปิด Drawer ของโต๊ะนี้ขึ้นมาแทน
+        // ปิด Modal ทันที
         setShowConfirmOpenBillModal(false);
 
-        // จำลองการกดโต๊ะซ้ำเพื่อเปิด Drawer
-        const currentTableData = tables.find((t) => t.id === id) || {
-          id,
+        // ดึงข้อมูลโต๊ะใหม่
+        await fetchTables();
+
+        // บังคับให้ hasCustomers เป็น true เพื่อให้เข้าเงื่อนไขเปิด Drawer เสมอ
+        const currentTableData = {
+          id: id,
           name: currentTable?.name || "",
           hasCustomers: true,
         };
@@ -171,20 +168,26 @@ const TableRender = () => {
     }
   }
 
-  function handleConfirmPayment(): void {
-    console.log("Payment Successful!");
-    setShowPaymentSuccessModal(true);
-    setShowConfirmCashPayment(false);
-    setShowConfirmQRPayment(false);
-  }
+  const handleOpenConfirmPayment = (
+    method: PaymentMethod,
+    total: number,
+    tableName: string
+  ) => {
+    setPaymentMethod(method);
+    setPaymentTotal(total);
+    setPaymentTableName(tableName);
+    setShowConfirmPaymentModal(true);
+  };
 
-  function reset(): void {
-    setShowTableBillDrawer(false);
+  function handleConfirmPaymentFinished(): void {
+    // ปิด Modal ยืนยันจ่ายเงิน
+    setShowConfirmPaymentModal(false);
+    // หากจ่ายสำเร็จ คุณสามารถเลือกปิด Payment Drawer ด้วยก็ได้
     setShowPaymentModal(false);
-    setCurrentTable(null);
-    setShowConfirmOpenBillModal(false);
-    setShowPaymentSuccessModal(false);
-    setQrData(""); // รีเซ็ต QR ด้วย
+    // แสดง Modal Success
+    setShowPaymentSuccessModal(true);
+    // โหลดข้อมูลโต๊ะใหม่
+    fetchTables();
   }
 
   return (
@@ -250,42 +253,42 @@ const TableRender = () => {
       )}
 
       {showPaymentModal && currentTable && (
-        <PaymentModal
+        <TableBillPaymentDrawer
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
           tableId={currentTable.id}
-          onCashPayment={() => setShowConfirmCashPayment(true)}
-          onQRPayment={() => setShowConfirmQRPayment(true)}
+          billId={activeBillData?.id}
+          onCashPayment={(total, tName) =>
+            handleOpenConfirmPayment("cash", total, tName)
+          }
+          onQRPayment={(total, tName) =>
+            handleOpenConfirmPayment("qr", total, tName)
+          }
         />
       )}
 
-      {showConfirmCashPayment && (
-        <ConfirmModalComponent
-          confirmType={ConfirmTypeEnum.CashPayment}
-          total={856}
-          onConfirm={handleConfirmPayment}
-          onCancel={() => setShowConfirmCashPayment(false)}
+      {/* TableBillConfirmPaymentModal */}
+      {showConfirmPaymentModal && currentTable && (
+        <TableBillConfirmPaymentModal
+          isOpen={showConfirmPaymentModal}
+          method={paymentMethod}
+          totalAmount={paymentTotal}
+          tableName={paymentTableName}
+          billId={activeBillData?.id}
+          onClose={() => setShowConfirmPaymentModal(false)}
+          onConfirm={handleConfirmPaymentFinished}
         />
       )}
 
-      {showConfirmQRPayment && (
-        <ConfirmModalComponent
-          confirmType={ConfirmTypeEnum.QRPayment}
-          total={856}
-          qrUrl="https://media-cdn.tripadvisor.com/media/photo-s/17/92/17/25/thai-qr-payment.jpg"
-          onConfirm={handleConfirmPayment}
-          onCancel={() => setShowConfirmQRPayment(false)}
-        />
-      )}
-
+      {/* Payment Success Modal */}
       {showPaymentSuccessModal && (
-        <ConfirmModalComponent
-          confirmType={ConfirmTypeEnum.PaymentSuccess}
-          onConfirm={() => {
+        <TablePaymentSuccessModal
+          isOpen={!!showPaymentSuccessModal}
+          onClose={() => {
             setShowPaymentSuccessModal(false);
-            fetchTables();
+            setCurrentTable(null);
+            setShowTableBillDrawer(false);
           }}
-          onCancel={() => setShowPaymentSuccessModal(false)}
         />
       )}
     </div>

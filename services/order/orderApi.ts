@@ -24,9 +24,9 @@ export const createOrder = async (
 };
 
 // 2. ดึง Order ทั้งหมดของ Bill
-export const getOrdersByBillId = async (billId: string) => {
+export const getOrdersByBillId = async (billId: string, queryString: string = "") => {
   const restaurantId = getRestaurantId();
-  const path = `/s/restaurants/${restaurantId}/bills/${billId}/orders?bill_status=0`;
+  const path = `/s/restaurants/${restaurantId}/bills/${billId}/orders${queryString}`;
 
   const response = await apiGet(path);
   return response;
