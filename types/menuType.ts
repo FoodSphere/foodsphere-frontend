@@ -97,6 +97,10 @@ export interface ICreatePromotionMenuRequest {
 export interface IUpdatePromotionMenuRequest {
   name: string;
   price: number;
+  ingredients?: {
+    ingredient_id: number;
+    amount: number;
+  }[];
   components: {
     menu_id: number;
     quantity: number;

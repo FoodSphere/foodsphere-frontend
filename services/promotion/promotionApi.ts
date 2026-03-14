@@ -111,7 +111,7 @@ export const updatePromotionMenuWithImage = async (
   }
 };
 
-// ลบ menu
+// ลบ promotion menu
 export const deletePromotionMenu = async (menuId: number) => {
   const restaurantId = getRestaurantId();
 
