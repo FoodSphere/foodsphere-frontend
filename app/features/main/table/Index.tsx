@@ -102,7 +102,7 @@ const TableRender = () => {
             const portalsRes = await getPortalsByBillId(activeBill.id);
             if (portalsRes && portalsRes.data && portalsRes.data.length > 0) {
               const activePortal = portalsRes.data[0]; // ดึงตัวแรกมาใช้งาน
-              console.log(activePortal.id)
+              console.log(activePortal.id);
               const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
               const url = `${customerBaseUrl}/portals/${activePortal.id}`;
               setQrData(url);
@@ -132,35 +132,32 @@ const TableRender = () => {
         pax: guests,
       };
 
-      // ยิง API สร้างบิล
       const response = await createBill(payload);
 
       if (
         response &&
         (response.statusCode === 201 || response.statusCode === 200)
       ) {
-        // สมมติว่า Backend คืนข้อมูลบิลที่สร้างสำเร็จมาใน response.data
         const newBillId = response.data.id;
 
-        // ยิง API สร้าง Portal ต่อทันที
         const portalPayload = { max_usage: guests, valid_duration: null };
         const portalRes = await createOrderingPortal(newBillId, portalPayload);
 
         if (portalRes && portalRes.data) {
-          // สร้าง URL สำหรับให้ลูกค้าแสกน (เปลี่ยน BASE_URL เป็น Domain หน้าบ้านลูกค้าของคุณ)
           const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
           const url = `${customerBaseUrl}/portals/${portalRes.data.id}`;
           setQrData(url);
         }
 
-        await fetchTables();
-
-        // ปิดแค่ Modal Open Bill แล้วเปิด Drawer ของโต๊ะนี้ขึ้นมาแทน
+        // ปิด Modal ทันที
         setShowConfirmOpenBillModal(false);
 
-        // จำลองการกดโต๊ะซ้ำเพื่อเปิด Drawer
-        const currentTableData = tables.find((t) => t.id === id) || {
-          id,
+        // ดึงข้อมูลโต๊ะใหม่
+        await fetchTables();
+
+        // บังคับให้ hasCustomers เป็น true เพื่อให้เข้าเงื่อนไขเปิด Drawer เสมอ
+        const currentTableData = {
+          id: id,
           name: currentTable?.name || "",
           hasCustomers: true,
         };
