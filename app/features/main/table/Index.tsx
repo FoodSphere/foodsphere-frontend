@@ -93,8 +93,6 @@ const TableRender = () => {
     const paymentMethodParam = searchParams.get("payment_method");
     const billId = searchParams.get("bill_id");
 
-    console.log(sessionId, paymentMethodParam, billId);
-
     if (sessionId && paymentMethodParam === "promptpay" && billId) {
       const verify = async () => {
         try {
