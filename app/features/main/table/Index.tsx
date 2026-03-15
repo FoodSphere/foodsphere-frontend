@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
 import { TableBillPaymentDrawer } from "@/app/features/main/table/components/TableBillPaymentDrawer";
@@ -22,6 +22,12 @@ import { PaymentMethod, TableBillConfirmPaymentModal } from "./components/TableB
 import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
 import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
+import { EPaymentMethod } from "@/types/enum";
+import {
+  checkout,
+  verifyCheckoutSession,
+  StripeVerificationResult,
+} from "@/services/stripe";
 
 const TableRender = () => {
   const router = useRouter();
@@ -52,7 +58,11 @@ const TableRender = () => {
   const [paymentTotal, setPaymentTotal] = useState<number>(0);
   const [paymentTableName, setPaymentTableName] = useState<string>("");
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] =
-    useState<Boolean>(false);
+    useState<boolean>(false);
+  const [stripeResult, setStripeResult] =
+    useState<StripeVerificationResult | null>(null);
+
+  const searchParams = useSearchParams();
 
   // ==========================================
   // 1. Fetch ข้อมูลจาก API เมื่อโหลด Component
@@ -77,6 +87,32 @@ const TableRender = () => {
   useEffect(() => {
     fetchTables();
   }, []);
+
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    const paymentMethodParam = searchParams.get("payment_method");
+    const billId = searchParams.get("bill_id");
+
+    console.log(sessionId, paymentMethodParam, billId);
+
+    if (sessionId && paymentMethodParam === "promptpay" && billId) {
+      const verify = async () => {
+        try {
+          const result = await verifyCheckoutSession(sessionId, billId);
+          if (result.success) {
+            setStripeResult(result);
+            setShowPaymentSuccessModal(true);
+          }
+        } catch (error) {
+          console.error("Failed to verify checkout session:", error);
+        } finally {
+          // Remove query params to prevent refetching on reload
+          router.replace("/table");
+        }
+      };
+      verify();
+    }
+  }, [searchParams, router]);
 
   // ==========================================
 
@@ -180,13 +216,11 @@ const TableRender = () => {
   };
 
   function handleConfirmPaymentFinished(): void {
-    // ปิด Modal ยืนยันจ่ายเงิน
-    setShowConfirmPaymentModal(false);
-    // หากจ่ายสำเร็จ คุณสามารถเลือกปิด Payment Drawer ด้วยก็ได้
-    setShowPaymentModal(false);
-    // แสดง Modal Success
-    setShowPaymentSuccessModal(true);
-    // โหลดข้อมูลโต๊ะใหม่
+    if (paymentMethod === EPaymentMethod.CASH) {
+      alert("Please pay cash");
+    } else if (paymentMethod === EPaymentMethod.PROMPTPAY) {
+      checkout(paymentTotal, paymentTableName, activeBillData?.id || null);
+    }
     fetchTables();
   }
 
@@ -262,7 +296,7 @@ const TableRender = () => {
             handleOpenConfirmPayment("cash", total, tName)
           }
           onQRPayment={(total, tName) =>
-            handleOpenConfirmPayment("qr", total, tName)
+            handleOpenConfirmPayment("promptpay", total, tName)
           }
         />
       )}
@@ -281,11 +315,16 @@ const TableRender = () => {
       )}
 
       {/* Payment Success Modal */}
-      {showPaymentSuccessModal && (
+      {showPaymentSuccessModal && stripeResult && (
         <TablePaymentSuccessModal
           isOpen={!!showPaymentSuccessModal}
+          tableName={stripeResult.table_name || "N/A"}
+          status={stripeResult.status || "COMPLETED"}
+          amountTotal={stripeResult.amount_total}
+          paymentMethod={stripeResult.payment_method || "CASH"}
           onClose={() => {
             setShowPaymentSuccessModal(false);
+            setStripeResult(null);
             setCurrentTable(null);
             setShowTableBillDrawer(false);
           }}
