@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 
 import { Icons } from "@/app/icons";
+import { EPaymentMethod } from "@/types/enum";
 
-export type PaymentMethod = "cash" | "qr";
+export type PaymentMethod = "cash" | "promptpay";
 
 interface TableBillConfirmPaymentModalProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export const TableBillConfirmPaymentModal = ({
     }
 
     // โหมด QR (Stripe) - เพื่อนในทีมจะนำตัวแปรไปจัดการต่อ
-    if (method === "qr") {
+    if (method === EPaymentMethod.PROMPTPAY) {
       console.log("Proceeding to Stripe QR Payment with:", {
         billId,
         tableName,
@@ -74,7 +75,7 @@ export const TableBillConfirmPaymentModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
@@ -156,7 +157,7 @@ export const TableBillConfirmPaymentModal = ({
           )}
 
           {/* QR Code Message */}
-          {method === "qr" && (
+          {method === EPaymentMethod.PROMPTPAY && (
             <div className="text-center py-2 px-4">
               <p className="text-gray-600 font-medium">
                 You will be redirected to the Stripe payment gateway to complete
@@ -175,7 +176,7 @@ export const TableBillConfirmPaymentModal = ({
               ${
                 !isCashValid
                   ? "bg-gray-300 cursor-not-allowed shadow-none"
-                  : method === "cash"
+                  : method === EPaymentMethod.CASH
                     ? "bg-primary-orange-main hover:bg-orange-600 shadow-orange-500/30"
                     : "bg-[#003D6B] hover:bg-[#002f52] shadow-blue-900/30"
               }`}

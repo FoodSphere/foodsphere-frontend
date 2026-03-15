@@ -12,3 +12,15 @@ export enum ESort {
   ASC = "asc",
   DESC = "desc",
 }
+
+export enum EPaymentMethod {
+  CASH = "cash",
+  PROMPTPAY = "promptpay",
+}
+
+export enum EPaymentStatus {
+  PAID = "paid",
+  UNPAID = "unpaid",
+  NO_PAYMENT_REQUIRED = "no_payment_required",
+  CANCELLED = "cancelled",
+}
