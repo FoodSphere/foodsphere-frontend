@@ -2,10 +2,37 @@
 
 import { redirect } from "next/navigation";
 import Stripe from "stripe";
+import { cookies } from "next/headers";
 
 import { EPaymentMethod, EPaymentStatus } from "@/types/enum";
 
-const connectedAccountId = "acct_1SDkwz781n9LFcRD";
+const customerEmail = "guest-foodsphere@gmail.com";
+
+const getConnectedAccountId = async () => {
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+  const cookieStore = await cookies();
+  const token = cookieStore.get("access_token")?.value;
+  const restaurantId = cookieStore.get("restaurant_id")?.value;
+
+  const res = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}`, {
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        }
+      : {
+          "Content-Type": "application/json",
+        },
+    cache: "no-store",
+  });
+
+  const restaurant = await res.json();
+
+  if (!restaurant) {
+    throw new Error("No restaurant found");
+  }
+  return restaurant.stripe_account_id;
+};
 
 export async function checkout(
   totalPrice: number,
@@ -24,10 +51,15 @@ export async function checkout(
   });
 
   try {
+    const connectedAccountId = await getConnectedAccountId();
     if (!billId) {
       throw new Error("Bill ID is required");
     }
+    if (!connectedAccountId) {
+      throw new Error("Connected Account ID is not defined");
+    }
     const session = await stripe.checkout.sessions.create({
+      customer_email: customerEmail,
       mode: "payment",
       payment_method_types: [EPaymentMethod.PROMPTPAY],
       line_items: [
@@ -132,24 +164,5 @@ export async function verifyCheckoutSession(
       payment_method: null,
       error: "Invalid session",
     };
-  }
-}
-
-export async function getTransactions() {
-  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-
-  if (!STRIPE_SECRET_KEY) {
-    throw new Error("STRIPE_SECRET_KEY is not defined");
-  }
-
-  const stripe = new Stripe(STRIPE_SECRET_KEY, {
-    typescript: true,
-  });
-
-  try {
-    const sessions = await stripe.checkout.sessions.list();
-    console.log(sessions);
-  } catch (error) {
-    console.error("Error retrieving Stripe session:", error);
   }
 }
