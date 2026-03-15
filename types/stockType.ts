@@ -27,6 +27,7 @@ export interface ICreateIngredientRequest {
   tags: { tag_id: number }[];
   unit: string;
   description: string;
+  status: number
 }
 
 export interface IUpdateIngredientRequest {
@@ -35,4 +36,5 @@ export interface IUpdateIngredientRequest {
   tags: { tag_id: number }[];
   unit: string;
   description: string;
+  status: number
 }

@@ -18,7 +18,7 @@ export interface IMenuResponse {
     quantity: number;
   }[];
   ingredients: {
-    ingredient: { id: number; name: string; unit: string; image_url: string };
+    ingredient: { id: number; name: string; unit: string; image_url: string; status: number; };
     amount: number;
   }[];
   tags: {
@@ -43,6 +43,7 @@ export interface ICreateMenuRequest {
   }[];
   display_name: string;
   description: string;
+  status: number;
 }
 
 export interface IUpdateMenuRequest {
@@ -57,6 +58,7 @@ export interface IUpdateMenuRequest {
   }[];
   display_name: string;
   description: string;
+  status: number;
 }
 
 export interface IPromotionMenuResponse {
@@ -96,6 +98,7 @@ export interface ICreatePromotionMenuRequest {
   }[];
   display_name: string;
   description: string;
+  status: number;
 }
 
 export interface IUpdatePromotionMenuRequest {
@@ -114,4 +117,5 @@ export interface IUpdatePromotionMenuRequest {
   }[];
   display_name: string;
   description: string;
+  status: number;
 }

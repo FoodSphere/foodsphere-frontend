@@ -8,11 +8,17 @@ import {
   deleteMenu,
   getMenuById,
   getMenus,
+  updateMenu,
   updateMenuWithImage,
 } from "@/services/menu/menuApi";
 import { getMenuTags } from "@/services/menu/menuTagApi";
+import { updatePromotionMenu } from "@/services/promotion/promotionApi";
 import { getIngredients } from "@/services/stock/stockApi";
-import { IMenuResponse } from "@/types/menuType";
+import {
+  IMenuResponse,
+  IUpdateMenuRequest,
+  IUpdatePromotionMenuRequest,
+} from "@/types/menuType";
 
 import { MenuAddTagDrawer } from "./components/MenuAddTagDrawer";
 import { MenuCard } from "./components/MenuCard";
@@ -21,6 +27,7 @@ import { MenuFilterBar } from "./components/MenuFilterBar";
 
 // --- Types ---
 export interface Ingredient {
+  ingredient_id: number;
   name: string;
   amount: number;
   unit: string;
@@ -39,6 +46,7 @@ export interface IMenuItem {
   ingredients: Ingredient[];
   components: MenuComponent[];
   tags: { tag_id: number; name: string }[];
+  description: string;
   status: number;
 }
 
@@ -89,19 +97,78 @@ export default function MenuRender() {
   };
 
   // ฟังก์ชันสำหรับเปิด-ปิดสถานะ
-  const handleToggleStatus = (id: number) => {
+  const handleToggleStatus = async (id: number) => {
+    // 1. หาข้อมูลของ Item ที่ถูกกด
+    const itemToUpdate = menuItems.find((item) => item.id === id);
+    if (!itemToUpdate) return;
+
+    // 2. สลับสถานะ (0 = ปิด, 1 = เปิด)
+    const newStatus = itemToUpdate.status === 1 ? 0 : 1;
+
+    // 3. Optimistic Update บน UI
     setMenuItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === id
-          ? { ...item, status: item.status === 0 ? 1 : 0 } // สมมติ 0=Open, 1=Closed
-          : item
+        item.id === id ? { ...item, status: newStatus } : item
       )
     );
 
-    // ตรงนี้อาจจะไปเรียก API เพื่อ Update Database จริงๆ ด้วย
-    const item = menuItems.find((i) => i.id === id);
-    // Logic เรียก API update status (ถ้ามี)
-    console.log(`Toggled status for ${item?.name}`);
+    try {
+      // 4. เช็คว่าเป็น Promotion Menu หรือ Menu ธรรมดา
+      // (ถ้ามี components ความยาว > 0 ถือว่าเป็น Promotion Menu)
+      const isPromotion =
+        itemToUpdate.components && itemToUpdate.components.length > 0;
+
+      // เตรียม Tag & Ingredient ให้เป็น Format ที่ API ต้องการ
+      const payloadTags = itemToUpdate.tags.map((t) => ({ tag_id: t.tag_id }));
+      const payloadIngredients = itemToUpdate.ingredients.map((ing) => ({
+        ingredient_id: ing.ingredient_id,
+        amount: ing.amount,
+      }));
+
+      if (isPromotion) {
+        // Payload สำหรับ Promotion Menu
+        const payload: IUpdatePromotionMenuRequest = {
+          name: itemToUpdate.name,
+          price: itemToUpdate.price,
+          display_name: itemToUpdate.name,
+          description: itemToUpdate.description,
+          status: newStatus,
+          tags: payloadTags,
+          ingredients:
+            payloadIngredients.length > 0 ? payloadIngredients : undefined, // ใส่ถ้ามี
+          components: itemToUpdate.components.map((c) => ({
+            menu_id: c.menu_id,
+            quantity: c.quantity,
+          })),
+        };
+
+        await updatePromotionMenu(id, payload);
+        console.log(`Toggled status for Promotion: ${itemToUpdate.name}`);
+      } else {
+        // Payload สำหรับ Normal Menu
+        const payload: IUpdateMenuRequest = {
+          name: itemToUpdate.name,
+          price: itemToUpdate.price,
+          display_name: itemToUpdate.name,
+          description: itemToUpdate.description,
+          status: newStatus,
+          tags: payloadTags,
+          ingredients: payloadIngredients,
+        };
+
+        await updateMenu(id, payload);
+        console.log(`Toggled status for Menu: ${itemToUpdate.name}`);
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      // หากพัง ให้ Revert UI กลับ
+      setMenuItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === id ? { ...item, status: itemToUpdate.status } : item
+        )
+      );
+      alert("Failed to update menu status.");
+    }
   };
 
   const handleSaveMenu = async (formData: any, file: File | null) => {
@@ -134,6 +201,7 @@ export default function MenuRender() {
         tags: mappedTags,
         display_name: formData.name,
         description: "รายละเอียดเมนู",
+        status: formData.status
       };
 
       // --- 2. เช็คว่าเป็น Update หรือ Create ---
@@ -246,8 +314,7 @@ export default function MenuRender() {
                       try {
                         const detail = await getMenuById(comp.menu_id);
                         // หมายเหตุ: ปรับ .data.name ให้ตรงกับโครงสร้าง Response จาก Backend ของคุณนะครับ
-                        componentName =
-                          detail?.data?.name;
+                        componentName = detail?.data?.name;
                       } catch (error) {
                         console.error(
                           `Failed to fetch details for menu ID ${comp.menu_id}`,
@@ -273,14 +340,16 @@ export default function MenuRender() {
               currency: "บาท",
               ingredients: item.ingredients
                 ? item.ingredients.map((ing) => ({
+                    ingredient_id: ing.ingredient.id, // <-- Map ID มาเก็บไว้ด้วย
                     name: ing.ingredient.name,
                     amount: ing.amount,
                     unit: ing.ingredient.unit,
                   }))
                 : [],
-              components: resolvedComponents, // ใช้ค่าที่ผูกชื่อสำเร็จแล้ว
+              components: resolvedComponents,
               tags: item.tags || [],
               status: item.status,
+              description: item.description || "รายละเอียดเมนู",
             };
           })
         );
@@ -413,7 +482,7 @@ export default function MenuRender() {
                   currency={item.currency}
                   ingredients={item.ingredients}
                   components={item.components}
-                  status={item.status === 0}
+                  status={item.status === 1}
                   onEdit={() => handleOpenEdit(item)}
                   onToggleStatus={() => handleToggleStatus(item.id)}
                 />

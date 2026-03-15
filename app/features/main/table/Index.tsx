@@ -10,24 +10,27 @@ import {
   getActiveBillByTableId,
   getPortalsByBillId,
 } from "@/services/bill/billApi";
+import {
+  checkout,
+  StripeVerificationResult,
+  verifyCheckoutSession,
+} from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
 import { IBillResponse } from "@/types/billType";
+import { EPaymentMethod } from "@/types/enum";
 import { ITableResponse } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
 import { TableAddDrawer } from "./components/TableAddDrawer";
-import { PaymentMethod, TableBillConfirmPaymentModal } from "./components/TableBillConfirmPaymentModal";
+import {
+  PaymentMethod,
+  TableBillConfirmPaymentModal,
+} from "./components/TableBillConfirmPaymentModal";
 import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
 import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
-import { EPaymentMethod } from "@/types/enum";
-import {
-  checkout,
-  verifyCheckoutSession,
-  StripeVerificationResult,
-} from "@/services/stripe";
 
 const TableRender = () => {
   const router = useRouter();
@@ -225,7 +228,7 @@ const TableRender = () => {
   }
 
   return (
-    <div className="p-8 flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6 min-h-screen">
       <Header totalTable={tables.length} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">

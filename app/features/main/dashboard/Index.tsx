@@ -1,109 +1,71 @@
+"use client";
+import React from "react";
+// นำเข้า Recharts สำหรับทำกราฟ (ต้อง npm install recharts ก่อน)
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
 import DataTable, { ColumnDef } from "./components/DataTable";
-import SalesChart from "./components/SalesChart";
-import StatusBadge, { StatusType } from "./components/StatusBadge";
-import StatsCard from "./components/StatusCard";
+import StatsCard from "./components/StatsCard";
 
-const OrdersIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-    />
-  </svg>
-);
+export type StatusType =
+  | "Completed"
+  | "Failed"
+  | "Added"
+  | "Consumed"
+  | "Updated";
 
-const CustomersIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.653-.124-1.282-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.653.124-1.282.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-    />
-  </svg>
-);
-
-// 1. กำหนด Type และ Data สำหรับ Latest Transaction
+// --- Mock Data ---
 type Transaction = {
   transactionId: string;
   timestamp: string;
   amount: string;
   status: StatusType;
 };
-
 const transactionData: Transaction[] = [
   {
     transactionId: "0000010",
     timestamp: "Today 11:25",
-    amount: "B 250.00",
+    amount: "฿ 250.00",
     status: "Completed",
   },
   {
     transactionId: "0000009",
     timestamp: "08/03/25 12:31",
-    amount: "B 500.00",
+    amount: "฿ 500.00",
     status: "Completed",
   },
   {
     transactionId: "0000008",
     timestamp: "08/03/25 12:29",
-    amount: "B 500.00",
+    amount: "฿ 500.00",
     status: "Failed",
   },
 ];
 
-const transactionColumns: ColumnDef<Transaction>[] = [
-  { header: "Transaction ID", accessor: "transactionId" },
-  { header: "Timestamp", accessor: "timestamp" },
-  { header: "Amount", accessor: "amount" },
-  {
-    header: "Status",
-    accessor: "status",
-    render: (item) => <StatusBadge status={item.status} />,
-  },
-];
-
-// 2. กำหนด Type และ Data สำหรับ Bestseller Menus
-type BestsellerMenu = {
-  menuId: string;
-  menuName: string;
-  amount: string;
-};
-
+type BestsellerMenu = { menuId: string; menuName: string; amount: string };
 const bestsellerData: BestsellerMenu[] = [
   { menuId: "0000023", menuName: "Pad Kraprao Crispy Pork", amount: "500 pcs" },
   { menuId: "0000022", menuName: "Pad Kraprao Minced Pork", amount: "350 pcs" },
   { menuId: "00000209", menuName: "Fried Rice Chicken", amount: "298 pcs" },
 ];
 
-const bestsellerColumns: ColumnDef<BestsellerMenu>[] = [
-  { header: "Menu ID", accessor: "menuId" },
-  { header: "Menu Name", accessor: "menuName" },
-  { header: "Amount", accessor: "amount" },
-];
-
-// 3. กำหนด Type และ Data สำหรับ Latest Stock
 type StockItem = {
   ingredientName: string;
   timestamp: string;
   amount: string;
   status: StatusType;
 };
-
 const stockData: StockItem[] = [
   {
     ingredientName: "Wagyu Beef",
@@ -125,61 +87,211 @@ const stockData: StockItem[] = [
   },
 ];
 
-const stockColumns: ColumnDef<StockItem>[] = [
-  { header: "Ingredient Name", accessor: "ingredientName" },
-  { header: "Timestamp", accessor: "timestamp" },
-  { header: "Amount", accessor: "amount" },
-  {
-    header: "Status",
-    accessor: "status",
-    render: (item) => <StatusBadge status={item.status} />,
-  },
+// --- Mock Chart Data ---
+const salesChartData = [
+  { name: "Mon", sales: 4000 },
+  { name: "Tue", sales: 3000 },
+  { name: "Wed", sales: 5000 },
+  { name: "Thu", sales: 2780 },
+  { name: "Fri", sales: 6890 },
+  { name: "Sat", sales: 8390 },
+  { name: "Sun", sales: 9490 },
 ];
 
-const DashboardRender = () => {
+const pieChartData = [
+  { name: "Crispy Pork", value: 500 },
+  { name: "Minced Pork", value: 350 },
+  { name: "Chicken", value: 298 },
+  { name: "Others", value: 400 },
+];
+const COLORS = ["#FF5C39", "#FF8A66", "#FFB8A3", "#FFE5DE"]; // โทนสีส้มของแบรนด์
+
+// --- Helper สำหรับแสดง Status โดยไม่ใช้ Component แยก ---
+const renderStatus = (status: StatusType) => {
+  const styles: Record<string, string> = {
+    Completed: "bg-green-50 text-green-600 border-green-200",
+    Added: "bg-blue-50 text-blue-600 border-blue-200",
+    Failed: "bg-red-50 text-red-600 border-red-200",
+    Consumed: "bg-orange-50 text-orange-600 border-orange-200",
+    Updated: "bg-yellow-50 text-yellow-600 border-yellow-200",
+  };
   return (
-    <div className="w-full">
+    <span
+      className={`px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider rounded-lg border ${styles[status] || "bg-gray-100 text-gray-500"}`}
+    >
+      {status}
+    </span>
+  );
+};
+
+const DashboardRender = () => {
+  // Columns Setup
+  const transactionColumns: ColumnDef<Transaction>[] = [
+    { header: "ID", accessor: "transactionId" },
+    { header: "Timestamp", accessor: "timestamp" },
+    { header: "Amount", accessor: "amount" },
+    {
+      header: "Status",
+      accessor: "status",
+      render: (item) => renderStatus(item.status),
+    },
+  ];
+
+  const bestsellerColumns: ColumnDef<BestsellerMenu>[] = [
+    { header: "ID", accessor: "menuId" },
+    { header: "Menu Name", accessor: "menuName" },
+    { header: "Amount", accessor: "amount" },
+  ];
+
+  const stockColumns: ColumnDef<StockItem>[] = [
+    { header: "Ingredient", accessor: "ingredientName" },
+    { header: "Timestamp", accessor: "timestamp" },
+    { header: "Amount", accessor: "amount" },
+    {
+      header: "Status",
+      accessor: "status",
+      render: (item) => renderStatus(item.status),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-8 p-6 md:p-8 min-h-screen bg-gray-50/50">
+      {/* 1. Page Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            Dashboard
+          </h1>
+          <p className="text-gray-500 mt-1 font-medium">
+            Welcome back, here&apos;s your restaurant overview.
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Top Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Card 1: Today Sales */}
         <StatsCard
-          title="Today Sales"
-          value="B 5,620.69"
-          icon="B"
-          iconBgColor="bg-orange-100"
-          iconTextColor="text-orange-600"
+          title="Total Sales"
+          value="฿ 5,620.69"
+          icon={<span className="text-2xl font-black">฿</span>}
+          iconBgColor="bg-green-100"
+          iconTextColor="text-green-600"
           trend="up"
           statsPercentage={8.5}
           reportUrl="/reports/sales"
         />
-
-        {/* Card 2: Today Orders */}
         <StatsCard
-          title="Today Orders"
+          title="Total Orders"
           value="109"
-          icon={<OrdersIcon />}
-          iconBgColor="bg-red-100"
-          iconTextColor="text-red-600"
+          icon={<span className="text-2xl font-black">📦</span>}
+          iconBgColor="bg-blue-100"
+          iconTextColor="text-blue-600"
           trend="down"
-          statsPercentage={8.5}
+          statsPercentage={2.4}
           reportUrl="/reports/orders"
         />
-
-        {/* Card 3: Today Customers */}
         <StatsCard
-          title="Today Customers"
+          title="Total Customers"
           value="42"
-          icon={<CustomersIcon />}
+          icon={<span className="text-2xl font-black">👥</span>}
           iconBgColor="bg-orange-100"
           iconTextColor="text-orange-600"
           trend="up"
-          statsPercentage={2.7}
+          statsPercentage={12.7}
           reportUrl="/reports/customers"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* 3. Charts Section (NEW) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Sales Chart (Takes up 2 columns) */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-[24px] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+          <h3 className="text-xl font-extrabold text-gray-900 mb-6">
+            Sales Overview (This Week)
+          </h3>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={salesChartData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f3f4f6"
+                />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#9ca3af", fontSize: 12 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#9ca3af", fontSize: 12 }}
+                />
+                <Tooltip
+                  cursor={{ fill: "#f9fafb" }}
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "none",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                  }}
+                />
+                <Bar
+                  dataKey="sales"
+                  fill="#FF5C39"
+                  radius={[6, 6, 0, 0]}
+                  barSize={40}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Bestseller Pie Chart */}
+        <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+          <h3 className="text-xl font-extrabold text-gray-900 mb-2">
+            Top Categories
+          </h3>
+          <div className="h-[300px] w-full flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieChartData}
+                  innerRadius={60}
+                  outerRadius={90}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {pieChartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "none",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                  }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: "12px" }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Data Tables Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <DataTable<Transaction>
-          title="Latest Transaction"
+          title="Recent Transactions"
           viewAllUrl="/transactions"
           columns={transactionColumns}
           data={transactionData}
@@ -191,7 +303,7 @@ const DashboardRender = () => {
           data={bestsellerData}
         />
         <DataTable<StockItem>
-          title="Latest Stock"
+          title="Recent Stock Activity"
           viewAllUrl="/stock"
           columns={stockColumns}
           data={stockData}

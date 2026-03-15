@@ -1,14 +1,11 @@
-// DataTable.tsx
-import React from 'react';
+import React from "react";
 
-// นิยามโครงสร้างของ "Column Definition"
 export interface ColumnDef<T> {
   header: string;
-  accessor: keyof T; // บังคับให้ accessor ต้องเป็น key ที่มีอยู่ใน T
-  render?: (item: T) => React.ReactNode; // ฟังก์ชัน render (ถ้ามี)
+  accessor: keyof T;
+  render?: (item: T) => React.ReactNode;
 }
 
-// นิยาม Props ของ DataTable Component
 export interface DataTableProps<T> {
   title: string;
   viewAllUrl: string;
@@ -16,43 +13,68 @@ export interface DataTableProps<T> {
   data: T[];
 }
 
-// ใช้ Generic <T extends object> เพื่อบอกว่า T ต้องเป็น object เท่านั้น
-function DataTable<T extends object>({ title, viewAllUrl, columns, data }: DataTableProps<T>) {
+function DataTable<T extends object>({
+  title,
+  viewAllUrl,
+  columns,
+  data,
+}: DataTableProps<T>) {
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm w-full">
+    <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] w-full flex flex-col h-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-gray-800">{title}</h3>
-        <a href={viewAllUrl} className="text-sm font-medium text-blue-600 hover:underline">
-          View all
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
+          {title}
+        </h3>
+        <a
+          href={viewAllUrl}
+          className="text-sm font-bold text-gray-400 hover:text-primary-orange-main transition-colors bg-gray-50 hover:bg-orange-50 px-3 py-1.5 rounded-lg"
+        >
+          View All
         </a>
       </div>
 
       {/* Table Content */}
-      <div className="w-full">
-        {/* Table Header */}
-        <div className="grid grid-cols-4 gap-4 pb-2 border-b border-gray-200 text-left text-sm font-semibold text-gray-500" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`}}>
-          {columns.map((col) => (
-            <div key={col.header}>{col.header}</div>
-          ))}
-        </div>
+      <div className="w-full flex-1 overflow-x-auto">
+        <div className="min-w-[500px]">
+          {/* Table Header */}
+          <div
+            className="grid gap-4 pb-3 border-b border-gray-200 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
+            style={{
+              gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
+            }}
+          >
+            {columns.map((col) => (
+              <div key={col.header}>{col.header}</div>
+            ))}
+          </div>
 
-        {/* Table Body */}
-        <div>
-          {data.map((item, rowIndex) => (
-            <div 
-              key={rowIndex} 
-              className="grid grid-cols-4 gap-4 py-3 text-sm text-gray-700 border-b border-gray-100 last:border-b-0"
-              style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`}}
-            >
-              {columns.map((col) => (
-                <div key={col.header} className="truncate">
-                  {/* หัวใจหลัก: ถ้ามีฟังก์ชัน render ให้ใช้ render, ถ้าไม่มีให้แสดงข้อมูลปกติ */}
-                  {col.render ? col.render(item) : String(item[col.accessor])}
+          {/* Table Body */}
+          <div className="mt-2">
+            {data.length > 0 ? (
+              data.map((item, rowIndex) => (
+                <div
+                  key={rowIndex}
+                  className="grid gap-4 py-3.5 text-sm text-gray-700 border-b border-gray-50 hover:bg-gray-50/50 transition-colors rounded-xl px-2 -mx-2 items-center"
+                  style={{
+                    gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {columns.map((col) => (
+                    <div key={col.header} className="truncate font-medium">
+                      {col.render
+                        ? col.render(item)
+                        : String(item[col.accessor])}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))}
+              ))
+            ) : (
+              <div className="py-8 text-center text-gray-400 text-sm font-medium">
+                No data available.
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
