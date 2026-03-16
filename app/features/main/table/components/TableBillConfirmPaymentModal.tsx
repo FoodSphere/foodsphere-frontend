@@ -9,7 +9,7 @@ export type PaymentMethod = "cash" | "promptpay";
 
 interface TableBillConfirmPaymentModalProps {
   isOpen: boolean;
-  method: PaymentMethod;
+  method: PaymentMethod | null;
   totalAmount: number;
   tableName: string;
   billId?: string;
@@ -46,7 +46,7 @@ export const TableBillConfirmPaymentModal = ({
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
-    if (!isCashValid) return;
+    if (!isCashValid || !method) return;
 
     setIsSubmitting(true);
 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
 import { TableBillPaymentDrawer } from "@/app/features/main/table/components/TableBillPaymentDrawer";
 import {
+  completeBill,
   createBill,
   createOrderingPortal,
   getActiveBillByTableId,
@@ -18,7 +19,10 @@ import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
 import { TableAddDrawer } from "./components/TableAddDrawer";
-import { PaymentMethod, TableBillConfirmPaymentModal } from "./components/TableBillConfirmPaymentModal";
+import {
+  PaymentMethod,
+  TableBillConfirmPaymentModal,
+} from "./components/TableBillConfirmPaymentModal";
 import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
 import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
@@ -28,6 +32,13 @@ import {
   verifyCheckoutSession,
   StripeVerificationResult,
 } from "@/services/stripe";
+import {
+  createCashPayment,
+  verifyCashPayment,
+} from "@/services/payment/paymentApi";
+import { TablePaymentFailedModal } from "./components/TablePaymentFailedModal";
+import { toast } from "@/app/components/ui/toast/use-toast";
+import { TableBillConfirmCompleteModal } from "./components/TableBillConfirmCompleteModal";
 
 const TableRender = () => {
   const router = useRouter();
@@ -40,7 +51,10 @@ const TableRender = () => {
     useState<boolean>(false);
 
   const [showConfirmOpenBillModal, setShowConfirmOpenBillModal] =
-    useState<Boolean>(false);
+    useState<boolean>(false);
+
+  const [showConfirmCompleteBillModal, setShowConfirmCompleteBillModal] =
+    useState<boolean>(false);
 
   const [activeBillData, setActiveBillData] = useState<IBillResponse | null>(
     null
@@ -54,10 +68,14 @@ const TableRender = () => {
 
   const [showConfirmPaymentModal, setShowConfirmPaymentModal] =
     useState<boolean>(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(
+    null
+  );
   const [paymentTotal, setPaymentTotal] = useState<number>(0);
   const [paymentTableName, setPaymentTableName] = useState<string>("");
   const [showPaymentSuccessModal, setShowPaymentSuccessModal] =
+    useState<boolean>(false);
+  const [showPaymentFailedModal, setShowPaymentFailedModal] =
     useState<boolean>(false);
   const [stripeResult, setStripeResult] =
     useState<StripeVerificationResult | null>(null);
@@ -90,19 +108,59 @@ const TableRender = () => {
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
-    const paymentMethodParam = searchParams.get("payment_method");
+    const paymentMethod = searchParams.get("payment_method");
     const billId = searchParams.get("bill_id");
+    const cancel = searchParams.get("cancel");
+    const paymentId = searchParams.get("payment_id");
 
-    if (sessionId && paymentMethodParam === "promptpay" && billId) {
+    if (cancel && billId) {
+      setShowPaymentFailedModal(true);
+      const result = {
+        success: false,
+        status: "FAILED",
+        customer_email: "N/A",
+        amount_total: 0,
+        bill_id: null,
+        table_name: null,
+        payment_method: null,
+        error: "Payment cancelled",
+      }
+      setStripeResult(result);
+    }
+
+    if (paymentId && paymentMethod === EPaymentMethod.CASH && billId) {
+      const verify = async () => {
+        try {
+          const result = await verifyCashPayment(paymentId, billId);
+          setStripeResult(result);
+          if (result.success) {
+            setShowPaymentSuccessModal(true);
+          } else {
+            setShowPaymentFailedModal(true);
+          }
+        } catch (error) {
+          console.error("Failed to verify cash payment:", error);
+          toast({ variant: "error", title: "Failed to verify cash payment" });
+        } finally {
+          // Remove query params to prevent refetching on reload
+          router.replace("/table");
+        }
+      };
+      verify();
+    }
+    if (sessionId && paymentMethod === EPaymentMethod.PROMPTPAY && billId) {
       const verify = async () => {
         try {
           const result = await verifyCheckoutSession(sessionId, billId);
+          setStripeResult(result);
           if (result.success) {
-            setStripeResult(result);
             setShowPaymentSuccessModal(true);
+          } else {
+            setShowPaymentFailedModal(true);
           }
         } catch (error) {
-          console.error("Failed to verify checkout session:", error);
+          console.error("Failed to verify QR payment:", error);
+          toast({ variant: "error", title: "Failed to verify QR payment" });
         } finally {
           // Remove query params to prevent refetching on reload
           router.replace("/table");
@@ -126,6 +184,7 @@ const TableRender = () => {
       try {
         // Fetch หา Bill ของโต๊ะนี้
         const billResponse = await getActiveBillByTableId(Number(table.id));
+        console.log(billResponse);
 
         if (billResponse && billResponse.data) {
           const activeBill = billResponse.data;
@@ -213,13 +272,44 @@ const TableRender = () => {
     setShowConfirmPaymentModal(true);
   };
 
-  function handleConfirmPaymentFinished(): void {
-    if (paymentMethod === EPaymentMethod.CASH) {
-      alert("Please pay cash");
-    } else if (paymentMethod === EPaymentMethod.PROMPTPAY) {
-      checkout(paymentTotal, paymentTableName, activeBillData?.id || null);
+  async function handleConfirmPaymentFinished(): Promise<void> {
+    if (!activeBillData?.id) {
+      toast({ variant: "error", title: "Bill not found" });
+      return;
     }
-    fetchTables();
+    if (paymentMethod === EPaymentMethod.CASH) {
+      await createCashPayment(activeBillData.id);
+    } else if (paymentMethod === EPaymentMethod.PROMPTPAY) {
+      await checkout(paymentTotal, paymentTableName, activeBillData.id);
+    }
+    await fetchTables();
+    resetState();
+  }
+
+  async function handleConfirmCompleteBill() {
+    if (!activeBillData?.id) {
+      toast({ variant: "error", title: "Bill not found" });
+      return;
+    }
+    await completeBill(activeBillData.id);
+    await fetchTables();
+    resetState();
+  }
+
+  function resetState() {
+    setShowPaymentSuccessModal(false);
+    setShowPaymentFailedModal(false);
+    setShowConfirmPaymentModal(false);
+    setShowConfirmOpenBillModal(false);
+    setShowConfirmCompleteBillModal(false);
+    setShowTableBillDrawer(false);
+    setShowPaymentModal(false);
+    setCurrentTable(null);
+    setActiveBillData(null);
+    setPaymentMethod(null);
+    setPaymentTotal(0);
+    setPaymentTableName("");
+    setQrData("");
   }
 
   return (
@@ -279,6 +369,7 @@ const TableRender = () => {
           billData={activeBillData}
           qrUrl={qrData}
           onCheckBill={() => setShowPaymentModal(true)}
+          onCompleteBill={() => setShowConfirmCompleteBillModal(true)}
           onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
           onEditOrder={() => router.push(`/table/${currentTable.id}/edit`)}
         />
@@ -291,10 +382,10 @@ const TableRender = () => {
           tableId={currentTable.id}
           billId={activeBillData?.id}
           onCashPayment={(total, tName) =>
-            handleOpenConfirmPayment("cash", total, tName)
+            handleOpenConfirmPayment(EPaymentMethod.CASH, total, tName)
           }
           onQRPayment={(total, tName) =>
-            handleOpenConfirmPayment("promptpay", total, tName)
+            handleOpenConfirmPayment(EPaymentMethod.PROMPTPAY, total, tName)
           }
         />
       )}
@@ -312,6 +403,15 @@ const TableRender = () => {
         />
       )}
 
+      {/* TableBillConfirmCompleteModal */}
+      {showConfirmCompleteBillModal && currentTable && (
+        <TableBillConfirmCompleteModal
+          isOpen={showConfirmCompleteBillModal}
+          onClose={() => setShowConfirmCompleteBillModal(false)}
+          onConfirm={handleConfirmCompleteBill}
+        />
+      )}
+
       {/* Payment Success Modal */}
       {showPaymentSuccessModal && stripeResult && (
         <TablePaymentSuccessModal
@@ -321,10 +421,21 @@ const TableRender = () => {
           amountTotal={stripeResult.amount_total}
           paymentMethod={stripeResult.payment_method || "CASH"}
           onClose={() => {
-            setShowPaymentSuccessModal(false);
-            setStripeResult(null);
-            setCurrentTable(null);
-            setShowTableBillDrawer(false);
+            resetState();
+          }}
+        />
+      )}
+
+      {/* Payment Failed Modal */}
+      {showPaymentFailedModal && stripeResult && (
+        <TablePaymentFailedModal
+          isOpen={!!showPaymentFailedModal}
+          tableName={stripeResult.table_name || "N/A"}
+          status={stripeResult.status || "FAILED"}
+          paymentMethod={stripeResult.payment_method || "CASH"}
+          error={stripeResult.error || "Payment failed"}
+          onClose={() => {
+            resetState();
           }}
         />
       )}

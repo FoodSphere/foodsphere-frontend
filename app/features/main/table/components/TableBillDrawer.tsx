@@ -5,6 +5,7 @@ import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { Icons } from "@/app/icons";
 import { getMenuById } from "@/services/menu/menuApi";
 import { IBillResponse } from "@/types/billType";
+import { EBillStatus } from "@/types/enum";
 
 interface EnrichedOrderItem {
   id: string;
@@ -22,6 +23,7 @@ interface TableBillDrawerProps {
   billData?: IBillResponse | null;
   qrUrl?: string;
   onCheckBill?: () => void;
+  onCompleteBill?: () => void;
   onAddOrder?: () => void;
   onEditOrder?: () => void;
 }
@@ -65,11 +67,14 @@ export const TableBillDrawer = ({
   billData,
   qrUrl,
   onCheckBill,
+  onCompleteBill,
   onAddOrder,
   onEditOrder,
 }: TableBillDrawerProps) => {
   const [displayOrders, setDisplayOrders] = useState<EnrichedOrderItem[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+  console.log(billData);
 
   useEffect(() => {
     const loadOrderDetails = async () => {
@@ -202,13 +207,24 @@ export const TableBillDrawer = ({
                 </div>
               </div>
 
-              <button
-                onClick={onCheckBill}
-                disabled={displayOrders.length === 0}
-                className="w-full bg-primary-orange-main hover:bg-[#ff451f] disabled:bg-gray-400 text-white py-4 rounded-xl font-bold text-xl shadow-md mt-6 flex items-center justify-center gap-3 transition-colors"
-              >
-                Check Bill <Icons name="OrderIcon" className="w-6 h-6" />
-              </button>
+              {billData?.status === EBillStatus.OPEN && (
+                <button
+                  onClick={onCheckBill}
+                  disabled={displayOrders.length === 0}
+                  className="w-full bg-primary-orange-main hover:bg-[#ff451f] disabled:bg-gray-400 text-white py-4 rounded-xl font-bold text-xl shadow-md mt-6 flex items-center justify-center gap-3 transition-colors"
+                >
+                  Check Bill <Icons name="OrderIcon" className="w-6 h-6" />
+                </button>
+              )}
+              {billData?.status === EBillStatus.PAID && (
+                <button
+                  onClick={onCompleteBill}
+                  disabled={displayOrders.length === 0}
+                  className="w-full bg-primary-green-main hover:bg-[#22c55e] disabled:bg-gray-400 text-white py-4 rounded-xl font-bold text-xl shadow-md mt-6 flex items-center justify-center gap-3 transition-colors"
+                >
+                  Complete Bill <Icons name="OrderIcon" className="w-6 h-6" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -290,21 +306,23 @@ export const TableBillDrawer = ({
               </ScrollArea>
             </div>
 
-            <div className="mt-4 space-y-3 pt-4 border-t border-gray-100 shrink-0">
-              <button
-                onClick={onAddOrder}
-                className="w-full bg-primary-orange-main hover:bg-[#ff451f] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors"
-              >
-                Add Order <Icons name="PlusIcon" className="w-6 h-6" />
-              </button>
-              <button
-                onClick={onEditOrder}
-                disabled={displayOrders.length === 0}
-                className="w-full bg-white border border-primary-orange-main hover:bg-orange-50 disabled:bg-gray-300 text-primary-orange-main py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors"
-              >
-                Edit Order <Icons name="EditIcon" className="w-6 h-6" />
-              </button>
-            </div>
+            {billData?.status === EBillStatus.OPEN && (
+              <div className="mt-4 space-y-3 pt-4 border-t border-gray-100 shrink-0">
+                <button
+                  onClick={onAddOrder}
+                  className="w-full bg-primary-orange-main hover:bg-[#ff451f] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Order <Icons name="PlusIcon" className="w-6 h-6" />
+                </button>
+                <button
+                  disabled={displayOrders.length === 0}
+                  onClick={onEditOrder}
+                  className="w-full bg-white border border-primary-orange-main hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed text-primary-orange-main py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors"
+                >
+                  Edit Order <Icons name="EditIcon" className="w-6 h-6" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

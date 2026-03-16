@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Stripe from "stripe";
 import { cookies } from "next/headers";
 
-import { EPaymentMethod, EPaymentStatus } from "@/types/enum";
+import { EPaymentMethod, EStripePaymentStatus } from "@/types/enum";
 
 const customerEmail = "guest-foodsphere@gmail.com";
 
@@ -90,7 +90,7 @@ export async function checkout(
         payment_method: EPaymentMethod.PROMPTPAY,
       },
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/table?session_id={CHECKOUT_SESSION_ID}&payment_method=promptpay&bill_id=${billId}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/table`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/table?cancel=true&payment_method=promptpay&bill_id=${billId}`,
     });
     return redirect(session.url as string);
   } catch (error) {
@@ -129,7 +129,7 @@ export async function verifyCheckoutSession(
 
     if (session && session.metadata?.bill_id === billId) {
       return {
-        success: session.payment_status === EPaymentStatus.PAID,
+        success: session.payment_status === EStripePaymentStatus.PAID,
         status: session.payment_status,
         customer_email: session.customer_details?.email || "N/A",
         amount_total: session.amount_total ? session.amount_total / 100 : 0,
@@ -137,7 +137,7 @@ export async function verifyCheckoutSession(
         table_name: (session.metadata?.table_name as string) || null,
         payment_method: (session.metadata?.payment_method as string) || null,
         error:
-          session.payment_status !== EPaymentStatus.PAID
+          session.payment_status !== EStripePaymentStatus.PAID
             ? "Payment not completed"
             : null,
       };
