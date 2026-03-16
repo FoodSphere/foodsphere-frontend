@@ -8,16 +8,16 @@ export interface ColumnDef<T> {
 
 export interface DataTableProps<T> {
   title: string;
-  viewAllUrl: string;
   columns: ColumnDef<T>[];
   data: T[];
+  headerAction?: React.ReactNode;
 }
 
 function DataTable<T extends object>({
   title,
-  viewAllUrl,
   columns,
   data,
+  headerAction,
 }: DataTableProps<T>) {
   return (
     <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] w-full flex flex-col h-full">
@@ -26,18 +26,15 @@ function DataTable<T extends object>({
         <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
           {title}
         </h3>
-        <a
-          href={viewAllUrl}
-          className="text-sm font-bold text-gray-400 hover:text-primary-orange-main transition-colors bg-gray-50 hover:bg-orange-50 px-3 py-1.5 rounded-lg"
-        >
-          View All
-        </a>
+        <div className="flex items-center gap-3">
+          {/* แสดง Filter Dropdown (ถ้ามี) */}
+          {headerAction}
+        </div>
       </div>
 
       {/* Table Content */}
       <div className="w-full flex-1 overflow-x-auto">
         <div className="min-w-[500px]">
-          {/* Table Header */}
           <div
             className="grid gap-4 pb-3 border-b border-gray-200 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
             style={{
@@ -49,7 +46,6 @@ function DataTable<T extends object>({
             ))}
           </div>
 
-          {/* Table Body */}
           <div className="mt-2">
             {data.length > 0 ? (
               data.map((item, rowIndex) => (

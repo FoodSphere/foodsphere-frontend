@@ -1,6 +1,5 @@
 "use client";
-import React from "react";
-// นำเข้า Recharts สำหรับทำกราฟ (ต้อง npm install recharts ก่อน)
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -15,6 +14,16 @@ import {
   YAxis,
 } from "recharts";
 
+import {
+  getCountBill,
+  getCountEachOrder,
+  getCountOrder,
+  getPaymentTransaction,
+  getRevenue,
+  getStockUse,
+} from "@/services/dashboard/dashboardApi";
+import { getIngredients } from "@/services/stock/stockApi";
+
 import DataTable, { ColumnDef } from "./components/DataTable";
 import StatsCard from "./components/StatsCard";
 
@@ -25,95 +34,34 @@ export type StatusType =
   | "Consumed"
   | "Updated";
 
-// --- Mock Data ---
+// --- Types ---
 type Transaction = {
   transactionId: string;
   timestamp: string;
+  table: string;
   amount: string;
+  paymentMethod: string;
   status: StatusType;
 };
-const transactionData: Transaction[] = [
-  {
-    transactionId: "0000010",
-    timestamp: "Today 11:25",
-    amount: "฿ 250.00",
-    status: "Completed",
-  },
-  {
-    transactionId: "0000009",
-    timestamp: "08/03/25 12:31",
-    amount: "฿ 500.00",
-    status: "Completed",
-  },
-  {
-    transactionId: "0000008",
-    timestamp: "08/03/25 12:29",
-    amount: "฿ 500.00",
-    status: "Failed",
-  },
-];
 
 type BestsellerMenu = { menuId: string; menuName: string; amount: string };
-const bestsellerData: BestsellerMenu[] = [
-  { menuId: "0000023", menuName: "Pad Kraprao Crispy Pork", amount: "500 pcs" },
-  { menuId: "0000022", menuName: "Pad Kraprao Minced Pork", amount: "350 pcs" },
-  { menuId: "00000209", menuName: "Fried Rice Chicken", amount: "298 pcs" },
-];
 
-type StockItem = {
+type StockUses = {
   ingredientName: string;
   timestamp: string;
   amount: string;
+  balanceAfter: string;
+  note: string;
   status: StatusType;
 };
-const stockData: StockItem[] = [
-  {
-    ingredientName: "Wagyu Beef",
-    timestamp: "Today 08:25",
-    amount: "50 pcs",
-    status: "Added",
-  },
-  {
-    ingredientName: "Salmon",
-    timestamp: "Today 08:40",
-    amount: "50 pcs",
-    status: "Added",
-  },
-  {
-    ingredientName: "Tuna",
-    timestamp: "27/02/25 12:31",
-    amount: "10 pcs",
-    status: "Consumed",
-  },
-];
 
-// --- Mock Chart Data ---
-const salesChartData = [
-  { name: "Mon", sales: 4000 },
-  { name: "Tue", sales: 3000 },
-  { name: "Wed", sales: 5000 },
-  { name: "Thu", sales: 2780 },
-  { name: "Fri", sales: 6890 },
-  { name: "Sat", sales: 8390 },
-  { name: "Sun", sales: 9490 },
-];
+const COLORS = ["#FF5C39", "#FF7650", "#FF8A66", "#FFB8A3", "#FFE5DE"];
 
-const pieChartData = [
-  { name: "Crispy Pork", value: 500 },
-  { name: "Minced Pork", value: 350 },
-  { name: "Chicken", value: 298 },
-  { name: "Others", value: 400 },
-];
-const COLORS = ["#FF5C39", "#FF8A66", "#FFB8A3", "#FFE5DE"]; // โทนสีส้มของแบรนด์
-
-// --- Helper สำหรับแสดง Status โดยไม่ใช้ Component แยก ---
 const renderStatus = (status: StatusType) => {
   const styles: Record<string, string> = {
     Completed: "bg-green-50 text-green-600 border-green-200",
-    Added: "bg-blue-50 text-blue-600 border-blue-200",
-    Failed: "bg-red-50 text-red-600 border-red-200",
     Consumed: "bg-orange-50 text-orange-600 border-orange-200",
-    Updated: "bg-yellow-50 text-yellow-600 border-yellow-200",
+    Failed: "bg-red-50 text-red-600 border-red-200",
   };
   return (
     <span
@@ -124,11 +72,304 @@ const renderStatus = (status: StatusType) => {
   );
 };
 
+const SearchableIngredientDropdown = ({
+  ingredients,
+  selected,
+  onSelect,
+}: any) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filtered = ingredients.filter((ing: any) =>
+    ing.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative">
+      <div
+        className="text-sm border border-gray-200 bg-white rounded-lg px-3 py-1.5 cursor-pointer min-w-[140px] flex justify-between items-center"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate max-w-[100px]">
+          {selected === "All" ? "All Ingredients" : selected}
+        </span>
+        <span className="text-gray-400 text-xs ml-2">▼</span>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-10 right-0 mt-1 w-48 bg-white border border-gray-100 rounded-xl shadow-lg max-h-56 overflow-y-auto">
+          <div className="sticky top-0 bg-white p-2 border-b border-gray-50">
+            <input
+              type="text"
+              className="w-full text-xs px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-md outline-none focus:border-primary-orange-main focus:ring-1 focus:ring-primary-orange-main"
+              placeholder="Search ingredient..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div
+            className="px-3 py-2 text-xs font-medium hover:bg-orange-50 cursor-pointer"
+            onClick={() => {
+              onSelect("All");
+              setIsOpen(false);
+            }}
+          >
+            All Ingredients
+          </div>
+          {filtered.map((ing: any) => (
+            <div
+              key={ing.id}
+              className="px-3 py-2 text-xs font-medium text-gray-700 hover:bg-orange-50 cursor-pointer border-t border-gray-50"
+              onClick={() => {
+                onSelect(ing.name);
+                setIsOpen(false);
+              }}
+            >
+              {ing.name}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const DashboardRender = () => {
-  // Columns Setup
+  const [paymentFilter, setPaymentFilter] = useState("All");
+  const [ingredientFilter, setIngredientFilter] = useState("All");
+  const [ingredientsList, setIngredientsList] = useState<any[]>([]);
+
+  // States สำหรับ Charts
+  const [salesChartData, setSalesChartData] = useState<
+    { name: string; sales: number }[]
+  >([]);
+  const [pieChartData, setPieChartData] = useState<
+    { name: string; value: number }[]
+  >([]);
+  const [bestsellerData, setBestsellerData] = useState<BestsellerMenu[]>([]);
+
+  const [transactionsData, setTransactionsData] = useState<Transaction[]>([]);
+  const [rawStockUsesData, setRawStockUsesData] = useState<any[]>([]);
+
+  // Query String สำหรับวันนี้ เพื่อใช้กับ Recent Transactions และ Stock Uses
+  const todayStr = new Date().toISOString().split("T")[0];
+  const dailyQueryString = `from_time=${todayStr}T00:00:00.000Z&to_time=${todayStr}T23:59:59.999Z`;
+
+  // === API Wrappers สำหรับ StatsCard โดยจัดรูปแบบ Query String ===
+  // ใช้ useCallback ป้องกันไม่ให้โดนสร้างใหม่รัวๆ
+  const fetchSales = useCallback(async (dateStr: string) => {
+    try {
+      const qs = `from_time=${dateStr}T00:00:00.000Z&to_time=${dateStr}T23:59:59.999Z`;
+      const res = await getRevenue(qs);
+      return res?.data.revenue;
+    } catch (err) {
+      console.error(err);
+      return 0;
+    }
+  }, []);
+
+  const fetchBills = useCallback(async (dateStr: string) => {
+    try {
+      const qs = `from_time=${dateStr}T00:00:00.000Z&to_time=${dateStr}T23:59:59.999Z`;
+      const res = await getCountBill(qs);
+      return res?.data.bill_count;
+    } catch (err) {
+      console.error(err);
+      return 0;
+    }
+  }, []);
+
+  const fetchOrders = useCallback(async (dateStr: string) => {
+    try {
+      const qs = `from_time=${dateStr}T00:00:00.000Z&to_time=${dateStr}T23:59:59.999Z`;
+      const res = await getCountOrder(qs);
+      return res?.data.menu_sold;
+    } catch (err) {
+      console.error(err);
+      return 0;
+    }
+  }, []);
+
+  // ดึงข้อมูล Ingredients List
+  useEffect(() => {
+    const fetchIng = async () => {
+      try {
+        const res = await getIngredients();
+        setIngredientsList(res?.data);
+      } catch (e) {}
+    };
+    fetchIng();
+  }, []);
+
+  // ดึงข้อมูล Sales Chart (ย้อนหลัง 7 วัน)
+  useEffect(() => {
+    const fetch7DaysSales = async () => {
+      try {
+        const days = [];
+        // สร้าง array วันที่ 7 วันล่าสุด (นับถอยหลัง)
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          days.push(d);
+        }
+
+        // ยิง API getRevenue พร้อมกัน 7 วัน
+        const promises = days.map(async (d) => {
+          const dateStr = d.toISOString().split("T")[0];
+          const qs = `from_time=${dateStr}T00:00:00.000Z&to_time=${dateStr}T23:59:59.999Z`;
+          const res = await getRevenue(qs);
+
+          // แปลงวันที่เป็นชื่อย่อวัน เช่น "Mon", "Tue"
+          const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+          return { name: dayName, sales: res?.data?.revenue || 0 };
+        });
+
+        const results = await Promise.all(promises);
+        setSalesChartData(results);
+      } catch (err) {
+        console.error("Failed to fetch 7 days sales", err);
+      }
+    };
+    fetch7DaysSales();
+  }, []);
+
+  // ดึงข้อมูล Top 5 Best Seller
+  useEffect(() => {
+    const fetchBestSellers = async () => {
+      try {
+        // คุณสามารถใส่ qs เป็น from_time/to_time ได้ถ้าต้องการระบุช่วงเวลา
+        // ตอนนี้เรียกแบบไม่ได้ใส่ qs เพื่อดึงยอดรวมทั้งหมดตามที่คุณบอก
+        const res = await getCountEachOrder();
+        const rawData = res?.data || [];
+
+        // เรียงลำดับจาก total_sold มากไปน้อย และตัดเอาแค่ 5 อันดับแรก
+        const top5 = [...rawData]
+          .sort((a, b) => b.total_sold - a.total_sold)
+          .slice(0, 5);
+
+        // จัด Format สำหรับ PieChart (ต้องการ name, value)
+        setPieChartData(
+          top5.map((item) => ({
+            name: item.menu_name,
+            value: item.total_sold,
+          }))
+        );
+
+        // จัด Format สำหรับ DataTable (ต้องการ menuId, menuName, amount)
+        setBestsellerData(
+          top5.map((item) => ({
+            menuId: String(item.menu_id).padStart(7, "0"), // เติมเลข 0 ข้างหน้าให้ครบ 7 หลัก (ตัวเลือกเสริม)
+            menuName: item.menu_name,
+            amount: `${item.total_sold} pcs`,
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to fetch best sellers", err);
+      }
+    };
+    fetchBestSellers();
+  }, []);
+
+  // ดึงข้อมูล Recent Transactions
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        // ส่ง dailyQueryString เข้าไปเพื่อให้ได้ข้อมูลเฉพาะวันนี้
+        const res = await getPaymentTransaction(dailyQueryString);
+        const rawData = res?.data || [];
+
+        const mappedData: Transaction[] = rawData.map((item: any) => {
+          const date = new Date(item.create_time);
+          const formattedDate =
+            date.toLocaleDateString("en-GB") +
+            " " +
+            date.toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+          // ตรวจสอบ payment_method ว่าเป็น stripe หรือไม่ (แปลงเป็นตัวเล็กเพื่อป้องกันเคสพิมพ์ใหญ่/เล็ก)
+          const paymentDisplay =
+            item.payment_method?.toLowerCase() === "stripe"
+              ? "QR Code"
+              : item.payment_method || "N/A";
+
+          return {
+            transactionId: item.bill_id.split("-")[0],
+            timestamp: formattedDate,
+            table: item.table?.name || "-",
+            amount: `฿ ${item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            paymentMethod: paymentDisplay, // ใช้ค่าที่แปลงแล้ว
+            status: item.status === 1 ? "Completed" : "Failed",
+          };
+        });
+        setTransactionsData(mappedData);
+      } catch (err) {
+        console.error("Failed to fetch transactions", err);
+      }
+    };
+    fetchTransactions();
+  }, [dailyQueryString]);
+
+  // ดึงข้อมูล Stock Uses
+  useEffect(() => {
+    const fetchStock = async () => {
+      try {
+        // ส่ง dailyQueryString เข้าไปเพื่อให้ได้ข้อมูลเฉพาะวันนี้
+        const res = await getStockUse(dailyQueryString);
+        setRawStockUsesData(res?.data || []);
+      } catch (err) {
+        console.error("Failed to fetch stock uses", err);
+      }
+    };
+    fetchStock();
+  }, [dailyQueryString]);
+
+  // จัดการ Map ข้อมูล Stock Use กับชื่อ Ingredient และทำ Filter
+  const processedStockUses: StockUses[] = rawStockUsesData.map((item) => {
+    const ingredient = ingredientsList.find(
+      (ing) => ing.id === item.ingredient_id
+    );
+    const date = new Date(item.create_time);
+
+    // Logic กำหนดสถานะ:
+    // สมมติว่าถ้า amount เป็นบวกแปลว่ามีการเพิ่ม (Added) ถ้าติดลบแปลว่าเบิกไปใช้ (Consumed)
+    // *หมายเหตุ: หาก backend ของคุณส่ง amount เป็นบวกเสมอแต่ดูว่าลดลงจาก balance ก่อนหน้า คุณอาจจะต้องปรับเงื่อนไขตรงนี้ครับ
+    const isConsumed = item.amount < 0;
+    const determinedStatus: StatusType = isConsumed ? "Consumed" : "Added";
+
+    return {
+      ingredientName: ingredient
+        ? ingredient.name
+        : `Unknown (ID: ${item.ingredient_id})`,
+      timestamp:
+        date.toLocaleDateString("en-GB") +
+        " " +
+        date.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      amount: `${Math.abs(item.amount)}`,
+      balanceAfter: `${item.balance_after}`,
+      note: item.note || "-",
+      status: determinedStatus,
+    };
+  });
+
+  const filteredTransactions = transactionsData.filter(
+    (t) => paymentFilter === "All" || t.paymentMethod === paymentFilter
+  );
+
+  const filteredStock = processedStockUses.filter(
+    (s) => ingredientFilter === "All" || s.ingredientName === ingredientFilter
+  );
+
   const transactionColumns: ColumnDef<Transaction>[] = [
-    { header: "ID", accessor: "transactionId" },
+    { header: "Bill ID", accessor: "transactionId" },
     { header: "Timestamp", accessor: "timestamp" },
+    { header: "Table", accessor: "table" }, // คอลัมน์ใหม่
+    { header: "Payment", accessor: "paymentMethod" },
     { header: "Amount", accessor: "amount" },
     {
       header: "Status",
@@ -143,10 +384,12 @@ const DashboardRender = () => {
     { header: "Amount", accessor: "amount" },
   ];
 
-  const stockColumns: ColumnDef<StockItem>[] = [
+  const stockColumns: ColumnDef<StockUses>[] = [
     { header: "Ingredient", accessor: "ingredientName" },
     { header: "Timestamp", accessor: "timestamp" },
-    { header: "Amount", accessor: "amount" },
+    { header: "Used", accessor: "amount" },
+    { header: "Balance", accessor: "balanceAfter" }, // คอลัมน์ใหม่
+    { header: "Note", accessor: "note" }, // คอลัมน์ใหม่
     {
       header: "Status",
       accessor: "status",
@@ -156,58 +399,48 @@ const DashboardRender = () => {
 
   return (
     <div className="flex flex-col gap-8 p-6 md:p-8 min-h-screen bg-gray-50/50">
-      {/* 1. Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-gray-500 mt-1 font-medium">
-            Welcome back, here&apos;s your restaurant overview.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          Dashboard
+        </h1>
+        <p className="text-gray-500 mt-1 font-medium">
+          Welcome back, here&apos;s your restaurant overview.
+        </p>
       </div>
 
-      {/* 2. Top Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatsCard
           title="Total Sales"
-          value="฿ 5,620.69"
           icon={<span className="text-2xl font-black">฿</span>}
           iconBgColor="bg-green-100"
           iconTextColor="text-green-600"
-          trend="up"
-          statsPercentage={8.5}
-          reportUrl="/reports/sales"
+          fetchData={fetchSales}
+          formatValue={(val) =>
+            `฿ ${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          }
+        />
+        <StatsCard
+          title="Total Bills"
+          icon={<span className="text-2xl font-black">🧾</span>}
+          iconBgColor="bg-orange-100"
+          iconTextColor="text-orange-600"
+          fetchData={fetchBills}
+          formatValue={(val) => val.toLocaleString("en-US")}
         />
         <StatsCard
           title="Total Orders"
-          value="109"
           icon={<span className="text-2xl font-black">📦</span>}
           iconBgColor="bg-blue-100"
           iconTextColor="text-blue-600"
-          trend="down"
-          statsPercentage={2.4}
-          reportUrl="/reports/orders"
-        />
-        <StatsCard
-          title="Total Customers"
-          value="42"
-          icon={<span className="text-2xl font-black">👥</span>}
-          iconBgColor="bg-orange-100"
-          iconTextColor="text-orange-600"
-          trend="up"
-          statsPercentage={12.7}
-          reportUrl="/reports/customers"
+          fetchData={fetchOrders}
+          formatValue={(val) => val.toLocaleString("en-US")}
         />
       </div>
 
-      {/* 3. Charts Section (NEW) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Sales Chart (Takes up 2 columns) */}
         <div className="lg:col-span-2 bg-white p-6 rounded-[24px] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
           <h3 className="text-xl font-extrabold text-gray-900 mb-6">
-            Sales Overview (This Week)
+            Sales Overview
           </h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -251,12 +484,11 @@ const DashboardRender = () => {
           </div>
         </div>
 
-        {/* Bestseller Pie Chart */}
-        <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)]">
+        <div className="bg-white p-6 rounded-[24px] border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] flex flex-col">
           <h3 className="text-xl font-extrabold text-gray-900 mb-2">
-            Top Categories
+            Top 5 Best Seller Menus
           </h3>
-          <div className="h-[300px] w-full flex items-center justify-center">
+          <div className="flex-1 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -288,25 +520,41 @@ const DashboardRender = () => {
         </div>
       </div>
 
-      {/* 4. Data Tables Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <DataTable<Transaction>
           title="Recent Transactions"
-          viewAllUrl="/transactions"
           columns={transactionColumns}
-          data={transactionData}
+          data={filteredTransactions}
+          headerAction={
+            <select
+              className="text-sm border border-gray-200 bg-white rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-primary-orange-main cursor-pointer"
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+            >
+              <option value="All">All Payments</option>
+              <option value="Cash">Cash</option>
+              <option value="QR Code">QR Code</option>
+            </select>
+          }
         />
+
         <DataTable<BestsellerMenu>
-          title="Bestseller Menus"
-          viewAllUrl="/bestsellers"
+          title="Top 5 Best Seller Menus"
           columns={bestsellerColumns}
           data={bestsellerData}
         />
-        <DataTable<StockItem>
-          title="Recent Stock Activity"
-          viewAllUrl="/stock"
+
+        <DataTable<StockUses>
+          title="Stock Uses"
           columns={stockColumns}
-          data={stockData}
+          data={filteredStock}
+          headerAction={
+            <SearchableIngredientDropdown
+              ingredients={ingredientsList}
+              selected={ingredientFilter}
+              onSelect={setIngredientFilter}
+            />
+          }
         />
       </div>
     </div>
