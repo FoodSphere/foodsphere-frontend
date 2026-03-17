@@ -18,6 +18,7 @@ import {
   createCashPayment,
   verifyCashPayment,
 } from "@/services/payment/paymentApi";
+import { updateServiceRequestStatus } from "@/services/service-request/serviceRequestApi";
 import {
   checkout,
   StripeVerificationResult,
@@ -50,7 +51,6 @@ import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
 import { TablePaymentFailedModal } from "./components/TablePaymentFailedModal";
 import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
-import { updateServiceRequestStatus } from "@/services/service-request/serviceRequestApi";
 
 const TableRender = () => {
   const router = useRouter();
@@ -135,12 +135,10 @@ const TableRender = () => {
         )
         .withAutomaticReconnect()
         .build();
-      connect
-        .start()
-        .catch((err) => {
-          console.error("Error while connecting to SignalR Hub:", err);
-          throw err;
-        });
+      connect.start().catch((err) => {
+        console.error("Error while connecting to SignalR Hub:", err);
+        throw err;
+      });
 
       connect.on(
         "service_request_created",
@@ -429,7 +427,7 @@ const TableRender = () => {
   }
 
   return (
-    <div className="p-8 flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6 min-h-screen">
       <Header totalTable={tables.length} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">

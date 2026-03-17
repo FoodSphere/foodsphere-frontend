@@ -6,7 +6,9 @@ export const Header = ({ totalTable }: HeaderProps) => {
   return (
     <>
       <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-bold">Tables</h1>
+        <h1 className="text-4xl font-extrabold text-black tracking-tight">
+          Tables
+        </h1>
       </div>
 
       <div className="flex gap-4 items-center justify-end">

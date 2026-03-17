@@ -20,9 +20,15 @@ export const createStaff = async (staff: ICreateStaffRequest) => {
   return await apiPost(`/s/restaurants/${restaurantId}/workers`, staff);
 };
 
-export const updateStaff = async (staffId: number, staff: IUpdateStaffRequest) => {
+export const updateStaff = async (
+  staffId: number,
+  staff: IUpdateStaffRequest
+) => {
   const restaurantId = getRestaurantId();
-  return await apiPut(`/s/restaurants/${restaurantId}/workers/${staffId}`, staff);
+  return await apiPut(
+    `/s/restaurants/${restaurantId}/workers/${staffId}`,
+    staff
+  );
 };
 
 export const deleteStaff = async (staffId: number) => {

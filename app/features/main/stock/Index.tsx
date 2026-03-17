@@ -7,6 +7,7 @@ import {
   createIngredientWithImage,
   deleteIngredient,
   getIngredients,
+  updateIngredient,
   updateIngredientWithImage,
 } from "@/services/stock/stockApi";
 import { getStockTags } from "@/services/stock/stockTagApi";
@@ -75,18 +76,50 @@ const StockRender = () => {
     setIsModalOpen(true);
   };
 
-  const handleToggleStatus = (id: number) => {
+  const handleToggleStatus = async (id: number) => {
+    // 1. หาข้อมูลของ Item ที่ถูกกด
+    const itemToUpdate = stockItems.find((item) => item.id === id);
+    if (!itemToUpdate) return;
+
+    // 2. สลับสถานะ (0 = ปิด, 1 = เปิด)
+    const newStatus = itemToUpdate.status === 1 ? 0 : 1;
+
+    // 3. อัปเดต UI ทันที (Optimistic Update) เพื่อความรวดเร็ว
     setStockItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === id
-          ? { ...item, status: item.status === 0 ? 1 : 0 } // สมมติ 0=Open, 1=Closed
-          : item
+        item.id === id ? { ...item, status: newStatus } : item
       )
     );
 
-    const item = stockItems.find((i) => i.id === id);
-    // Logic เรียก API update status (ถ้ามี)
-    console.log(`Toggled status for ${item?.name}`);
+    try {
+      // 4. จัดเตรียม Payload สำหรับยิง API ให้ตรงกับ IUpdateIngredientRequest
+      const payload: IUpdateIngredientRequest = {
+        name: itemToUpdate.name,
+        stock: itemToUpdate.stock,
+        unit: itemToUpdate.unit,
+        description: itemToUpdate.description || "",
+        tags: itemToUpdate.tags.map((t) => ({ tag_id: t.tag_id })),
+        status: newStatus,
+      };
+
+      // 5. เรียก API เพื่ออัปเดตข้อมูล
+      const res = await updateIngredient(id, payload);
+
+      if (res?.statusCode === 200 || res?.statusCode === 204) {
+        console.log(`Toggled status for ${itemToUpdate.name} successfully`);
+      } else {
+        throw new Error("API responded with an error");
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      // หาก API พัง ให้ Revert UI กลับไปเป็นค่าเดิมก่อนหน้า
+      setStockItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === id ? { ...item, status: itemToUpdate.status } : item
+        )
+      );
+      alert("Failed to update ingredient status.");
+    }
   };
 
   const handleSaveStock = async (payload: any, file: File | null) => {
@@ -108,6 +141,7 @@ const StockRender = () => {
         : payload.category
           ? payload.category.map((c: any) => ({ tag_id: Number(c.id) }))
           : [],
+      status: payload.status,
     };
 
     try {
@@ -328,14 +362,12 @@ const StockRender = () => {
               {filteredItems.map((item) => (
                 <StockCard
                   key={item.id}
-                  // --- [สำคัญ] Map Props ใหม่ให้เข้ากับ StockCard ตัวเดิม ---
-                  id={item.id} // StockCard รับ id เป็น string
-                  img_url={item.image_url} // เปลี่ยน imgUrl -> image_url
-                  name={item.name} // เปลี่ยน title -> name
-                  stock={item.stock} // เปลี่ยน amount -> stock
+                  id={item.id}
+                  img_url={item.image_url}
+                  name={item.name}
+                  stock={item.stock}
                   unit={item.unit}
-                  // สมมติว่า status 0 คือ Available
-                  status={item.status === 0}
+                  status={item.status === 1} 
                   onEdit={() => handleOpenEditModal(item)}
                   onToggleStatus={() => handleToggleStatus(item.id)}
                 />

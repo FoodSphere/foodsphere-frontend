@@ -1,5 +1,5 @@
 // src/components/restaurant/ManageRoleView.tsx
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -23,25 +23,26 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
-import { SearchBar } from "./SearchBar";
-import {
-  getRoles,
-  createRole,
-  updateRole,
-  deleteRole,
-} from "@/services/role/roleApi";
 import {
   getPermissions,
   getPermissionsGroupName,
   updateRolePermission,
 } from "@/services/role/permissionApi";
 import {
-  IPermissionsGroup,
+  createRole,
+  deleteRole,
+  getRoles,
+  updateRole,
+} from "@/services/role/roleApi";
+import {
   IPermissionResponse,
-  IRoleResponse,
+  IPermissionsGroup,
   IRole,
+  IRoleResponse,
   IRoleWithId,
 } from "@/types/roleType";
+
+import { SearchBar } from "./SearchBar";
 
 interface FormData {
   name: string;
