@@ -3,9 +3,9 @@ import React, { useEffect, useState } from "react";
 import {
   Loader2,
   Pencil,
+  QrCode as QrCodeIcon,
   Trash2,
   UserPlus,
-  QrCode as QrCodeIcon,
   X,
 } from "lucide-react";
 
@@ -22,10 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/app/components/ui/select";
+import { toast } from "@/app/components/ui/toast/use-toast";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
 import { getRoles } from "@/services/role/roleApi";
 import {
   createStaff,
+  createStaffPortal,
   deleteStaff,
   getStaffs,
   updateStaff,
@@ -37,15 +39,8 @@ import {
   IStaffWithId,
   IStaffWithMappedRole,
 } from "@/types/staffType";
-import {
-  createStaff,
-  createStaffPortal,
-  deleteStaff,
-  getStaffs,
-  updateStaff,
-} from "@/services/staff/staffApi";
-import { getRoles } from "@/services/role/roleApi";
-import { toast } from "@/app/components/ui/toast/use-toast";
+
+import { SearchBar } from "./SearchBar";
 
 interface FormData {
   name: string;

@@ -18,6 +18,7 @@ import {
   createCashPayment,
   verifyCashPayment,
 } from "@/services/payment/paymentApi";
+import { updateServiceRequestStatus } from "@/services/service-request/serviceRequestApi";
 import {
   checkout,
   StripeVerificationResult,
@@ -25,23 +26,31 @@ import {
 } from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
 import { IBillResponse } from "@/types/billType";
+import {
+  EPaymentMethod,
+  EServiceRequestReasonType,
+  EServiceRequestStatus,
+} from "@/types/enum";
+import {
+  CreatedServiceRequestFromSignalR,
+  ServiceRequest,
+  UpdatedServiceRequestFromSignalR,
+} from "@/types/serviceRequestType";
 import { ITableResponse } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
 import { TableAddDrawer } from "./components/TableAddDrawer";
-import { PaymentMethod, TableBillConfirmPaymentModal } from "./components/TableBillConfirmPaymentModal";
+import { TableBillConfirmCompleteModal } from "./components/TableBillConfirmCompleteModal";
+import {
+  PaymentMethod,
+  TableBillConfirmPaymentModal,
+} from "./components/TableBillConfirmPaymentModal";
 import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
 import { TablePaymentFailedModal } from "./components/TablePaymentFailedModal";
 import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
-import { EPaymentMethod } from "@/types/enum";
-import {
-  checkout,
-  verifyCheckoutSession,
-  StripeVerificationResult,
-} from "@/services/stripe";
 
 const TableRender = () => {
   const router = useRouter();
@@ -126,12 +135,10 @@ const TableRender = () => {
         )
         .withAutomaticReconnect()
         .build();
-      connect
-        .start()
-        .catch((err) => {
-          console.error("Error while connecting to SignalR Hub:", err);
-          throw err;
-        });
+      connect.start().catch((err) => {
+        console.error("Error while connecting to SignalR Hub:", err);
+        throw err;
+      });
 
       connect.on(
         "service_request_created",
