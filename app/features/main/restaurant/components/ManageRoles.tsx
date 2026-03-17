@@ -49,6 +49,19 @@ interface FormData {
   permission_ids: number[];
 }
 
+const PAGE_PERMISSIONS: Record<string, { core: Set<number>; deps: Set<number> }> = {
+  Dashboard: { core: new Set([8000]), deps: new Set([]) },
+  Order: { core: new Set([7020, 7030]), deps: new Set([]) },
+  Table: { core: new Set([6000, 6010, 7000, 7010]), deps: new Set([]) },
+  Stock: { core: new Set([2000, 2020]), deps: new Set([]) },
+  Menu: { core: new Set([3000, 3010]), deps: new Set([]) },
+  Restaurant: {
+    core: new Set([1000, 1010, 9000, 9010, 9020, 9030]),
+    deps: new Set([]),
+  },
+};
+
+
 export const ManageRolesView = () => {
   const [roles, setRoles] = useState<IRoleWithId[]>([]);
   const [permissionsGroup, setPermissionsGroup] = useState<IPermissionsGroup[]>(
@@ -453,50 +466,68 @@ const RoleCard = ({
   };
 
   const onPermissionChange = (permission_id: number) => {
-    setRoleData((prev) => {
-      const isChecked = prev.permission_ids.includes(permission_id);
-      const newPermissions = isChecked
-        ? prev.permission_ids.filter((id) => id !== permission_id)
-        : [...prev.permission_ids, permission_id];
+    const isChecked = roleData.permission_ids.includes(permission_id);
+    const newPermissions = isChecked
+      ? roleData.permission_ids.filter((id) => id !== permission_id)
+      : [...roleData.permission_ids, permission_id];
 
-      const newState = {
-        ...prev,
-        permission_ids: newPermissions,
-      };
-
-      onPermissionsUpdate(newPermissions);
-      return newState;
-    });
+    onPermissionsUpdate(newPermissions);
+    setRoleData((prev) => ({
+      ...prev,
+      permission_ids: newPermissions,
+    }));
   };
 
   const onPermissionAllCheck = (group_permission_ids: number[]) => {
-    setRoleData((prev) => {
-      const allGroupChecked = group_permission_ids.every((id) =>
-        prev.permission_ids.includes(id)
+    const allGroupChecked = group_permission_ids.every((id) =>
+      roleData.permission_ids.includes(id)
+    );
+
+    let newPermissions: number[];
+    if (allGroupChecked) {
+      // Uncheck all in this group
+      newPermissions = roleData.permission_ids.filter(
+        (id) => !group_permission_ids.includes(id)
       );
+    } else {
+      // Check all in this group (add missing ones)
+      const missingIds = group_permission_ids.filter(
+        (id) => !roleData.permission_ids.includes(id)
+      );
+      newPermissions = [...roleData.permission_ids, ...missingIds];
+    }
 
-      let newPermissions: number[];
-      if (allGroupChecked) {
-        // Uncheck all in this group
-        newPermissions = prev.permission_ids.filter(
-          (id) => !group_permission_ids.includes(id)
-        );
-      } else {
-        // Check all in this group (add missing ones)
-        const missingIds = group_permission_ids.filter(
-          (id) => !prev.permission_ids.includes(id)
-        );
-        newPermissions = [...prev.permission_ids, ...missingIds];
-      }
+    onPermissionsUpdate(newPermissions);
+    setRoleData((prev) => ({
+      ...prev,
+      permission_ids: newPermissions,
+    }));
+  };
 
-      const newState = {
-        ...prev,
-        permission_ids: newPermissions,
-      };
+  const onPagePermissionChange = (page: string) => {
+    const config = PAGE_PERMISSIONS[page];
+    const currentSet = new Set(roleData.permission_ids);
 
-      onPermissionsUpdate(newPermissions);
-      return newState;
-    });
+    let newPermissions: number[];
+    if (currentSet.isSupersetOf(config.core)) {
+      // Uncheck: remove core permissions
+      newPermissions = Array.from(currentSet.difference(config.core));
+    } else {
+      // Check: add all
+      newPermissions = Array.from(currentSet.union(config.core));
+    }
+
+    onPermissionsUpdate(newPermissions);
+    setRoleData((prev) => ({
+      ...prev,
+      permission_ids: newPermissions,
+    }));
+  };
+
+  const isPageActive = (page: string) => {
+    const config = PAGE_PERMISSIONS[page];
+    const currentSet = new Set(roleData.permission_ids);
+    return currentSet.isSupersetOf(config.core);
   };
 
   return (
@@ -520,7 +551,9 @@ const RoleCard = ({
             <h3 className="text-xl font-bold text-gray-900 leading-tight">
               {role.name}
             </h3>
-            <p className="text-sm text-gray-500">{role.description}</p>
+            <p className="text-sm text-gray-500 max-w-[200px] truncate indent-1">
+              {role.description || "..."}
+            </p>
           </div>
         </div>
 
@@ -564,22 +597,34 @@ const RoleCard = ({
       </div>
 
       {isExpanded && (
-        <div className="bg-gray-50/80 border-t border-gray-100 p-5 animate-in slide-in-from-top-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {permissionsGroup.map((group) => (
-              <div
-                key={group.title}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100"
-              >
-                <PermissionGroup
-                  group={group}
-                  permission_ids={roleData.permission_ids}
-                  onPermissionChange={onPermissionChange}
-                  onPermissionAllCheck={onPermissionAllCheck}
-                  isEditing={isEditing}
-                />
-              </div>
-            ))}
+        <div className="bg-gray-50/80 border-t border-gray-100 p-5 animate-in slide-in-from-top-2 space-y-6">
+          {/* Page Level Toggles */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-2">
+            <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-[#FF5C39]" />
+              Quick Access by Page
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {Object.keys(PAGE_PERMISSIONS).map((page) => (
+                <div
+                  key={page}
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    isPageActive(page)
+                      ? "bg-orange-50 border-[#FF5C39] text-[#FF5C39]"
+                      : "bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100"
+                  }`}
+                  onClick={() => isEditing && onPagePermissionChange(page)}
+                >
+                  <span className="text-sm font-bold">{page}</span>
+                  <Checkbox
+                    disabled={!isEditing}
+                    checked={isPageActive(page)}
+                    className="mt-2 h-5 w-5 rounded-md border-gray-300 data-[state=checked]:bg-[#FF5C39] data-[state=checked]:border-[#FF5C39] cursor-pointer pointer-events-none"
+                    onCheckedChange={() => {}}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
