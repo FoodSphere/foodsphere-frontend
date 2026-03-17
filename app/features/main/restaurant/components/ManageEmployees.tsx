@@ -1,8 +1,16 @@
 // src/components/restaurant/ManageEmployeesView.tsx
 import React, { useEffect, useState } from "react";
-import { Loader2, Pencil, Trash2, UserPlus } from "lucide-react";
+import {
+  Loader2,
+  Pencil,
+  Trash2,
+  UserPlus,
+  QrCode as QrCodeIcon,
+  X,
+} from "lucide-react";
 
 import { ConfirmModalComponent } from "@/app/components/featureComponents/ConfirmModalComponent";
+import { QrCode as QrCodeComponent } from "@/app/components/featureComponents/QrCode";
 import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
 import { Input } from "@/app/components/ui/input";
@@ -29,8 +37,15 @@ import {
   IStaffWithId,
   IStaffWithMappedRole,
 } from "@/types/staffType";
-
-import { SearchBar } from "./SearchBar";
+import {
+  createStaff,
+  createStaffPortal,
+  deleteStaff,
+  getStaffs,
+  updateStaff,
+} from "@/services/staff/staffApi";
+import { getRoles } from "@/services/role/roleApi";
+import { toast } from "@/app/components/ui/toast/use-toast";
 
 interface FormData {
   name: string;
@@ -44,6 +59,10 @@ export const ManageEmployeesView = () => {
   const [addingStaff, setAddingStaff] = useState<IStaff | null>(null);
   const [editingStaff, setEditingStaff] = useState<IStaffWithId | null>(null);
   const [deletingStaff, setDeletingStaff] = useState<IStaffWithId | null>(null);
+  const [showQRForStaff, setShowQRForStaff] = useState<IStaffWithId | null>(
+    null
+  );
+  const [qrUrlForStaff, setQrUrlForStaff] = useState<string | null>(null);
 
   const [isStaffLoading, setIsStaffLoading] = useState<boolean>(true);
   const [isFormEmpty, setIsFormEmpty] = useState<boolean>(true);
@@ -123,6 +142,21 @@ export const ManageEmployeesView = () => {
     setShowConfirmDeleteStaff(true);
   };
 
+  const handleShowQR = async (staff: IStaffWithId) => {
+    const res = await createStaffPortal(staff.id);
+    if (res && res.data && res.data.id) {
+      const portalUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/worker-portal/${res.data.id}`;
+      setQrUrlForStaff(portalUrl);
+      setShowQRForStaff(staff);
+      console.log(portalUrl);
+    } else {
+      toast({
+        title: "Failed to create staff portal",
+        variant: "error",
+      });
+    }
+  };
+
   const handleAddEmployeeConfirm = async () => {
     console.log("Add Staff");
     if (addingStaff) {
@@ -157,6 +191,7 @@ export const ManageEmployeesView = () => {
     setEditingStaff(null);
     setAddingStaff(null);
     setDeletingStaff(null);
+    setShowQRForStaff(null);
     setFormData({ name: "", roles: [], phone: "" });
     setIsFormEmpty(true);
   };
@@ -296,7 +331,7 @@ export const ManageEmployeesView = () => {
                 <Button
                   disabled={isFormEmpty}
                   onClick={handleAddEmployee}
-                  className="w-full h-12 rounded-xl bg-[#FF5C39] hover:bg-orange-600 text-white text-lg font-bold shadow-md disabled:opacity-50 disabled:text-white transition-transform active:scale-95"
+                  className="w-full h-12 rounded-xl bg-[#FF5C39] hover:bg-orange-600 text-white text-lg font-bold shadow-md disabled:opacity-50 disabled:text-white cursor-pointer transition-transform active:scale-95"
                 >
                   {isEditing ? "Save Changes" : "Create Account"}
                 </Button>
@@ -384,6 +419,7 @@ export const ManageEmployeesView = () => {
                         staff={staff}
                         handleStaffEdit={handleStaffEdit}
                         handleStaffDelete={handleStaffDelete}
+                        handleShowQR={handleShowQR}
                         handleCancel={handleCancel}
                         isEditing={isFocused}
                       />
@@ -419,6 +455,18 @@ export const ManageEmployeesView = () => {
             onCancel={() => setShowConfirmDeleteStaff(false)}
           />
         )}
+
+        {/* QR POS Modal */}
+        {showQRForStaff && qrUrlForStaff && (
+          <QrModal
+            staffName={showQRForStaff.name}
+            qrUrl={qrUrlForStaff}
+            onClose={() => {
+              setShowQRForStaff(null);
+              setQrUrlForStaff(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -428,12 +476,14 @@ const StaffCard = ({
   staff,
   handleStaffEdit,
   handleStaffDelete,
+  handleShowQR,
   handleCancel,
   isEditing,
 }: {
   staff: IStaffWithMappedRole;
   handleStaffEdit: (staff: IStaffWithId) => void;
   handleStaffDelete: (staff: IStaffWithId) => void;
+  handleShowQR: (staff: IStaffWithId) => void;
   handleCancel: () => void;
   isEditing: boolean;
 }) => {
@@ -443,6 +493,10 @@ const StaffCard = ({
 
   const handleDelete = () => {
     handleStaffDelete(staff);
+  };
+
+  const handleQR = () => {
+    handleShowQR(staff);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -491,7 +545,7 @@ const StaffCard = ({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-10 w-10 rounded-full hover:bg-orange-50 hover:text-[#FF5C39]"
+                className="h-10 w-10 rounded-full hover:bg-orange-50 hover:text-[#FF5C39] cursor-pointer"
                 onClick={handleEdit}
               >
                 <Pencil className="h-5 w-5" />
@@ -499,7 +553,15 @@ const StaffCard = ({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-500"
+                className="h-10 w-10 rounded-full hover:bg-orange-50 hover:text-[#FF5C39] cursor-pointer"
+                onClick={handleQR}
+              >
+                <QrCodeIcon className="h-5 w-5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-500 cursor-pointer"
                 onClick={handleDelete}
                 disabled={staff.role_name === "Manager"}
               >
@@ -510,5 +572,52 @@ const StaffCard = ({
         </div>
       </div>
     </Card>
+  );
+};
+
+const QrModal = ({
+  staffName,
+  qrUrl,
+  onClose,
+}: {
+  staffName: string;
+  qrUrl: string | null;
+  onClose: () => void;
+}) => {
+  if (!qrUrl) {
+    return null;
+  }
+  return (
+    <div className="fixed inset-0 z-9999 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="bg-white rounded-[24px] w-full max-w-[400px] p-6 relative flex flex-col items-center shadow-2xl animate-in fade-in zoom-in duration-200">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-4">
+          <QrCodeIcon className="w-6 h-6 text-[#FF5C39]" />
+        </div>
+
+        <h3 className="text-xl font-bold text-gray-900 mb-2">POS Access QR</h3>
+        <p className="text-gray-500 mb-6 text-center text-sm">
+          Scan this QR code to access the POS system as{" "}
+          <span className="font-semibold text-gray-900">{staffName}</span>
+        </p>
+
+        <div className="bg-gray-50 p-6 rounded-2xl mb-8 border border-gray-100 shadow-inner">
+          <QrCodeComponent data={qrUrl} width={220} />
+        </div>
+
+        <Button
+          onClick={onClose}
+          className="w-full h-12 rounded-xl bg-[#FF5C39] hover:bg-orange-600 text-white font-bold text-lg shadow-md transition-transform active:scale-95"
+        >
+          Done
+        </Button>
+      </div>
+    </div>
   );
 };

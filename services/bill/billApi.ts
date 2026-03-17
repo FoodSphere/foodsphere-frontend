@@ -5,7 +5,7 @@ import {
   IPortalCreateRequest,
 } from "@/types/billType";
 
-import { apiGet, apiPost } from "../common";
+import { apiGet, apiPost, apiPut } from "../common";
 
 export const getRestaurantId = () => {
   const restaurantId = getCookie("restaurant_id");
@@ -50,7 +50,7 @@ export const getActiveBillByTableId = async (tableId: number) => {
   if (resAllBills && resAllBills.data) {
     // กรองเอาเฉพาะที่ status = 0 และ table_id ตรงกับโต๊ะที่เลือก
     const activeBill = resAllBills.data.find(
-      (bill: IBillResponse) => bill.status === 0 && bill.table_id === tableId
+      (bill: IBillResponse) => (bill.status === 0 || bill.status === 1) && bill.table_id === tableId
     );
 
     // ถ้าเจอบิลที่เปิดอยู่ ให้เอา ID ไป Get ข้อมูลแบบละเอียดอีกครั้ง
@@ -89,5 +89,14 @@ export const getOrderingPortal = async (billId: string, portalId: string) => {
   const path = `/s/restaurants/${restaurantId}/bills/${billId}/portals/${portalId}`;
 
   const response = await apiGet(path);
+  return response;
+};
+
+// 8. ฟังก์ชันสำหรับ Complete Bill
+export const completeBill = async (billId: string) => {
+  const restaurantId = getRestaurantId();
+  const path = `/restaurants/${restaurantId}/branches/1/bills/${billId}/complete`;
+
+  const response = await apiPut(path);
   return response;
 };

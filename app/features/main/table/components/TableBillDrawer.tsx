@@ -5,6 +5,8 @@ import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { Icons } from "@/app/icons";
 import { getMenuById } from "@/services/menu/menuApi";
 import { IBillResponse } from "@/types/billType";
+import { EBillStatus, EServiceRequestStatus } from "@/types/enum";
+import { ServiceRequest } from "@/types/serviceRequestType";
 
 interface EnrichedOrderItem {
   id: string;
@@ -21,9 +23,13 @@ interface TableBillDrawerProps {
   tableName: string;
   billData?: IBillResponse | null;
   qrUrl?: string;
+  serviceRequests?: ServiceRequest[];
   onCheckBill?: () => void;
+  onCompleteBill?: () => void;
   onAddOrder?: () => void;
   onEditOrder?: () => void;
+  onAcknowledgeServiceRequest?: (id: string) => void;
+  onDoneServiceRequest?: (id: string) => void;
 }
 
 // 1. ฟังก์ชันช่วยแปลงตัวเลข Status เป็นข้อความ
@@ -64,12 +70,18 @@ export const TableBillDrawer = ({
   tableName,
   billData,
   qrUrl,
+  serviceRequests,
   onCheckBill,
+  onCompleteBill,
   onAddOrder,
   onEditOrder,
+  onAcknowledgeServiceRequest,
+  onDoneServiceRequest,
 }: TableBillDrawerProps) => {
   const [displayOrders, setDisplayOrders] = useState<EnrichedOrderItem[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+  console.log(billData);
 
   useEffect(() => {
     const loadOrderDetails = async () => {
@@ -176,11 +188,40 @@ export const TableBillDrawer = ({
                   </div>
                 )}
               </div>
-
-              <button className="bg-primary-orange-main hover:bg-[#ff451f] text-white px-10 py-3 rounded-xl font-bold text-lg shadow-md flex items-center gap-3 transition-colors">
-                Print <Icons name="PrintIcon" className="w-6 h-6" />
-              </button>
             </div>
+
+            {/* Service Requests Section */}
+            {serviceRequests && serviceRequests.length > 0 && (
+              <div className="flex flex-col gap-4">
+                <h3 className="text-2xl font-bold text-black">
+                  Service Requests
+                </h3>
+                <div className="space-y-2 text-lg bg-white p-4 rounded-xl shadow-sm">
+                  {serviceRequests.map((request) => (
+                    <div key={request.id} className="flex justify-between">
+                      <span className="text-black">{request.reason}</span>
+                      {request.status === EServiceRequestStatus.PENDING && (
+                        <button
+                          onClick={() =>
+                            onAcknowledgeServiceRequest?.(request.id)
+                          }
+                        >
+                          Acknowledge
+                        </button>
+                      )}
+                      {request.status ===
+                        EServiceRequestStatus.ACKNOWLEDGED && (
+                        <button
+                          onClick={() => onDoneServiceRequest?.(request.id)}
+                        >
+                          Done
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Summary Section */}
             <div className="mt-auto">
@@ -202,13 +243,24 @@ export const TableBillDrawer = ({
                 </div>
               </div>
 
-              <button
-                onClick={onCheckBill}
-                disabled={displayOrders.length === 0}
-                className="w-full bg-primary-orange-main hover:bg-[#ff451f] disabled:bg-gray-400 text-white py-4 rounded-xl font-bold text-xl shadow-md mt-6 flex items-center justify-center gap-3 transition-colors"
-              >
-                Check Bill <Icons name="OrderIcon" className="w-6 h-6" />
-              </button>
+              {billData?.status === EBillStatus.OPEN && (
+                <button
+                  onClick={onCheckBill}
+                  disabled={displayOrders.length === 0}
+                  className="w-full bg-primary-orange-main hover:bg-[#ff451f] disabled:bg-gray-400 text-white py-4 rounded-xl font-bold text-xl shadow-md mt-6 flex items-center justify-center gap-3 transition-colors"
+                >
+                  Check Bill <Icons name="OrderIcon" className="w-6 h-6" />
+                </button>
+              )}
+              {billData?.status === EBillStatus.PAID && (
+                <button
+                  onClick={onCompleteBill}
+                  disabled={displayOrders.length === 0}
+                  className="w-full bg-primary-green-main hover:bg-[#22c55e] disabled:bg-gray-400 text-white py-4 rounded-xl font-bold text-xl shadow-md mt-6 flex items-center justify-center gap-3 transition-colors"
+                >
+                  Complete Bill <Icons name="OrderIcon" className="w-6 h-6" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -290,21 +342,23 @@ export const TableBillDrawer = ({
               </ScrollArea>
             </div>
 
-            <div className="mt-4 space-y-3 pt-4 border-t border-gray-100 shrink-0">
-              <button
-                onClick={onAddOrder}
-                className="w-full bg-primary-orange-main hover:bg-[#ff451f] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors"
-              >
-                Add Order <Icons name="PlusIcon" className="w-6 h-6" />
-              </button>
-              <button
-                onClick={onEditOrder}
-                disabled={displayOrders.length === 0}
-                className="w-full bg-white border border-primary-orange-main hover:bg-orange-50 disabled:bg-gray-300 text-primary-orange-main py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors"
-              >
-                Edit Order <Icons name="EditIcon" className="w-6 h-6" />
-              </button>
-            </div>
+            {billData?.status === EBillStatus.OPEN && (
+              <div className="mt-4 space-y-3 pt-4 border-t border-gray-100 shrink-0">
+                <button
+                  onClick={onAddOrder}
+                  className="w-full bg-primary-orange-main hover:bg-[#ff451f] text-white py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Order <Icons name="PlusIcon" className="w-6 h-6" />
+                </button>
+                <button
+                  disabled={displayOrders.length === 0}
+                  onClick={onEditOrder}
+                  className="w-full bg-white border border-primary-orange-main hover:bg-orange-50 disabled:opacity-50 disabled:cursor-not-allowed text-primary-orange-main py-3 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-colors"
+                >
+                  Edit Order <Icons name="EditIcon" className="w-6 h-6" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

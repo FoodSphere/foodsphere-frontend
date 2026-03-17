@@ -1,6 +1,5 @@
 import { getCookie } from "@/libs/cookie";
-import { ICreateStaffRequest, IUpdateStaffRequest } from "@/types/staffType";
-
+import { ICreateStaffRequest, IStaffPortalRequest, IUpdateStaffRequest } from "@/types/staffType";
 import { apiDelete, apiGet, apiPost, apiPut } from "../common";
 
 const getRestaurantId = () => {
@@ -35,4 +34,16 @@ export const updateStaff = async (
 export const deleteStaff = async (staffId: number) => {
   const restaurantId = getRestaurantId();
   return await apiDelete(`/s/restaurants/${restaurantId}/workers/${staffId}`);
+};
+
+export const createStaffPortal = async (staffId: number) => {
+  const restaurantId = getRestaurantId();
+  return await apiPut(`/s/restaurants/${restaurantId}/workers/${staffId}/portal`, {});
+};
+
+export const loginStaffWithPortal = async (staff_portal_id: string) => {
+  const request: IStaffPortalRequest = {
+    portal_id: staff_portal_id,
+  };
+  return await apiPost(`/auth/worker/token`, request);
 };
