@@ -135,7 +135,7 @@ export default function MenuRender() {
           status: newStatus,
           tags: payloadTags,
           ingredients:
-            payloadIngredients.length > 0 ? payloadIngredients : undefined, // ใส่ถ้ามี
+            payloadIngredients.length > 0 ? payloadIngredients : undefined,
           components: itemToUpdate.components.map((c) => ({
             menu_id: c.menu_id,
             quantity: c.quantity,

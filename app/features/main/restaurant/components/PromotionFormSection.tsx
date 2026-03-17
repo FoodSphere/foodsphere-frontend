@@ -163,6 +163,7 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
           name: setName,
           display_name: setName,
           description: description,
+          status: 1,
           price: parseFloat(specialPrice) || 0,
           components: newSetItems.map((item) => ({
             menu_id: Number(item.menu_id),
@@ -183,6 +184,7 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
           name: setName,
           display_name: setName,
           description: description,
+          status: 1,
           price: parseFloat(specialPrice) || 0,
           components: newSetItems.map((item) => ({
             menu_id: Number(item.menu_id),

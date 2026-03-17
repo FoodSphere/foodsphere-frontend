@@ -15,8 +15,13 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import { ConfirmTypeEnum } from "@/public/enum/confirmModalEnum";
-
-import { SearchBar } from "./SearchBar";
+import { getRoles } from "@/services/role/roleApi";
+import {
+  createStaff,
+  deleteStaff,
+  getStaffs,
+  updateStaff,
+} from "@/services/staff/staffApi";
 import { IRoleMap, IRoleResponse, IRoleWithId } from "@/types/roleType";
 import {
   IStaff,
@@ -24,13 +29,8 @@ import {
   IStaffWithId,
   IStaffWithMappedRole,
 } from "@/types/staffType";
-import {
-  createStaff,
-  deleteStaff,
-  getStaffs,
-  updateStaff,
-} from "@/services/staff/staffApi";
-import { getRoles } from "@/services/role/roleApi";
+
+import { SearchBar } from "./SearchBar";
 
 interface FormData {
   name: string;
@@ -168,7 +168,7 @@ export const ManageEmployeesView = () => {
       if (res && res.data && Array.isArray(res.data)) {
         const apiData: IStaffResponse[] = res.data;
         const currentRoles = await fetchRolesData();
-        
+
         // แปลงข้อมูลจาก API ให้เข้ากับหน้าบ้าน (UI)
         const mappedStaffs: IStaffWithMappedRole[] = apiData.map((item) => ({
           id: item.id,
