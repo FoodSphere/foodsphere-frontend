@@ -19,3 +19,7 @@ export interface IStaffResponse extends IStaffWithId {
 export interface IStaffWithMappedRole extends IStaffWithId {
   role_name: string;
 }
+
+export interface IStaffPortalRequest {
+  portal_id: string;
+}

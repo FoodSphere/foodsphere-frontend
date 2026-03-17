@@ -72,12 +72,20 @@ export const apiGet = async (path: string, query?: string) => {
 
     if (
       res.status === EHttpStatusCode.INVALID_TOKEN ||
-      res.status === EHttpStatusCode.UNAUTHORIZED
+      res.status === EHttpStatusCode.UNAUTHORIZED ||
+      res.status === EHttpStatusCode.FORBIDDEN
     ) {
-      await logOut();
+      useGlobalStore.getState().setLoading(false);
+      if (res.status === EHttpStatusCode.FORBIDDEN) {
+        redirect("/forbidden");
+      } else {
+        await logOut();
+      }
     }
+
     return await handleResponse(res);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.log("error :", error);
   } finally {
     useGlobalStore.getState().setLoading(false);
@@ -95,12 +103,19 @@ export const apiGetNoLoading = async (path: string, query?: string) => {
 
     if (
       res.status === EHttpStatusCode.INVALID_TOKEN ||
-      res.status === EHttpStatusCode.UNAUTHORIZED
+      res.status === EHttpStatusCode.UNAUTHORIZED ||
+      res.status === EHttpStatusCode.FORBIDDEN
     ) {
-      await logOut();
+      if (res.status === EHttpStatusCode.FORBIDDEN) {
+        redirect("/forbidden");
+      } else {
+        await logOut();
+      }
     }
+
     return await handleResponse(res);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.log("error :", error);
   }
 };
@@ -129,12 +144,20 @@ export const apiPost = async (path: string, payload?: any) => {
 
     if (
       res.status === EHttpStatusCode.INVALID_TOKEN ||
-      res.status === EHttpStatusCode.UNAUTHORIZED
+      res.status === EHttpStatusCode.UNAUTHORIZED ||
+      res.status === EHttpStatusCode.FORBIDDEN
     ) {
-      await logOut();
+      useGlobalStore.getState().setLoading(false);
+      if (res.status === EHttpStatusCode.FORBIDDEN) {
+        redirect("/forbidden");
+      } else {
+        await logOut();
+      }
     }
+
     return await handleResponse(res);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.log("error :", error);
     throw new Error(JSON.stringify(error, null, 2));
   } finally {
@@ -166,12 +189,20 @@ export const apiPut = async (path: string, payload?: any) => {
 
     if (
       res.status === EHttpStatusCode.INVALID_TOKEN ||
-      res.status === EHttpStatusCode.UNAUTHORIZED
+      res.status === EHttpStatusCode.UNAUTHORIZED ||
+      res.status === EHttpStatusCode.FORBIDDEN
     ) {
-      await logOut();
+      useGlobalStore.getState().setLoading(false);
+      if (res.status === EHttpStatusCode.FORBIDDEN) {
+        redirect("/forbidden");
+      } else {
+        await logOut();
+      }
     }
+
     return await handleResponse(res);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.log("error :", error);
     throw new Error(JSON.stringify(error, null, 2));
   } finally {
@@ -208,12 +239,20 @@ export const apiPatch = async (
 
     if (
       res.status === EHttpStatusCode.INVALID_TOKEN ||
-      res.status === EHttpStatusCode.UNAUTHORIZED
+      res.status === EHttpStatusCode.UNAUTHORIZED ||
+      res.status === EHttpStatusCode.FORBIDDEN
     ) {
-      await logOut();
+      useGlobalStore.getState().setLoading(false);
+      if (res.status === EHttpStatusCode.FORBIDDEN) {
+        redirect("/forbidden");
+      } else {
+        await logOut();
+      }
     }
+
     return await handleResponse(res);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.log("Error in apiPatch :", error);
     throw new Error(JSON.stringify(error, null, 2));
   } finally {
@@ -235,12 +274,20 @@ export const apiDelete = async (path: string) => {
 
     if (
       res.status === EHttpStatusCode.INVALID_TOKEN ||
-      res.status === EHttpStatusCode.UNAUTHORIZED
+      res.status === EHttpStatusCode.UNAUTHORIZED ||
+      res.status === EHttpStatusCode.FORBIDDEN
     ) {
-      await logOut();
+      useGlobalStore.getState().setLoading(false);
+      if (res.status === EHttpStatusCode.FORBIDDEN) {
+        redirect("/forbidden");
+      } else {
+        await logOut();
+      }
     }
+
     return await handleResponse(res);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.log("error :", error);
     throw new Error(JSON.stringify(error, null, 2));
   } finally {

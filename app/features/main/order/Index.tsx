@@ -8,7 +8,6 @@ import { OrderCard } from "@/app/features/main/order/components/OrderCard";
 import { getCookie } from "@/libs/cookie";
 import { getMenuById } from "@/services/menu/menuApi";
 import { getAllOrders, updateOrderStatus } from "@/services/order/orderApi";
-import { getTables } from "@/services/table/tableApi";
 
 import { FilterStatus, OrderFilterBar } from "./components/OrderFilterBar";
 import { OrderSearchBar } from "./components/OrderSearchBar";
@@ -77,9 +76,7 @@ const OrderRender = () => {
     setIsLoading(true);
     try {
       // *** ดึงข้อมูล Orders  ***
-      const [ordersRes] = await Promise.all([
-        getAllOrders(),
-      ]);
+      const [ordersRes] = await Promise.all([getAllOrders()]);
 
       if (!ordersRes || !ordersRes.data || ordersRes.data.length === 0) {
         setOrders([]);
@@ -167,9 +164,6 @@ const OrderRender = () => {
       if (!createdOrder || !createdOrder.items) return;
 
       try {
-        const tablesRes = await getTables();
-        const tablesList = tablesRes?.data || [];
-
         const newItemsPromises = createdOrder.items.map(
           async (item: any, index: number) => {
             let menuName = "Unknown Menu";
@@ -219,19 +213,18 @@ const OrderRender = () => {
     });
 
     connect.on("order_item_updated", async (updatedOrder) => {
-      console.log("Order Item Updated:", updatedOrder);
       setOrders((prevOrders) => {
         return prevOrders.map((order) => {
-          if (order.id === updatedOrder.id) {
+          if (order.originalOrderId === updatedOrder.order_id) {
             return {
               ...order,
               quantity: updatedOrder.quantity,
-              note: updatedOrder.note,
+              additionalDetail: updatedOrder.note,
             };
           }
           return order;
         });
-      })
+      });
     });
 
     return () => {

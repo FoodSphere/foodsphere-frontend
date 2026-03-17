@@ -118,80 +118,96 @@ const TableRender = () => {
   useEffect(() => {
     fetchTables();
 
-    const accessToken = getCookie("access_token");
-    const restaurantId = getCookie("restaurant_id");
+    try {
+      const accessToken = getCookie("access_token");
+      const restaurantId = getCookie("restaurant_id");
 
-    const connect = new signalR.HubConnectionBuilder()
-      .withUrl(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/restaurants/${restaurantId}/branches/1/hubs/pos`,
-        {
-          accessTokenFactory: () => `${accessToken}`,
-        }
-      )
-      .withAutomaticReconnect()
-      .build();
-    connect
-      .start()
-      .catch((err) =>
-        console.error("Error while connecting to SignalR Hub:", err)
-      );
-
-    connect.on(
-      "service_request_created",
-      (serviceRequest: CreatedServiceRequestFromSignalR) => {
-        if (serviceRequest.reason === EServiceRequestReasonType.CASH_PAYMENT) {
-          console.log("Cash Payment");
-        } else if (
-          serviceRequest.reason === EServiceRequestReasonType.CALL_WAITER
-        ) {
-          console.log("Call Waiter!");
-        }
-        const newServiceRequest: ServiceRequest = {
-          id: serviceRequest.id,
-          create_time: serviceRequest.create_time,
-          update_time: serviceRequest.update_time,
-          reason: serviceRequest.reason,
-          status: serviceRequest.status,
-        };
-        setServiceRequests((prev) => [...prev, newServiceRequest]);
+      if (!accessToken || !restaurantId) {
+        throw new Error("Access token or restaurant ID not found");
       }
-    );
 
-    connect.on(
-      "service_request_status_updated",
-      (serviceRequest: UpdatedServiceRequestFromSignalR) => {
-
-        
-        setServiceRequests((prev) => {
-          const isFinished =
-            serviceRequest.status == EServiceRequestStatus.DONE ||
-            serviceRequest.status == EServiceRequestStatus.CANCELLED;
-
-          if (isFinished) {
-            return prev.filter((sr) => sr.id !== serviceRequest.resource.id);
+      const connect = new signalR.HubConnectionBuilder()
+        .withUrl(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/restaurants/${restaurantId}/branches/1/hubs/pos`,
+          {
+            accessTokenFactory: () => `${accessToken}`,
           }
+        )
+        .withAutomaticReconnect()
+        .build();
+      connect
+        .start()
+        .catch((err) => {
+          console.error("Error while connecting to SignalR Hub:", err);
+          throw err;
+        });
 
-          const findServiceRequest = prev.find((sr) => sr.id === serviceRequest.resource.id);
-          if (!findServiceRequest) {
-            return prev;
+      connect.on(
+        "service_request_created",
+        (serviceRequest: CreatedServiceRequestFromSignalR) => {
+          if (
+            serviceRequest.reason === EServiceRequestReasonType.CASH_PAYMENT
+          ) {
+            console.log("Cash Payment");
+          } else if (
+            serviceRequest.reason === EServiceRequestReasonType.CALL_WAITER
+          ) {
+            console.log("Call Waiter!");
           }
-          const updatedServiceRequest: ServiceRequest = {
-            id: findServiceRequest.id,
-            create_time: findServiceRequest.create_time,
-            update_time: findServiceRequest.update_time,
-            reason: findServiceRequest.reason,
+          const newServiceRequest: ServiceRequest = {
+            id: serviceRequest.id,
+            create_time: serviceRequest.create_time,
+            update_time: serviceRequest.update_time,
+            reason: serviceRequest.reason,
             status: serviceRequest.status,
           };
-          return prev.map((sr) =>
-            sr.id === serviceRequest.resource.id ? updatedServiceRequest : sr
-          );
-        });
-      }
-    );
+          setServiceRequests((prev) => [...prev, newServiceRequest]);
+        }
+      );
 
-    return () => {
-      connect.stop();
-    };
+      connect.on(
+        "service_request_status_updated",
+        (serviceRequest: UpdatedServiceRequestFromSignalR) => {
+          setServiceRequests((prev) => {
+            const isFinished =
+              serviceRequest.status == EServiceRequestStatus.DONE ||
+              serviceRequest.status == EServiceRequestStatus.CANCELLED;
+
+            if (isFinished) {
+              return prev.filter((sr) => sr.id !== serviceRequest.resource.id);
+            }
+
+            const findServiceRequest = prev.find(
+              (sr) => sr.id === serviceRequest.resource.id
+            );
+            if (!findServiceRequest) {
+              return prev;
+            }
+            const updatedServiceRequest: ServiceRequest = {
+              id: findServiceRequest.id,
+              create_time: findServiceRequest.create_time,
+              update_time: findServiceRequest.update_time,
+              reason: findServiceRequest.reason,
+              status: serviceRequest.status,
+            };
+            return prev.map((sr) =>
+              sr.id === serviceRequest.resource.id ? updatedServiceRequest : sr
+            );
+          });
+        }
+      );
+
+      return () => {
+        connect.stop();
+      };
+    } catch (error) {
+      console.error("Failed to connect to SignalR Hub:", error);
+      toast({
+        title: "Error",
+        description: "Failed to connect to SignalR Hub",
+      });
+      throw error;
+    }
   }, []);
 
   useEffect(() => {
