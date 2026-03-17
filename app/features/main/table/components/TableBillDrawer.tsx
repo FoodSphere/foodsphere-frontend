@@ -5,7 +5,8 @@ import { ScrollArea } from "@/app/components/ui/scroll-area";
 import { Icons } from "@/app/icons";
 import { getMenuById } from "@/services/menu/menuApi";
 import { IBillResponse } from "@/types/billType";
-import { EBillStatus } from "@/types/enum";
+import { EBillStatus, EServiceRequestStatus } from "@/types/enum";
+import { ServiceRequest } from "@/types/serviceRequestType";
 
 interface EnrichedOrderItem {
   id: string;
@@ -22,10 +23,13 @@ interface TableBillDrawerProps {
   tableName: string;
   billData?: IBillResponse | null;
   qrUrl?: string;
+  serviceRequests?: ServiceRequest[];
   onCheckBill?: () => void;
   onCompleteBill?: () => void;
   onAddOrder?: () => void;
   onEditOrder?: () => void;
+  onAcknowledgeServiceRequest?: (id: string) => void;
+  onDoneServiceRequest?: (id: string) => void;
 }
 
 // 1. ฟังก์ชันช่วยแปลงตัวเลข Status เป็นข้อความ
@@ -66,10 +70,13 @@ export const TableBillDrawer = ({
   tableName,
   billData,
   qrUrl,
+  serviceRequests,
   onCheckBill,
   onCompleteBill,
   onAddOrder,
   onEditOrder,
+  onAcknowledgeServiceRequest,
+  onDoneServiceRequest,
 }: TableBillDrawerProps) => {
   const [displayOrders, setDisplayOrders] = useState<EnrichedOrderItem[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
@@ -181,11 +188,40 @@ export const TableBillDrawer = ({
                   </div>
                 )}
               </div>
-
-              <button className="bg-primary-orange-main hover:bg-[#ff451f] text-white px-10 py-3 rounded-xl font-bold text-lg shadow-md flex items-center gap-3 transition-colors">
-                Print <Icons name="PrintIcon" className="w-6 h-6" />
-              </button>
             </div>
+
+            {/* Service Requests Section */}
+            {serviceRequests && serviceRequests.length > 0 && (
+              <div className="flex flex-col gap-4">
+                <h3 className="text-2xl font-bold text-black">
+                  Service Requests
+                </h3>
+                <div className="space-y-2 text-lg bg-white p-4 rounded-xl shadow-sm">
+                  {serviceRequests.map((request) => (
+                    <div key={request.id} className="flex justify-between">
+                      <span className="text-black">{request.reason}</span>
+                      {request.status === EServiceRequestStatus.PENDING && (
+                        <button
+                          onClick={() =>
+                            onAcknowledgeServiceRequest?.(request.id)
+                          }
+                        >
+                          Acknowledge
+                        </button>
+                      )}
+                      {request.status ===
+                        EServiceRequestStatus.ACKNOWLEDGED && (
+                        <button
+                          onClick={() => onDoneServiceRequest?.(request.id)}
+                        >
+                          Done
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Summary Section */}
             <div className="mt-auto">

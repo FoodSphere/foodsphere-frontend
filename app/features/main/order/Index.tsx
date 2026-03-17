@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import * as signalR from "@microsoft/signalr";
 
 // Import Components
 import { OrderCard } from "@/app/features/main/order/components/OrderCard";
+import { getCookie } from "@/libs/cookie";
 import { getMenuById } from "@/services/menu/menuApi";
 import { getAllOrders, updateOrderStatus } from "@/services/order/orderApi";
 import { getTables } from "@/services/table/tableApi";
@@ -74,10 +76,9 @@ const OrderRender = () => {
   const fetchOrdersData = async () => {
     setIsLoading(true);
     try {
-      // *** ดึงข้อมูล Orders และ Tables พร้อมกันเพื่อลดระยะเวลาโหลด ***
-      const [ordersRes, tablesRes] = await Promise.all([
+      // *** ดึงข้อมูล Orders  ***
+      const [ordersRes] = await Promise.all([
         getAllOrders(),
-        getTables(),
       ]);
 
       if (!ordersRes || !ordersRes.data || ordersRes.data.length === 0) {
@@ -87,7 +88,6 @@ const OrderRender = () => {
       }
 
       const rawOrders = ordersRes.data;
-      const tablesList = tablesRes?.data || []; // รับข้อมูลโต๊ะมาเก็บไว้
 
       const allItemsPromises = rawOrders.flatMap((order: any) => {
         // เพิ่ม index เข้ามาใน map เพื่อเอาไปสร้าง ID ไม่ให้ซ้ำกัน
@@ -109,20 +109,7 @@ const OrderRender = () => {
           const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 
           // 1. ลอง console.log ดูว่ามีค่า table_id ส่งมาจริงไหม และใช้ชื่อ key ว่าอะไร
-          console.log("Order Data:", order); 
-          
-          // 2. ดึงค่า table id (ดักเผื่อกรณี backend ส่งมาเป็น camelCase)
-          const targetTableId = order.table_id || order.tableId;
-
-          // 3. แปลงเป็น String ทั้งคู่ก่อนเทียบกันเพื่อแก้ปัญหา Type Mismatch
-          const matchedTable = tablesList.find(
-            (t: any) => String(t.id) === String(targetTableId)
-          );
-          const tableName = matchedTable
-            ? matchedTable.name
-            : order.table_id
-              ? String(order.table_id)
-              : "-";
+          console.log("Order Data:", order);
 
           return {
             // *** แก้ไขการสร้าง ID ให้การันตีว่าไม่ซ้ำ (billId-orderId-index) ***
@@ -131,7 +118,7 @@ const OrderRender = () => {
             billId: order.bill_id,
             img: imgUrl,
             foodName: menuName,
-            table: tableName, // ส่งชื่อโต๊ะเข้าไปแทน ID โต๊ะ
+            table: order.table.name, // ส่งชื่อโต๊ะเข้าไปแทน ID โต๊ะ
             additionalDetail: item.note || "-",
             quantity: item.quantity.toString(),
             order_at: formattedDate,
@@ -157,6 +144,99 @@ const OrderRender = () => {
 
   useEffect(() => {
     fetchOrdersData();
+
+    const accessToken = getCookie("access_token");
+    const restaurantId = getCookie("restaurant_id");
+
+    const connect = new signalR.HubConnectionBuilder()
+      .withUrl(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/restaurants/${restaurantId}/branches/1/hubs/pos`,
+        {
+          accessTokenFactory: () => `${accessToken}`,
+        }
+      )
+      .withAutomaticReconnect()
+      .build();
+    connect
+      .start()
+      .catch((err) =>
+        console.error("Error while connecting to SignalR Hub:", err)
+      );
+
+    connect.on("order_created", async (createdOrder) => {
+      if (!createdOrder || !createdOrder.items) return;
+
+      try {
+        const tablesRes = await getTables();
+        const tablesList = tablesRes?.data || [];
+
+        const newItemsPromises = createdOrder.items.map(
+          async (item: any, index: number) => {
+            let menuName = "Unknown Menu";
+            let imgUrl = "";
+
+            try {
+              const menuRes = await getMenuById(item.menu_id);
+              if (menuRes && menuRes.data) {
+                menuName = menuRes.data.name;
+                imgUrl = menuRes.data.image_url || imgUrl;
+              }
+            } catch (error) {
+              console.error(`Failed to fetch menu ID ${item.menu_id}`, error);
+            }
+
+            const dateObj = new Date(createdOrder.create_time);
+            const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+
+            return {
+              id: `${createdOrder.bill_id}-${createdOrder.id}-${index}`,
+              originalOrderId: createdOrder.id,
+              billId: createdOrder.bill_id,
+              img: imgUrl,
+              foodName: menuName,
+              table: createdOrder.table.name,
+              additionalDetail: item.note || "-",
+              quantity: item.quantity.toString(),
+              order_at: formattedDate,
+              status: mapOrderStatus(createdOrder.status) as any,
+            } as IOrder;
+          }
+        );
+
+        const newOrders = await Promise.all(newItemsPromises);
+
+        setOrders((prevOrders) => {
+          const merged = [...prevOrders, ...newOrders];
+          merged.sort(
+            (a, b) =>
+              new Date(b.order_at).getTime() - new Date(a.order_at).getTime()
+          );
+          return merged;
+        });
+      } catch (err) {
+        console.error("Error processing new order:", err);
+      }
+    });
+
+    connect.on("order_item_updated", async (updatedOrder) => {
+      console.log("Order Item Updated:", updatedOrder);
+      setOrders((prevOrders) => {
+        return prevOrders.map((order) => {
+          if (order.id === updatedOrder.id) {
+            return {
+              ...order,
+              quantity: updatedOrder.quantity,
+              note: updatedOrder.note,
+            };
+          }
+          return order;
+        });
+      })
+    });
+
+    return () => {
+      connect.stop();
+    };
   }, []);
 
   // ==============================================================

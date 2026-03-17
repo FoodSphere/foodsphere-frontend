@@ -3,6 +3,7 @@ export enum EHttpStatusCode {
   CREATED = 201,
   BAD_REQUEST = 400,
   UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
   NOT_FOUND = 404,
   INVALID_TOKEN = 498,
   SERVER_ERROR = 500,
@@ -44,4 +45,31 @@ export enum EBillStatus {
   PAID = 1,
   COMPLETED = 2,
   CANCELLED = 3,
+}
+
+export enum EUserType {
+  MASTER = "Master",
+  WORKER = "Worker",
+  CUSTOMER = "Customer",
+}
+
+export enum EPermission {
+  DASHBOARD = 8000,
+  ORDER = 7010,
+  TABLE = 6000,
+  STOCK = 5000,
+  MENU = 3000,
+  RESTAURANT = 1010,
+}
+
+export enum EServiceRequestStatus {
+  PENDING = 0,
+  ACKNOWLEDGED = 1,
+  DONE = 2,
+  CANCELLED = 3,
+}
+
+export enum EServiceRequestReasonType {
+  CALL_WAITER = "call_waiter",
+  CASH_PAYMENT = "cash_payment"
 }

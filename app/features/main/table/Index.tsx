@@ -1,9 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import * as signalR from "@microsoft/signalr";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { toast } from "@/app/components/ui/toast/use-toast";
 import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
 import { TableBillPaymentDrawer } from "@/app/features/main/table/components/TableBillPaymentDrawer";
+import { getCookie } from "@/libs/cookie";
 import {
   completeBill,
   createBill,
@@ -11,34 +14,43 @@ import {
   getActiveBillByTableId,
   getPortalsByBillId,
 } from "@/services/bill/billApi";
+import {
+  createCashPayment,
+  verifyCashPayment,
+} from "@/services/payment/paymentApi";
+import {
+  checkout,
+  StripeVerificationResult,
+  verifyCheckoutSession,
+} from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
 import { IBillResponse } from "@/types/billType";
+import {
+  EPaymentMethod,
+  EServiceRequestReasonType,
+  EServiceRequestStatus,
+} from "@/types/enum";
+import {
+  CreatedServiceRequestFromSignalR,
+  ServiceRequest,
+  UpdatedServiceRequestFromSignalR,
+} from "@/types/serviceRequestType";
 import { ITableResponse } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
 import { Table } from "./components/Table";
 import { TableAddDrawer } from "./components/TableAddDrawer";
+import { TableBillConfirmCompleteModal } from "./components/TableBillConfirmCompleteModal";
 import {
   PaymentMethod,
   TableBillConfirmPaymentModal,
 } from "./components/TableBillConfirmPaymentModal";
 import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
-import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
-import { EPaymentMethod } from "@/types/enum";
-import {
-  checkout,
-  verifyCheckoutSession,
-  StripeVerificationResult,
-} from "@/services/stripe";
-import {
-  createCashPayment,
-  verifyCashPayment,
-} from "@/services/payment/paymentApi";
 import { TablePaymentFailedModal } from "./components/TablePaymentFailedModal";
-import { toast } from "@/app/components/ui/toast/use-toast";
-import { TableBillConfirmCompleteModal } from "./components/TableBillConfirmCompleteModal";
+import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
+import { updateServiceRequestStatus } from "@/services/service-request/serviceRequestApi";
 
 const TableRender = () => {
   const router = useRouter();
@@ -63,6 +75,7 @@ const TableRender = () => {
   const [showTableBillDrawer, setShowTableBillDrawer] =
     useState<boolean>(false);
   const [qrData, setQrData] = useState<string>("");
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
 
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
@@ -104,6 +117,81 @@ const TableRender = () => {
 
   useEffect(() => {
     fetchTables();
+
+    const accessToken = getCookie("access_token");
+    const restaurantId = getCookie("restaurant_id");
+
+    const connect = new signalR.HubConnectionBuilder()
+      .withUrl(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/restaurants/${restaurantId}/branches/1/hubs/pos`,
+        {
+          accessTokenFactory: () => `${accessToken}`,
+        }
+      )
+      .withAutomaticReconnect()
+      .build();
+    connect
+      .start()
+      .catch((err) =>
+        console.error("Error while connecting to SignalR Hub:", err)
+      );
+
+    connect.on(
+      "service_request_created",
+      (serviceRequest: CreatedServiceRequestFromSignalR) => {
+        if (serviceRequest.reason === EServiceRequestReasonType.CASH_PAYMENT) {
+          console.log("Cash Payment");
+        } else if (
+          serviceRequest.reason === EServiceRequestReasonType.CALL_WAITER
+        ) {
+          console.log("Call Waiter!");
+        }
+        const newServiceRequest: ServiceRequest = {
+          id: serviceRequest.id,
+          create_time: serviceRequest.create_time,
+          update_time: serviceRequest.update_time,
+          reason: serviceRequest.reason,
+          status: serviceRequest.status,
+        };
+        setServiceRequests((prev) => [...prev, newServiceRequest]);
+      }
+    );
+
+    connect.on(
+      "service_request_status_updated",
+      (serviceRequest: UpdatedServiceRequestFromSignalR) => {
+
+        
+        setServiceRequests((prev) => {
+          const isFinished =
+            serviceRequest.status == EServiceRequestStatus.DONE ||
+            serviceRequest.status == EServiceRequestStatus.CANCELLED;
+
+          if (isFinished) {
+            return prev.filter((sr) => sr.id !== serviceRequest.resource.id);
+          }
+
+          const findServiceRequest = prev.find((sr) => sr.id === serviceRequest.resource.id);
+          if (!findServiceRequest) {
+            return prev;
+          }
+          const updatedServiceRequest: ServiceRequest = {
+            id: findServiceRequest.id,
+            create_time: findServiceRequest.create_time,
+            update_time: findServiceRequest.update_time,
+            reason: findServiceRequest.reason,
+            status: serviceRequest.status,
+          };
+          return prev.map((sr) =>
+            sr.id === serviceRequest.resource.id ? updatedServiceRequest : sr
+          );
+        });
+      }
+    );
+
+    return () => {
+      connect.stop();
+    };
   }, []);
 
   useEffect(() => {
@@ -124,7 +212,7 @@ const TableRender = () => {
         table_name: null,
         payment_method: null,
         error: "Payment cancelled",
-      }
+      };
       setStripeResult(result);
     }
 
@@ -296,6 +384,18 @@ const TableRender = () => {
     resetState();
   }
 
+  async function handleActionServiceRequest(
+    id: string,
+    status: EServiceRequestStatus
+  ) {
+    console.log("handleActionServiceRequest", id, status);
+    if (!activeBillData?.id) {
+      toast({ variant: "error", title: "Bill not found" });
+      return;
+    }
+    await updateServiceRequestStatus(id, activeBillData.id, status);
+  }
+
   function resetState() {
     setShowPaymentSuccessModal(false);
     setShowPaymentFailedModal(false);
@@ -368,10 +468,17 @@ const TableRender = () => {
           tableName={currentTable.name}
           billData={activeBillData}
           qrUrl={qrData}
+          serviceRequests={serviceRequests}
           onCheckBill={() => setShowPaymentModal(true)}
           onCompleteBill={() => setShowConfirmCompleteBillModal(true)}
           onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
           onEditOrder={() => router.push(`/table/${currentTable.id}/edit`)}
+          onAcknowledgeServiceRequest={(id) =>
+            handleActionServiceRequest(id, EServiceRequestStatus.ACKNOWLEDGED)
+          }
+          onDoneServiceRequest={(id) =>
+            handleActionServiceRequest(id, EServiceRequestStatus.DONE)
+          }
         />
       )}
 
