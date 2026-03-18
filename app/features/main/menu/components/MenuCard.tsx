@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 import { Icons } from "@/app/icons";
+import { EMenuStatus } from "@/types/enum";
 
 import { Ingredient } from "../Index";
-import { EMenuStatus } from "@/types/enum";
 
 export interface MenuComponent {
   menu_id: number;
@@ -61,9 +61,7 @@ export const MenuCard = ({
             src={image_url}
             alt={name}
             className={`w-full h-full object-cover transform transition-transform duration-500 ${
-              !(status === EMenuStatus.ACTIVE)
-                ? "grayscale"
-                : "hover:scale-105"
+              !(status === EMenuStatus.ACTIVE) ? "grayscale" : "hover:scale-105"
             }`}
           />
         ) : (
@@ -223,13 +221,13 @@ export const MenuCard = ({
           <div className="w-full mt-auto pt-2">
             <button
               onClick={onAdd}
-              disabled={!status}
+              disabled={status !== EMenuStatus.ACTIVE}
               className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm
-                ${
-                  !status
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : "bg-primary-orange-main hover:bg-orange-600 text-white hover:shadow-md active:scale-95"
-                }`}
+      ${
+        status !== EMenuStatus.ACTIVE
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+          : "bg-primary-orange-main hover:bg-orange-600 text-white hover:shadow-md active:scale-95"
+      }`}
             >
               <Icons name="PlusIcon" className="w-4 h-4" />
               Add to Order

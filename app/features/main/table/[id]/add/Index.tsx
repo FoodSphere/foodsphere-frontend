@@ -90,6 +90,8 @@ export default function TableAddOrderRender() {
 
   // --- Handlers ---
   const handleAddToOrder = (menuItem: IMenuResponse) => {
+    if (menuItem.status === 0) return;
+
     setOrderItems((prev) => {
       const existingItem = prev.find(
         (item) => item.menuId === menuItem.id.toString()
@@ -241,6 +243,7 @@ export default function TableAddOrderRender() {
                     item.image_url === "string" ? null : item.image_url
                   }
                   price={item.price}
+                  status={item.status}
                   currency="THB"
                   mode="order"
                   onAdd={() => handleAddToOrder(item)}
