@@ -50,27 +50,26 @@ interface FormData {
   permission_ids: number[];
 }
 
-const PAGE_PERMISSIONS: Record<string, { core: Set<number>; deps: Set<number> }> = {
-  Dashboard: { core: new Set([8000]), deps: new Set([]) },
-  Order: { core: new Set([7020, 7030]), deps: new Set([]) },
-  Table: { core: new Set([6000, 6010, 7000, 7010]), deps: new Set([]) },
-  Stock: { core: new Set([2000, 2020]), deps: new Set([]) },
-  Menu: { core: new Set([3000, 3010]), deps: new Set([]) },
-  Restaurant: {
-    core: new Set([1000, 1010, 9000, 9010, 9020, 9030]),
-    deps: new Set([]),
-  },
+// Permission Group each Page
+const PAGE_PERMISSIONS: Record<string, Set<number>> = {
+  dashboard: new Set([8000]),
+  order: new Set([1, 7020, 7030]),
+  table: new Set([2, 6000, 6010, 7000, 7010, 7020, 7030]),
+  stock: new Set([2000, 2010, 2020, 5000, 5010]),
+  menu: new Set([3000, 3010, 5000, 2010]),
+  restaurant: new Set([1000, 1010, 4000, 4010, 9000, 9010, 9020, 9030]),
 };
-
 
 export const ManageRolesView = () => {
   const [roles, setRoles] = useState<IRoleWithId[]>([]);
-  const [permissionsGroup, setPermissionsGroup] = useState<IPermissionsGroup[]>(
-    []
-  );
+
   const [addingRole, setAddingRole] = useState<IRole | null>(null);
   const [editingRole, setEditingRole] = useState<IRoleWithId | null>(null);
   const [deletingRole, setDeletingRole] = useState<IRoleWithId | null>(null);
+
+  const [rolesPageMap, setRolesPageMap] = useState<
+    Record<string, Record<string, boolean>>
+  >({});
 
   const [isFormEmpty, setIsFormEmpty] = useState<boolean>(true);
   const [showConfirmAddRole, setShowConfirmAddRole] = useState<boolean>(false);
@@ -190,42 +189,29 @@ export const ManageRolesView = () => {
         }));
 
         setRoles(mappedRoles);
+
+        const rolesPageMap: Record<string, Record<string, boolean>> = {};
+        mappedRoles.forEach((role) => {
+          let rolePermissionSet = new Set(role.permission_ids);
+          const page_map: Record<string, boolean> = Object.fromEntries(
+            Object.entries(PAGE_PERMISSIONS).map(([k, v]) => [
+              k,
+              rolePermissionSet.isSupersetOf(v),
+            ])
+          );
+          rolesPageMap[role.id] = page_map;
+        });
+        setRolesPageMap(rolesPageMap);
+        console.log(rolesPageMap);
       }
     } catch (error) {
       console.error("Error fetching menus:", error);
     }
   };
 
-  const fetchPermissionsData = async () => {
-    try {
-      const res = await getPermissions();
-
-      if (res && res.data && Array.isArray(res.data)) {
-        const apiData: IPermissionResponse[] = res.data;
-
-        // แปลงข้อมูลจาก API ให้เข้ากับหน้าบ้าน (UI)
-        const groupedPermissions = Object.groupBy(
-          apiData,
-          (item: IPermissionResponse) => getPermissionsGroupName(item.name)
-        );
-        const mappedPermissionsGroup: IPermissionsGroup[] = Object.entries(
-          groupedPermissions
-        ).map(([key, value]) => ({
-          title: key,
-          permissions: value || [],
-        }));
-
-        setPermissionsGroup(mappedPermissionsGroup);
-      }
-    } catch (error) {
-      console.error("Error fetching permissions:", error);
-    }
-  };
-
   // --- API Fetching ---
   useEffect(() => {
     fetchRolesData();
-    fetchPermissionsData();
   }, []);
 
   return (
@@ -383,7 +369,7 @@ export const ManageRolesView = () => {
                       handleRoleEdit={handleRoleEdit}
                       handleRoleDelete={handleRoleDelete}
                       isEditing={isFocused}
-                      permissionsGroup={permissionsGroup}
+                      rolesPageMap={rolesPageMap}
                       onPermissionsUpdate={(permission_ids) => {
                         setFormData((prev) => ({
                           ...prev,
@@ -432,14 +418,14 @@ const RoleCard = ({
   handleRoleEdit,
   handleRoleDelete,
   isEditing,
-  permissionsGroup,
+  rolesPageMap,
   onPermissionsUpdate,
 }: {
   role: IRoleWithId;
   handleRoleEdit: (role: IRoleWithId) => void;
   handleRoleDelete: (role: IRoleWithId) => void;
   isEditing: boolean;
-  permissionsGroup: IPermissionsGroup[];
+  rolesPageMap: Record<string, Record<string, boolean>>;
   onPermissionsUpdate: (permission_ids: number[]) => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -466,69 +452,21 @@ const RoleCard = ({
     handleRoleDelete(roleData);
   };
 
-  const onPermissionChange = (permission_id: number) => {
-    const isChecked = roleData.permission_ids.includes(permission_id);
-    const newPermissions = isChecked
-      ? roleData.permission_ids.filter((id) => id !== permission_id)
-      : [...roleData.permission_ids, permission_id];
+  const onPagePermissionChange = (page: string) => {
+    const page_map = rolesPageMap[roleData.id];
+    page_map[page] = !page_map[page];
 
-    onPermissionsUpdate(newPermissions);
-    setRoleData((prev) => ({
-      ...prev,
-      permission_ids: newPermissions,
-    }));
-  };
-
-  const onPermissionAllCheck = (group_permission_ids: number[]) => {
-    const allGroupChecked = group_permission_ids.every((id) =>
-      roleData.permission_ids.includes(id)
+    const newPermissions = new Set(
+      Object.entries(page_map)
+        .filter(([k, v]) => v)
+        .flatMap(([k]) => [...PAGE_PERMISSIONS[k]])
     );
 
-    let newPermissions: number[];
-    if (allGroupChecked) {
-      // Uncheck all in this group
-      newPermissions = roleData.permission_ids.filter(
-        (id) => !group_permission_ids.includes(id)
-      );
-    } else {
-      // Check all in this group (add missing ones)
-      const missingIds = group_permission_ids.filter(
-        (id) => !roleData.permission_ids.includes(id)
-      );
-      newPermissions = [...roleData.permission_ids, ...missingIds];
-    }
-
-    onPermissionsUpdate(newPermissions);
+    onPermissionsUpdate(Array.from(newPermissions));
     setRoleData((prev) => ({
       ...prev,
-      permission_ids: newPermissions,
+      permission_ids: Array.from(newPermissions),
     }));
-  };
-
-  const onPagePermissionChange = (page: string) => {
-    const config = PAGE_PERMISSIONS[page];
-    const currentSet = new Set(roleData.permission_ids);
-
-    let newPermissions: number[];
-    if (currentSet.isSupersetOf(config.core)) {
-      // Uncheck: remove core permissions
-      newPermissions = Array.from(currentSet.difference(config.core));
-    } else {
-      // Check: add all
-      newPermissions = Array.from(currentSet.union(config.core));
-    }
-
-    onPermissionsUpdate(newPermissions);
-    setRoleData((prev) => ({
-      ...prev,
-      permission_ids: newPermissions,
-    }));
-  };
-
-  const isPageActive = (page: string) => {
-    const config = PAGE_PERMISSIONS[page];
-    const currentSet = new Set(roleData.permission_ids);
-    return currentSet.isSupersetOf(config.core);
   };
 
   return (
@@ -610,7 +548,7 @@ const RoleCard = ({
                 <div
                   key={page}
                   className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                    isPageActive(page)
+                    rolesPageMap[roleData.id][page]
                       ? "bg-orange-50 border-[#FF5C39] text-[#FF5C39]"
                       : "bg-gray-50 border-transparent text-gray-400 hover:bg-gray-100"
                   }`}
@@ -619,7 +557,7 @@ const RoleCard = ({
                   <span className="text-sm font-bold">{page}</span>
                   <Checkbox
                     disabled={!isEditing}
-                    checked={isPageActive(page)}
+                    checked={rolesPageMap[roleData.id][page]}
                     className="mt-2 h-5 w-5 rounded-md border-gray-300 data-[state=checked]:bg-[#FF5C39] data-[state=checked]:border-[#FF5C39] cursor-pointer pointer-events-none"
                     onCheckedChange={() => {}}
                   />
@@ -630,57 +568,5 @@ const RoleCard = ({
         </div>
       )}
     </Card>
-  );
-};
-
-const PermissionGroup = ({
-  group,
-  permission_ids,
-  onPermissionChange,
-  onPermissionAllCheck,
-  isEditing,
-}: {
-  group: IPermissionsGroup;
-  permission_ids: number[];
-  onPermissionChange: (permissionId: number) => void;
-  onPermissionAllCheck: (permissionIds: number[]) => void;
-  isEditing: boolean;
-}) => {
-  const allChecked = group.permissions.every((k) =>
-    permission_ids.includes(k.id)
-  );
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-        <h4 className="font-bold text-sm text-gray-700">{group.title}</h4>
-        <Checkbox
-          disabled={!isEditing}
-          checked={allChecked}
-          className="h-5 w-5 rounded-md border-gray-300 data-[state=checked]:bg-[#FF5C39] data-[state=checked]:border-[#FF5C39]"
-          onCheckedChange={() =>
-            onPermissionAllCheck(group.permissions.map((k) => k.id))
-          }
-        />
-      </div>
-      <div className="space-y-2">
-        {group.permissions.map((permission) => (
-          <div
-            key={permission.id}
-            className="flex items-center justify-between group"
-          >
-            <span className="text-sm text-gray-500 group-hover:text-gray-800 transition-colors">
-              {permission.name}
-            </span>
-            <Checkbox
-              disabled={!isEditing}
-              checked={permission_ids.includes(permission.id)}
-              className="h-4 w-4 rounded border-gray-300 data-[state=checked]:bg-[#FF5C39] data-[state=checked]:border-[#FF5C39]"
-              onCheckedChange={() => onPermissionChange(permission.id)}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
   );
 };

@@ -55,20 +55,20 @@ export enum EUserType {
 
 export enum EPermission {
   DASHBOARD = 8000,
-  ORDER = 7020,
-  TABLE = 6000,
+  ORDER = 1,
+  TABLE = 2,
   STOCK = 2000,
   MENU = 3000,
-  RESTAURANT = 1000,
+  RESTAURANT = 1010,
 }
 
 export const PAGE_CORE_PERMISSIONS: Record<string, number[]> = {
-  "/": [8000],
-  "/order": [7020, 7030],
-  "/table": [6000, 6010, 7000, 7010],
-  "/stock": [2000, 2020],
-  "/menu": [3000, 3010],
-  "/restaurant": [1000, 1010, 9000, 9010, 9020, 9030],
+  "/": [EPermission.DASHBOARD],
+  "/order": [EPermission.ORDER],
+  "/table": [EPermission.TABLE],
+  "/stock": [EPermission.STOCK],
+  "/menu": [EPermission.MENU],
+  "/restaurant": [EPermission.RESTAURANT],
 };
 
 export enum EServiceRequestStatus {
