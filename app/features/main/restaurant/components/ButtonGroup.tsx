@@ -1,42 +1,24 @@
-"use client";
-import { Lock, Store, TicketPercent, Users } from "lucide-react";
-
 export type ViewType =
   | "my-restaurant"
   | "manage-employees"
   | "manage-roles"
   | "manage-promotion";
 
+export interface NavItem {
+  id: ViewType;
+  label: string;
+  icon: React.ReactNode;
+}
+
 interface ButtonGroupProps {
   activeView: ViewType;
+  navItems: NavItem[];
   setActiveView: (view: ViewType) => void;
 }
 
-const navItems = [
-  {
-    id: "my-restaurant",
-    label: "My Restaurant",
-    icon: <Store className="w-5 h-5" />,
-  },
-  {
-    id: "manage-employees",
-    label: "Manage Employees",
-    icon: <Users className="w-5 h-5" />,
-  },
-  {
-    id: "manage-roles",
-    label: "Manage Roles",
-    icon: <Lock className="w-5 h-5" />,
-  },
-  {
-    id: "manage-promotion",
-    label: "Manage Promotion",
-    icon: <TicketPercent className="w-5 h-5" />,
-  },
-];
-
 export const ButtonGroup = ({
   activeView,
+  navItems,
   setActiveView,
 }: ButtonGroupProps) => {
   return (
