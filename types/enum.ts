@@ -82,3 +82,9 @@ export enum EServiceRequestReasonType {
   CALL_WAITER = "call_waiter",
   CASH_PAYMENT = "cash_payment"
 }
+
+export enum EMenuStatus {
+  INACTIVE = 0,
+  ACTIVE = 1,
+  OUT_OF_STOCK = 2,
+}

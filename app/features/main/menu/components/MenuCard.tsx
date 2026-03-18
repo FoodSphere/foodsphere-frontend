@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Icons } from "@/app/icons";
 
 import { Ingredient } from "../Index";
+import { EMenuStatus } from "@/types/enum";
 
 export interface MenuComponent {
   menu_id: number;
@@ -18,7 +19,7 @@ interface MenuCardProps {
   currency: string;
   ingredients?: Ingredient[];
   components?: MenuComponent[];
-  status?: boolean;
+  status?: number;
   mode?: "manage" | "order";
   onAdd?: () => void;
   onEdit?: () => void;
@@ -32,7 +33,7 @@ export const MenuCard = ({
   currency,
   ingredients = [],
   components = [],
-  status = true,
+  status = 1,
   mode = "manage",
   onAdd,
   onEdit,
@@ -48,7 +49,9 @@ export const MenuCard = ({
   return (
     <div
       className={`flex flex-col bg-white rounded-xl shadow-md transition-all duration-300 overflow-hidden border border-gray-100 h-full ${
-        !status ? "opacity-70" : "hover:shadow-lg hover:-translate-y-1"
+        !(status === EMenuStatus.ACTIVE)
+          ? "opacity-70"
+          : "hover:shadow-lg hover:-translate-y-1"
       }`}
     >
       {/* Image Area */}
@@ -58,7 +61,9 @@ export const MenuCard = ({
             src={image_url}
             alt={name}
             className={`w-full h-full object-cover transform transition-transform duration-500 ${
-              !status ? "grayscale" : "hover:scale-105"
+              !(status === EMenuStatus.ACTIVE)
+                ? "grayscale"
+                : "hover:scale-105"
             }`}
           />
         ) : (
@@ -76,10 +81,17 @@ export const MenuCard = ({
         )}
 
         {/* Overlay เมื่อปิดใช้งาน */}
-        {!status && (
+        {status === EMenuStatus.INACTIVE && (
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-[1px]">
             <span className="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
               Closed
+            </span>
+          </div>
+        )}
+        {status === EMenuStatus.OUT_OF_STOCK && (
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center backdrop-blur-[1px]">
+            <span className="bg-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg">
+              Out of Stock
             </span>
           </div>
         )}
@@ -89,7 +101,7 @@ export const MenuCard = ({
       <div className="flex flex-col items-center p-4 pt-3 flex-1 border-t-[3px] border-primary-orange-main">
         {/* Title & Price */}
         <div
-          className={`w-full text-center mb-3 ${!status ? "text-gray-400" : ""}`}
+          className={`w-full text-center mb-3 ${status === EMenuStatus.INACTIVE || status === EMenuStatus.OUT_OF_STOCK ? "text-gray-400" : ""}`}
         >
           <h3
             className="text-lg font-bold mb-1 truncate px-2 text-gray-800"
@@ -142,7 +154,7 @@ export const MenuCard = ({
                           <span className="text-primary-orange-main font-medium truncate">
                             {comp.name || `Menu ID: ${comp.menu_id}`}
                           </span>
-                          <span className="flex-grow border-b border-dotted border-gray-300 mx-2"></span>
+                          <span className="grow border-b border-dotted border-gray-300 mx-2"></span>
                           <span className="whitespace-nowrap font-bold text-gray-800 bg-white px-1.5 py-0.5 rounded shadow-sm">
                             x{comp.quantity}
                           </span>
@@ -156,7 +168,7 @@ export const MenuCard = ({
                           <span className="text-gray-700 font-medium truncate">
                             {ing.name}
                           </span>
-                          <span className="flex-grow border-b border-dotted border-gray-300 mx-2"></span>
+                          <span className="grow border-b border-dotted border-gray-300 mx-2"></span>
                           <span className="whitespace-nowrap font-bold text-primary-orange-main">
                             {ing.amount}{" "}
                             <span className="text-[10px] text-gray-500">
@@ -185,15 +197,16 @@ export const MenuCard = ({
 
               {/* ปุ่ม Open/Close (ถ้าไม่มีปุ่ม Edit จะขยายเต็มพื้นที่อัตโนมัติ) */}
               <button
+                hidden={status === EMenuStatus.OUT_OF_STOCK}
                 onClick={onToggleStatus}
                 className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm border
                   ${
-                    !status
+                    status === EMenuStatus.INACTIVE
                       ? "bg-green-50 border-green-500 text-green-600 hover:bg-green-100"
                       : "bg-white border-primary-orange-main text-primary-orange-main hover:bg-orange-50"
                   } ${isPromotion ? "w-full" : "flex-1"}`}
               >
-                {status ? (
+                {status === EMenuStatus.ACTIVE ? (
                   <>
                     <Icons name="CloseIcon" className="w-4 h-4" /> Close
                   </>
