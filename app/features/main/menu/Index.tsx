@@ -31,6 +31,7 @@ export interface Ingredient {
   name: string;
   amount: number;
   unit: string;
+  status: number;
 }
 export interface MenuComponent {
   menu_id: number;
@@ -201,7 +202,7 @@ export default function MenuRender() {
         tags: mappedTags,
         display_name: formData.name,
         description: "รายละเอียดเมนู",
-        status: formData.status
+        status: formData.status,
       };
 
       // --- 2. เช็คว่าเป็น Update หรือ Create ---
@@ -344,11 +345,16 @@ export default function MenuRender() {
                     name: ing.ingredient.name,
                     amount: ing.amount,
                     unit: ing.ingredient.unit,
+                    status: ing.ingredient.status,
                   }))
                 : [],
               components: resolvedComponents,
               tags: item.tags || [],
-              status: item.status,
+              status: item.ingredients.some(
+                (ing) => ing.ingredient.status === 0
+              )
+                ? 2
+                : 1,
               description: item.description || "รายละเอียดเมนู",
             };
           })
@@ -482,7 +488,7 @@ export default function MenuRender() {
                   currency={item.currency}
                   ingredients={item.ingredients}
                   components={item.components}
-                  status={item.status === 1}
+                  status={item.status}
                   onEdit={() => handleOpenEdit(item)}
                   onToggleStatus={() => handleToggleStatus(item.id)}
                 />
