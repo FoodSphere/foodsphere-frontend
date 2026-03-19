@@ -46,13 +46,11 @@ type Transaction = {
 
 type BestsellerMenu = { menuId: string; menuName: string; amount: string };
 
+// อัปเดต Type ให้ตรงกับ Response ใหม่ของ Backend
 type StockUses = {
   ingredientName: string;
-  timestamp: string;
-  amount: string;
-  balanceAfter: string;
-  note: string;
-  status: StatusType;
+  totalUsed: number;
+  totalAdded: number;
 };
 
 const COLORS = ["#FF5C39", "#FF7650", "#FF8A66", "#FFB8A3", "#FFE5DE"];
@@ -152,12 +150,10 @@ const DashboardRender = () => {
   const [transactionsData, setTransactionsData] = useState<Transaction[]>([]);
   const [rawStockUsesData, setRawStockUsesData] = useState<any[]>([]);
 
-  // Query String สำหรับวันนี้ เพื่อใช้กับ Recent Transactions และ Stock Uses
+  // Query String สำหรับวันนี้
   const todayStr = new Date().toISOString().split("T")[0];
   const dailyQueryString = `from_time=${todayStr}T00:00:00.000Z&to_time=${todayStr}T23:59:59.999Z`;
 
-  // === API Wrappers สำหรับ StatsCard โดยจัดรูปแบบ Query String ===
-  // ใช้ useCallback ป้องกันไม่ให้โดนสร้างใหม่รัวๆ
   const fetchSales = useCallback(async (dateStr: string) => {
     try {
       const qs = `from_time=${dateStr}T00:00:00.000Z&to_time=${dateStr}T23:59:59.999Z`;
@@ -191,7 +187,6 @@ const DashboardRender = () => {
     }
   }, []);
 
-  // ดึงข้อมูล Ingredients List
   useEffect(() => {
     const fetchIng = async () => {
       try {
@@ -207,21 +202,23 @@ const DashboardRender = () => {
     const fetch7DaysSales = async () => {
       try {
         const days = [];
-        // สร้าง array วันที่ 7 วันล่าสุด (นับถอยหลัง)
         for (let i = 6; i >= 0; i--) {
           const d = new Date();
           d.setDate(d.getDate() - i);
           days.push(d);
         }
 
-        // ยิง API getRevenue พร้อมกัน 7 วัน
         const promises = days.map(async (d) => {
           const dateStr = d.toISOString().split("T")[0];
           const qs = `from_time=${dateStr}T00:00:00.000Z&to_time=${dateStr}T23:59:59.999Z`;
           const res = await getRevenue(qs);
 
-          // แปลงวันที่เป็นชื่อย่อวัน เช่น "Mon", "Tue"
-          const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+          // ปรับเปลี่ยนจาก ชื่อวัน (Mon, Tue) เป็น วัน/เดือน (เช่น 19/03)
+          const dayName = d.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+          });
+
           return { name: dayName, sales: res?.data?.revenue || 0 };
         });
 
@@ -238,17 +235,13 @@ const DashboardRender = () => {
   useEffect(() => {
     const fetchBestSellers = async () => {
       try {
-        // คุณสามารถใส่ qs เป็น from_time/to_time ได้ถ้าต้องการระบุช่วงเวลา
-        // ตอนนี้เรียกแบบไม่ได้ใส่ qs เพื่อดึงยอดรวมทั้งหมดตามที่คุณบอก
         const res = await getCountEachOrder();
         const rawData = res?.data || [];
 
-        // เรียงลำดับจาก total_sold มากไปน้อย และตัดเอาแค่ 5 อันดับแรก
         const top5 = [...rawData]
           .sort((a, b) => b.total_sold - a.total_sold)
           .slice(0, 5);
 
-        // จัด Format สำหรับ PieChart (ต้องการ name, value)
         setPieChartData(
           top5.map((item) => ({
             name: item.menu_name,
@@ -256,10 +249,9 @@ const DashboardRender = () => {
           }))
         );
 
-        // จัด Format สำหรับ DataTable (ต้องการ menuId, menuName, amount)
         setBestsellerData(
           top5.map((item) => ({
-            menuId: String(item.menu_id).padStart(7, "0"), // เติมเลข 0 ข้างหน้าให้ครบ 7 หลัก (ตัวเลือกเสริม)
+            menuId: String(item.menu_id).padStart(7, "0"),
             menuName: item.menu_name,
             amount: `${item.total_sold} pcs`,
           }))
@@ -275,7 +267,6 @@ const DashboardRender = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        // ส่ง dailyQueryString เข้าไปเพื่อให้ได้ข้อมูลเฉพาะวันนี้
         const res = await getPaymentTransaction(dailyQueryString);
         const rawData = res?.data || [];
 
@@ -289,7 +280,6 @@ const DashboardRender = () => {
               minute: "2-digit",
             });
 
-          // ตรวจสอบ payment_method ว่าเป็น stripe หรือไม่ (แปลงเป็นตัวเล็กเพื่อป้องกันเคสพิมพ์ใหญ่/เล็ก)
           const paymentDisplay =
             item.payment_method?.toLowerCase() === "stripe"
               ? "QR Code"
@@ -300,7 +290,7 @@ const DashboardRender = () => {
             timestamp: formattedDate,
             table: item.table?.name || "-",
             amount: `฿ ${item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            paymentMethod: paymentDisplay, // ใช้ค่าที่แปลงแล้ว
+            paymentMethod: paymentDisplay,
             status: item.status === 1 ? "Completed" : "Failed",
           };
         });
@@ -316,7 +306,6 @@ const DashboardRender = () => {
   useEffect(() => {
     const fetchStock = async () => {
       try {
-        // ส่ง dailyQueryString เข้าไปเพื่อให้ได้ข้อมูลเฉพาะวันนี้
         const res = await getStockUse(dailyQueryString);
         setRawStockUsesData(res?.data || []);
       } catch (err) {
@@ -326,34 +315,13 @@ const DashboardRender = () => {
     fetchStock();
   }, [dailyQueryString]);
 
-  // จัดการ Map ข้อมูล Stock Use กับชื่อ Ingredient และทำ Filter
+  // แมพข้อมูลใหม่ให้ตรงกับ response จาก Backend
   const processedStockUses: StockUses[] = rawStockUsesData.map((item) => {
-    const ingredient = ingredientsList.find(
-      (ing) => ing.id === item.ingredient_id
-    );
-    const date = new Date(item.create_time);
-
-    // Logic กำหนดสถานะ:
-    // สมมติว่าถ้า amount เป็นบวกแปลว่ามีการเพิ่ม (Added) ถ้าติดลบแปลว่าเบิกไปใช้ (Consumed)
-    // *หมายเหตุ: หาก backend ของคุณส่ง amount เป็นบวกเสมอแต่ดูว่าลดลงจาก balance ก่อนหน้า คุณอาจจะต้องปรับเงื่อนไขตรงนี้ครับ
-    const isConsumed = item.amount < 0;
-    const determinedStatus: StatusType = isConsumed ? "Consumed" : "Added";
-
     return {
-      ingredientName: ingredient
-        ? ingredient.name
-        : `Unknown (ID: ${item.ingredient_id})`,
-      timestamp:
-        date.toLocaleDateString("en-GB") +
-        " " +
-        date.toLocaleTimeString("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      amount: `${Math.abs(item.amount)}`,
-      balanceAfter: `${item.balance_after}`,
-      note: item.note || "-",
-      status: determinedStatus,
+      ingredientName:
+        item.ingredient_name || `Unknown (ID: ${item.ingredient_id})`,
+      totalUsed: item.total_used,
+      totalAdded: item.total_added,
     };
   });
 
@@ -368,7 +336,7 @@ const DashboardRender = () => {
   const transactionColumns: ColumnDef<Transaction>[] = [
     { header: "Bill ID", accessor: "transactionId" },
     { header: "Timestamp", accessor: "timestamp" },
-    { header: "Table", accessor: "table" }, // คอลัมน์ใหม่
+    { header: "Table", accessor: "table" },
     { header: "Payment", accessor: "paymentMethod" },
     { header: "Amount", accessor: "amount" },
     {
@@ -384,17 +352,11 @@ const DashboardRender = () => {
     { header: "Amount", accessor: "amount" },
   ];
 
+  // อัปเดต Column ของ Stock Uses ใหม่ให้รับกับโครงสร้าง Object ใหม่
   const stockColumns: ColumnDef<StockUses>[] = [
-    { header: "Ingredient", accessor: "ingredientName" },
-    { header: "Timestamp", accessor: "timestamp" },
-    { header: "Used", accessor: "amount" },
-    { header: "Balance", accessor: "balanceAfter" }, // คอลัมน์ใหม่
-    { header: "Note", accessor: "note" }, // คอลัมน์ใหม่
-    {
-      header: "Status",
-      accessor: "status",
-      render: (item) => renderStatus(item.status),
-    },
+    { header: "Ingredient Name", accessor: "ingredientName" },
+    { header: "Total Used", accessor: "totalUsed" },
+    { header: "Total Added", accessor: "totalAdded" },
   ];
 
   return (
