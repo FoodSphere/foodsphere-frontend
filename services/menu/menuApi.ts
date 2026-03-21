@@ -125,3 +125,19 @@ export const deleteMenu = async (menuId: number) => {
   const path = `/restaurants/${restaurantId}/menus/${menuId}`;
   return await apiDelete(path);
 };
+
+// Map Order Status
+export const mapOrderStatus = (statusNum: number): string => {
+  switch (statusNum) {
+    case 1:
+      return "Pending";
+    case 2:
+      return "Cooking";
+    case 3:
+      return "Completed";
+    case 4:
+      return "Cancel";
+    default:
+      return "Pending";
+  }
+};

@@ -19,7 +19,11 @@ import {
 } from "../../../order/components/OrderFilterBar";
 import { OrderSearchBar } from "../../../order/components/OrderSearchBar";
 import { OrderUpdateStatusConfirmModal } from "../../../order/components/OrderUpdateStatusConfirmModal";
-import { IOrder, mapOrderStatus, ModalConfig } from "../../../order/Index";
+import { ModalConfig } from "../../../order/Index";
+import { mapOrderStatus } from "@/services/menu/menuApi";
+import * as signalR from "@microsoft/signalr";
+import { getCookie } from "@/libs/cookie";
+import { IOrder, ICreateOrderFromSignalR, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 export default function TableEditOrderRender() {
   const [orders, setOrders] = useState<IOrder[]>([]);
@@ -125,6 +129,109 @@ export default function TableEditOrderRender() {
 
   useEffect(() => {
     fetchOrdersData();
+
+    const accessToken = getCookie("access_token");
+        const restaurantId = getCookie("restaurant_id");
+    
+        const connect = new signalR.HubConnectionBuilder()
+          .withUrl(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/restaurants/${restaurantId}/branches/1/hubs/pos`,
+            {
+              accessTokenFactory: () => `${accessToken}`,
+            }
+          )
+          .withAutomaticReconnect()
+          .build();
+        connect 
+          .start()
+          .catch((err) =>
+            console.error("Error while connecting to SignalR Hub:", err)
+          );
+
+    connect.on("order_created", async (createdOrder: ICreateOrderFromSignalR) => {
+      if (!createdOrder || !createdOrder.items) return;
+
+      try {
+        const newItemsPromises = createdOrder.items.map(
+          async (item: any, index: number) => {
+            let menuName = "Unknown Menu";
+            let imgUrl = "";
+
+            try {
+              const menuRes = await getMenuById(item.menu_id);
+              if (menuRes && menuRes.data) {
+                menuName = menuRes.data.name;
+                imgUrl = menuRes.data.image_url || imgUrl;
+              }
+            } catch (error) {
+              console.error(`Failed to fetch menu ID ${item.menu_id}`, error);
+            }
+
+            const dateObj = new Date(createdOrder.create_time);
+            const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+
+            return {
+              id: `${createdOrder.bill_id}-${createdOrder.id}-${index}`,
+              originalOrderId: createdOrder.id,
+              billId: createdOrder.bill_id,
+              img: imgUrl,
+              foodName: menuName,
+              table: createdOrder.table.name,
+              additionalDetail: item.note || "-",
+              quantity: item.quantity.toString(),
+              order_at: formattedDate,
+              status: mapOrderStatus(createdOrder.status) as any,
+            } as IOrder;
+          }
+        );
+
+        const newOrders = await Promise.all(newItemsPromises);
+
+        setOrders((prevOrders) => {
+          const merged = [...prevOrders, ...newOrders];
+          merged.sort(
+            (a, b) =>
+              new Date(b.order_at).getTime() - new Date(a.order_at).getTime()
+          );
+          return merged;
+        });
+      } catch (err) {
+        console.error("Error processing new order:", err);
+      }
+    });
+
+    connect.on("order_status_updated", async (updatedOrder: IUpdateOrderStatusFromSignalR) => {
+      setOrders((prevOrders) => {
+        return prevOrders.map((order) => {
+          if (order.originalOrderId === updatedOrder.resource.id) {
+            return {
+              ...order,
+              status: mapOrderStatus(updatedOrder.status) as any,
+            };
+          }
+          return order;
+        });
+      });
+    });
+
+    connect.on("order_item_updated", async (updatedOrder: IUpdateOrderItemFromSignalR) => {
+      setOrders((prevOrders) => {
+        return prevOrders.map((order) => {
+          if (order.originalOrderId === updatedOrder.order_id) {
+            return {
+              ...order,
+              quantity: updatedOrder.quantity.toString(),
+              additionalDetail: updatedOrder.note,
+            };
+          }
+          return order;
+        });
+      });
+    });
+
+    return () => {
+      connect.stop();
+    };
   }, [tableId]);
 
   // --- Handlers: เปิด Modal ยืนยัน ---
