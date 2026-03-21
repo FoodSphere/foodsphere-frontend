@@ -7,20 +7,21 @@ export interface ICreateBillRequest {
 export interface IBillItem {
   id: number;
   create_time: string;
-  update_time: string;
+  update_time: string | null;
   bill_id: string;
   order_id: number;
   restaurant_id: string;
   menu_id: number;
   price_snapshot: number;
   quantity: number;
-  note: string;
+  note: string | null;
 }
 
 export interface IBillOrder {
   id: number;
   create_time: string;
-  update_time: string;
+  update_time: string | null;
+  delete_time: string | null;
   bill_id: string;
   items: IBillItem[];
   status: number;

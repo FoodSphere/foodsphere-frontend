@@ -6,27 +6,15 @@ import * as signalR from "@microsoft/signalr";
 // Import Components
 import { OrderCard } from "@/app/features/main/order/components/OrderCard";
 import { getCookie } from "@/libs/cookie";
-import { getMenuById } from "@/services/menu/menuApi";
+import { getMenuById, mapOrderStatus } from "@/services/menu/menuApi";
 import { getAllOrders, updateOrderStatus } from "@/services/order/orderApi";
 
 import { FilterStatus, OrderFilterBar } from "./components/OrderFilterBar";
 import { OrderSearchBar } from "./components/OrderSearchBar";
 import { OrderUpdateStatusConfirmModal } from "./components/OrderUpdateStatusConfirmModal";
+import { ICreateOrderFromSignalR, IOrder, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 // Types
-export interface IOrder {
-  id: string;
-  originalOrderId?: number;
-  billId: string;
-  img?: string | null;
-  foodName: string;
-  table: string;
-  additionalDetail?: string;
-  quantity: string;
-  order_at: string;
-  status: string;
-}
-
 export interface ModalConfig {
   isOpen: boolean;
   orderId: string;
@@ -35,21 +23,6 @@ export interface ModalConfig {
   action: "update" | "cancel" | null;
   targetStatus: number | null;
 }
-
-export const mapOrderStatus = (statusNum: number): string => {
-  switch (statusNum) {
-    case 1:
-      return "Pending";
-    case 2:
-      return "Cooking";
-    case 3:
-      return "Completed";
-    case 4:
-      return "Cancel";
-    default:
-      return "Pending";
-  }
-};
 
 const OrderRender = () => {
   // --- State ---
@@ -160,7 +133,7 @@ const OrderRender = () => {
         console.error("Error while connecting to SignalR Hub:", err)
       );
 
-    connect.on("order_created", async (createdOrder) => {
+    connect.on("order_created", async (createdOrder: ICreateOrderFromSignalR) => {
       if (!createdOrder || !createdOrder.items) return;
 
       try {
@@ -212,13 +185,27 @@ const OrderRender = () => {
       }
     });
 
-    connect.on("order_item_updated", async (updatedOrder) => {
+    connect.on("order_status_updated", async (updatedOrder: IUpdateOrderStatusFromSignalR) => {
+      setOrders((prevOrders) => {
+        return prevOrders.map((order) => {
+          if (order.originalOrderId === updatedOrder.resource.id) {
+            return {
+              ...order,
+              status: mapOrderStatus(updatedOrder.status) as any,
+            };
+          }
+          return order;
+        });
+      });
+    });
+
+    connect.on("order_item_updated", async (updatedOrder: IUpdateOrderItemFromSignalR) => {
       setOrders((prevOrders) => {
         return prevOrders.map((order) => {
           if (order.originalOrderId === updatedOrder.order_id) {
             return {
               ...order,
-              quantity: updatedOrder.quantity,
+              quantity: updatedOrder.quantity.toString(),
               additionalDetail: updatedOrder.note,
             };
           }

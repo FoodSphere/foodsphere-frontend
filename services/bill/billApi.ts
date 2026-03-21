@@ -44,13 +44,14 @@ export const getBillById = async (billId: string) => {
 
 // 4. Helper Function: หา Bill ปัจจุบันของโต๊ะ (status = 0) แล้วไป Fetch ข้อมูลเต็ม
 export const getActiveBillByTableId = async (tableId: number) => {
-  // ดึงบิลทั้งหมดมาก่อน
-  const resAllBills = await getAllBills();
+  // ดึงบิลทั้งหมดเฉพาะที่ยังไม่ถูกปิด (status = 0 (OPEN) หรือ 1 (PAID))
+  const restaurantId = getRestaurantId();
+  const resActiveBills = await apiGet(`/s/restaurants/${restaurantId}/bills?status=0&status=1`);
 
-  if (resAllBills && resAllBills.data) {
-    // กรองเอาเฉพาะที่ status = 0 และ table_id ตรงกับโต๊ะที่เลือก
-    const activeBill = resAllBills.data.find(
-      (bill: IBillResponse) => (bill.status === 0 || bill.status === 1) && bill.table_id === tableId
+  if (resActiveBills && resActiveBills.data) {
+    // กรองเอาเฉพาะที่ table_id ตรงกับโต๊ะที่เลือก
+    const activeBill = resActiveBills.data.find(
+      (bill: IBillResponse) => bill.table_id === tableId
     );
 
     // ถ้าเจอบิลที่เปิดอยู่ ให้เอา ID ไป Get ข้อมูลแบบละเอียดอีกครั้ง

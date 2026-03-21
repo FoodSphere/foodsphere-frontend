@@ -1,7 +1,7 @@
 import { getCookie } from "@/libs/cookie";
-
-import { apiDelete, apiGet, apiPost, apiPut } from "../common";
 import { EServiceRequestStatus } from "@/types/enum";
+
+import { apiGet, apiPut } from "../common";
 
 export const getRestaurantId = () => {
   const restaurantId = getCookie("restaurant_id");
@@ -11,13 +11,21 @@ export const getRestaurantId = () => {
   return restaurantId;
 };
 
+export const getServiceRequests = async () => {
+  const restaurantId = getRestaurantId();
+  return apiGet(
+    `/restaurants/${restaurantId}/service-requests?status=0&status=1`
+  );
+};
+
 export const updateServiceRequestStatus = async (
   requestId: string,
   billId: string,
   status: EServiceRequestStatus
 ) => {
+  const restaurantId = getRestaurantId();
   return apiPut(
-    `/restaurants/${getRestaurantId()}/bills/${billId}/service-requests/${requestId}`,
+    `/restaurants/${restaurantId}/bills/${billId}/service-requests/${requestId}`,
     { status }
   );
 };

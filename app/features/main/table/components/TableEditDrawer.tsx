@@ -9,6 +9,7 @@ export interface TableData {
   id: string;
   name: string;
   hasCustomers: boolean;
+  billId: string;
 }
 
 interface TableEditDrawerProps {

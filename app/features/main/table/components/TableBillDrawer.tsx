@@ -1,3 +1,4 @@
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { useEffect, useState } from "react";
 
 import { QrCode } from "@/app/components/featureComponents/QrCode";
@@ -151,7 +152,7 @@ export const TableBillDrawer = ({
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-[rgba(0,0,0,0.5)]">
       <div className="bg-[#E5E5E5] rounded-l-3xl w-[900px] h-full overflow-hidden shadow-xl flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center px-8 pt-8 pb-4 shrink-0">
+        <div className="flex justify-between items-center px-8 pt-6 pb-4 shrink-0">
           <div className="bg-primary-orange-main text-white px-8 py-3 rounded-xl text-2xl font-bold shadow-md">
             Table {tableName}
           </div>
@@ -163,13 +164,13 @@ export const TableBillDrawer = ({
           </button>
         </div>
 
-        <div className="border-b border-gray-300 mx-8 mb-6 shrink-0"></div>
+        <div className="border-b border-gray-300 mx-8 mb-4 shrink-0"></div>
 
         <div className="flex gap-8 flex-1 overflow-hidden px-8 pb-8">
           {/* Left Column */}
-          <div className="w-[320px] flex flex-col gap-6 shrink-0">
+          <div className="w-[320px] flex flex-col gap-2 shrink-0">
             {/* QR Section */}
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-2">
               <p className="text-xl font-medium text-black">
                 QR{" "}
                 <span className="text-primary-orange-main">
@@ -192,40 +193,84 @@ export const TableBillDrawer = ({
 
             {/* Service Requests Section */}
             {serviceRequests && serviceRequests.length > 0 && (
-              <div className="flex flex-col gap-4">
-                <h3 className="text-2xl font-bold text-black">
-                  Service Requests
-                </h3>
-                <div className="space-y-2 text-lg bg-white p-4 rounded-xl shadow-sm">
-                  {serviceRequests.map((request) => (
-                    <div key={request.id} className="flex justify-between">
-                      <span className="text-black">{request.reason}</span>
-                      {request.status === EServiceRequestStatus.PENDING && (
-                        <button
-                          onClick={() =>
-                            onAcknowledgeServiceRequest?.(request.id)
-                          }
-                        >
-                          Acknowledge
-                        </button>
-                      )}
-                      {request.status ===
-                        EServiceRequestStatus.ACKNOWLEDGED && (
-                        <button
-                          onClick={() => onDoneServiceRequest?.(request.id)}
-                        >
-                          Done
-                        </button>
-                      )}
-                    </div>
-                  ))}
+              <div className="flex flex-col h-[150px] sm:h-[180px] bg-white/50 rounded-2xl p-2 border border-gray-200 shadow-inner">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-black flex items-center gap-2">
+                    <Icons
+                      name="CalendarIcon"
+                      className="w-5 h-5 text-primary-orange-main"
+                    />
+                    Service Requests
+                  </h3>
+                  <span className="bg-primary-orange-main text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                    {
+                      serviceRequests.filter(
+                        (r) => r.status !== EServiceRequestStatus.DONE
+                      ).length
+                    }{" "}
+                    Active
+                  </span>
                 </div>
+
+                <ScrollArea className="flex-1 -mr-2 pr-2 overflow-y-auto">
+                  <div className="space-y-3">
+                    {serviceRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="bg-white rounded-xl p-3 shadow-md border border-gray-100 flex flex-col gap-2 transition-all hover:scale-[1.02]"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-primary-orange-main font-bold text-sm shrink-0">
+                              {request.table.name}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-black text-sm leading-tight">
+                                {request.reason}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-medium">
+                                {formatDistanceToNow(
+                                  parseISO(request.create_time),
+                                  { addSuffix: true }
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex justify-end pt-1">
+                            {request.status ===
+                              EServiceRequestStatus.PENDING && (
+                              <button
+                                onClick={() =>
+                                  onAcknowledgeServiceRequest?.(request.id)
+                                }
+                                className="px-4 py-1.5 bg-primary-orange-main text-white text-[10px] font-bold rounded-lg shadow-sm hover:bg-[#ff451f] transition-all"
+                              >
+                                GO
+                              </button>
+                            )}
+                            {request.status ===
+                              EServiceRequestStatus.ACKNOWLEDGED && (
+                              <button
+                                onClick={() =>
+                                  onDoneServiceRequest?.(request.id)
+                                }
+                                className="px-4 py-1.5 bg-primary-green-main text-white text-[10px] font-bold rounded-lg shadow-sm hover:bg-[#22c55e] transition-all flex items-center justify-center gap-1"
+                              >
+                                DONE
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
             )}
 
             {/* Summary Section */}
             <div className="mt-auto">
-              <h3 className="text-2xl font-bold mb-4 text-black">Summary</h3>
+              <h3 className="text-2xl font-bold text-black">Summary</h3>
               <div className="space-y-2 text-lg bg-white p-4 rounded-xl shadow-sm">
                 <div className="flex justify-between text-gray-500 font-medium text-sm mb-2 border-b border-gray-100 pb-2">
                   <span>Guests (Pax)</span>
