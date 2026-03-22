@@ -34,6 +34,7 @@ import {
   EServiceRequestReasonType,
   EServiceRequestStatus,
 } from "@/types/enum";
+import { ICreateOrderFromSignalR, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 import {
   CreatedServiceRequestFromSignalR,
   ServiceRequest,
@@ -54,7 +55,6 @@ import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
 import { TablePaymentFailedModal } from "./components/TablePaymentFailedModal";
 import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
-import { ICreateOrderFromSignalR, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 const TableRender = () => {
   const router = useRouter();

@@ -1,9 +1,10 @@
+import { redirect } from "next/navigation";
+
 import { getCookie } from "@/libs/cookie";
+import { ECashPaymentStatus, ECashPaymentStatusNumber } from "@/types/enum";
 import { CashPaymentResponse } from "@/types/paymentType";
 
 import { apiDelete, apiGet, apiPost, apiPut } from "../common";
-import { redirect } from "next/navigation";
-import { ECashPaymentStatus, ECashPaymentStatusNumber } from "@/types/enum";
 
 export const getRestaurantId = () => {
   const restaurantId = getCookie("restaurant_id");

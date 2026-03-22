@@ -1,5 +1,6 @@
-import TableRender from "@/app/features/main/table/Index";
 import { Suspense } from "react";
+
+import TableRender from "@/app/features/main/table/Index";
 
 const page = () => {
   return (

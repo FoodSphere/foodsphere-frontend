@@ -1,10 +1,11 @@
 "use client";
 
+import { redirect } from "next/navigation";
+
 import { getCookie, setCookie } from "@/libs/cookie";
 
 import { useGlobalStore } from "../store/globalStore";
 import { EHttpStatusCode } from "../types/enum";
-import { redirect } from "next/navigation";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 

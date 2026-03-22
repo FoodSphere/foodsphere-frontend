@@ -8,11 +8,11 @@ import { OrderCard } from "@/app/features/main/order/components/OrderCard";
 import { getCookie } from "@/libs/cookie";
 import { getMenuById, mapOrderStatus } from "@/services/menu/menuApi";
 import { getAllOrders, updateOrderStatus } from "@/services/order/orderApi";
+import { ICreateOrderFromSignalR, IOrder, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 import { FilterStatus, OrderFilterBar } from "./components/OrderFilterBar";
 import { OrderSearchBar } from "./components/OrderSearchBar";
 import { OrderUpdateStatusConfirmModal } from "./components/OrderUpdateStatusConfirmModal";
-import { ICreateOrderFromSignalR, IOrder, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 // Types
 export interface ModalConfig {

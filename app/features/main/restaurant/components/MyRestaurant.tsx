@@ -10,6 +10,7 @@ import {
   Store,
   Upload,
 } from "lucide-react";
+
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -21,15 +22,15 @@ import {
   SelectValue,
 } from "@/app/components/ui/select";
 import {
-  IContact,
-  IGetRestaurantResponse,
-  IUpdateRestaurantRequest,
-} from "@/types/restaurantType";
-import {
   getRestaurant,
   updateRestaurant,
   uploadRestaurantImage,
 } from "@/services/restaurant/restaurantApi";
+import {
+  IContact,
+  IGetRestaurantResponse,
+  IUpdateRestaurantRequest,
+} from "@/types/restaurantType";
 
 // Generate time options for hour 00 to 23
 const hourOptions = Array.from({ length: 24 }, (_, i) => {

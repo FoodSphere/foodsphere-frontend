@@ -1,5 +1,6 @@
-import { apiGet, apiPut } from "../common";
 import { getCookie } from "@/libs/cookie";
+
+import { apiGet, apiPut } from "../common";
 
 const getRestaurantId = () => {
   const restaurantId = getCookie("restaurant_id");

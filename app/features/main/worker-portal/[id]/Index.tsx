@@ -1,12 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
+import { useRouter } from "next/navigation";
+
 import { toast } from "@/app/components/ui/toast/use-toast";
 import { setCookie } from "@/libs/cookie";
 import { loginStaffWithPortal } from "@/services/staff/staffApi";
 import { EUserType, PAGE_CORE_PERMISSIONS } from "@/types/enum";
-import { useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
-import { useRouter } from "next/navigation";
 
 // Type สำหรับข้อมูลใน JWT Token
 interface IJwtPayload {

@@ -1,5 +1,5 @@
-import { formatDistanceToNow, parseISO } from "date-fns";
 import { useEffect, useState } from "react";
+import { formatDistanceToNow, parseISO } from "date-fns";
 
 import { QrCode } from "@/app/components/featureComponents/QrCode";
 import { ScrollArea } from "@/app/components/ui/scroll-area";

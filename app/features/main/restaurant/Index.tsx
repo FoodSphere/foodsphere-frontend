@@ -1,15 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
+import jwt from "jsonwebtoken";
+import { Lock, Store, TicketPercent, Users } from "lucide-react";
 
-import { ButtonGroup, ViewType, NavItem } from "./components/ButtonGroup";
+import { getCookie } from "@/libs/cookie";
+import { EUserType } from "@/types/enum";
+
+import { ButtonGroup, NavItem,ViewType } from "./components/ButtonGroup";
 import { ManageEmployeesView } from "./components/ManageEmployees";
 import { ManagePromotionView } from "./components/ManagePromotion";
 import { ManageRolesView } from "./components/ManageRoles";
 import { MyRestaurantView } from "./components/MyRestaurant";
-import jwt from "jsonwebtoken";
-import { getCookie } from "@/libs/cookie";
-import { EUserType } from "@/types/enum";
-import { Lock, Store, TicketPercent, Users } from "lucide-react";
 
 interface JwtPayload {
   role: string[];

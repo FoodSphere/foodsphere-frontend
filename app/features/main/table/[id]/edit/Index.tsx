@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import * as signalR from "@microsoft/signalr";
 import { useParams } from "next/navigation";
 
 // Import Components
 import { OrderCard } from "@/app/features/main/order/components/OrderCard";
+import { getCookie } from "@/libs/cookie";
 import { getActiveBillByTableId } from "@/services/bill/billApi";
 import { getMenuById } from "@/services/menu/menuApi";
+import { mapOrderStatus } from "@/services/menu/menuApi";
 import {
   getOrdersByBillId,
   updateOrderStatus,
 } from "@/services/order/orderApi";
 import { getTables } from "@/services/table/tableApi";
+import { ICreateOrderFromSignalR, IOrder, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 import {
   FilterStatus,
@@ -20,10 +24,6 @@ import {
 import { OrderSearchBar } from "../../../order/components/OrderSearchBar";
 import { OrderUpdateStatusConfirmModal } from "../../../order/components/OrderUpdateStatusConfirmModal";
 import { ModalConfig } from "../../../order/Index";
-import { mapOrderStatus } from "@/services/menu/menuApi";
-import * as signalR from "@microsoft/signalr";
-import { getCookie } from "@/libs/cookie";
-import { IOrder, ICreateOrderFromSignalR, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 export default function TableEditOrderRender() {
   const [orders, setOrders] = useState<IOrder[]>([]);
