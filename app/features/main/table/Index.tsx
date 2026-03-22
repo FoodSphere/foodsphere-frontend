@@ -18,14 +18,17 @@ import {
   createCashPayment,
   verifyCashPayment,
 } from "@/services/payment/paymentApi";
-import { updateServiceRequestStatus } from "@/services/service-request/serviceRequestApi";
+import {
+  getServiceRequests,
+  updateServiceRequestStatus,
+} from "@/services/service-request/serviceRequestApi";
 import {
   checkout,
   StripeVerificationResult,
   verifyCheckoutSession,
 } from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
-import { IBillResponse } from "@/types/billType";
+import { IBillOrder, IBillResponse } from "@/types/billType";
 import {
   EPaymentMethod,
   EServiceRequestReasonType,
@@ -51,6 +54,7 @@ import { TableData, TableEditDrawer } from "./components/TableEditDrawer";
 import { TableOpenBillModal } from "./components/TableOpenBillModal";
 import { TablePaymentFailedModal } from "./components/TablePaymentFailedModal";
 import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal";
+import { ICreateOrderFromSignalR, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
 
 const TableRender = () => {
   const router = useRouter();
@@ -103,20 +107,37 @@ const TableRender = () => {
       const response = await getTables();
       if (response && response.data) {
         // Map ข้อมูลจาก API เข้ากับ State ของหน้าจอ
-        const mappedTables = response.data.map((t: ITableResponse) => ({
-          id: t.id.toString(), // ID ของ Database
-          name: t.name, // ชื่อโต๊ะ
-          hasCustomers: t.status !== 0, // status 0 คือไม่มีลูกค้า
-        }));
+        const mappedTables = await Promise.all(
+          response.data.map(async (t: ITableResponse) => ({
+            id: t.id.toString(), // ID ของ Database
+            name: t.name, // ชื่อโต๊ะ
+            hasCustomers: t.status !== 0, // status 0 คือไม่มีลูกค้า
+            billId: (await getActiveBillByTableId(t.id))?.data.id || null,
+          }))
+        );
+
         setTables(mappedTables);
+        console.log(mappedTables);
       }
     } catch (error) {
       console.error("Failed to fetch tables:", error);
     }
   };
 
+  const fetchServiceRequests = async () => {
+    try {
+      const response = await getServiceRequests();
+      if (response && response.data) {
+        setServiceRequests(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch service requests:", error);
+    }
+  };
+
   useEffect(() => {
     fetchTables();
+    fetchServiceRequests();
 
     try {
       const accessToken = getCookie("access_token");
@@ -140,6 +161,105 @@ const TableRender = () => {
         throw err;
       });
 
+      connect.on("order_created", async (createdOrder: ICreateOrderFromSignalR) => {
+        if (!createdOrder || !createdOrder.items) return;
+
+        try {
+          // Construct the new IBillOrder object correctly from SignalR data
+          const newBillOrder: IBillOrder = {
+            id: createdOrder.id,
+            create_time: createdOrder.create_time,
+            update_time: createdOrder.update_time,
+            delete_time: createdOrder.delete_time,
+            bill_id: createdOrder.bill_id,
+            status: createdOrder.status,
+            items: createdOrder.items.map((item) => ({
+              id: Number(item.id),
+              create_time: item.create_time,
+              update_time: item.update_time,
+              bill_id: item.bill_id,
+              order_id: Number(item.order_id),
+              restaurant_id: item.restaurant_id,
+              menu_id: item.menu_id,
+              price_snapshot: item.price_snapshot,
+              quantity: item.quantity,
+              note: item.note,
+            })),
+          };
+
+          setActiveBillData((prevActiveBillData) => {
+            // Only update if the order belongs to the currently displayed bill
+            if (!prevActiveBillData || prevActiveBillData.id !== createdOrder.bill_id) {
+              return prevActiveBillData;
+            }
+
+            const updatedOrders = [...prevActiveBillData.orders, newBillOrder];
+            updatedOrders.sort(
+              (a, b) =>
+                new Date(b.create_time).getTime() - new Date(a.create_time).getTime()
+            );
+
+            return {
+              ...prevActiveBillData,
+              orders: updatedOrders,
+            };
+          });
+        } catch (err) {
+          console.error("Error processing new order:", err);
+        }
+      });
+
+      connect.on(
+        "order_status_updated",
+        async (updatedOrder: IUpdateOrderStatusFromSignalR) => {
+          setActiveBillData((prev) => {
+            if (!prev || prev.id !== updatedOrder.resource.billId) return prev;
+            return {
+              ...prev,
+              orders: prev.orders.map((order) => {
+                if (order.id === updatedOrder.resource.id) {
+                  return {
+                    ...order,
+                    status: updatedOrder.status,
+                  };
+                }
+                return order;
+              }),
+            };
+          });
+        }
+      );
+
+      connect.on(
+        "order_item_updated",
+        async (updatedOrder: IUpdateOrderItemFromSignalR) => {
+          setActiveBillData((prev) => {
+            if (!prev || prev.id !== updatedOrder.bill_id) return prev;
+            return {
+              ...prev,
+              orders: prev.orders.map((order) => {
+                if (order.id === updatedOrder.order_id) {
+                  return {
+                    ...order,
+                    items: order.items.map((item) => {
+                      if (item.id === updatedOrder.id) {
+                        return {
+                          ...item,
+                          quantity: updatedOrder.quantity,
+                          note: updatedOrder.note,
+                        };
+                      }
+                      return item;
+                    }),
+                  };
+                }
+                return order;
+              }),
+            };
+          });
+        }
+      );
+
       connect.on(
         "service_request_created",
         (serviceRequest: CreatedServiceRequestFromSignalR) => {
@@ -156,6 +276,8 @@ const TableRender = () => {
             id: serviceRequest.id,
             create_time: serviceRequest.create_time,
             update_time: serviceRequest.update_time,
+            bill_id: serviceRequest.bill_id,
+            table: serviceRequest.table,
             reason: serviceRequest.reason,
             status: serviceRequest.status,
           };
@@ -185,6 +307,8 @@ const TableRender = () => {
               id: findServiceRequest.id,
               create_time: findServiceRequest.create_time,
               update_time: findServiceRequest.update_time,
+              bill_id: findServiceRequest.bill_id,
+              table: findServiceRequest.table,
               reason: findServiceRequest.reason,
               status: serviceRequest.status,
             };
@@ -301,6 +425,7 @@ const TableRender = () => {
               const customerBaseUrl = process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL;
               const url = `${customerBaseUrl}/portals/${activePortal.id}`;
               setQrData(url);
+              console.log(url);
             }
           } catch (portalError) {
             console.error("Failed to fetch portals:", portalError);
@@ -355,6 +480,7 @@ const TableRender = () => {
           id: id,
           name: currentTable?.name || "",
           hasCustomers: true,
+          billId: newBillId,
         };
         openTable(currentTableData);
       }
@@ -434,6 +560,13 @@ const TableRender = () => {
         {tables.map((table) => (
           <Table
             key={table.id}
+            badge={
+              serviceRequests.filter(
+                (request) =>
+                  request.table.id == Number(table.id) &&
+                  request.bill_id === table.billId
+              ).length
+            }
             id={table.name}
             hasCustomers={table.hasCustomers}
             onClick={() => openTable(table)}
@@ -482,7 +615,10 @@ const TableRender = () => {
           tableName={currentTable.name}
           billData={activeBillData}
           qrUrl={qrData}
-          serviceRequests={serviceRequests}
+          serviceRequests={serviceRequests.filter(
+            (request) => request.table.id == Number(currentTable.id)
+            && request.bill_id === activeBillData?.id
+          )}
           onCheckBill={() => setShowPaymentModal(true)}
           onCompleteBill={() => setShowConfirmCompleteBillModal(true)}
           onAddOrder={() => router.push(`/table/${currentTable.id}/add`)}
