@@ -1,43 +1,51 @@
-name: Deploy Next.js to Vercel
-
+name: CI/CD - Build and Push FoodSphere POS to GHCR.io and Deploy to K8S
 on:
   push:
-    branches:
-      - dev
-
+    branches: [ "dev" ]
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. Checkout repository
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ secrets.GHCR_USERNAME }}
+        password: ${{ secrets.GHCR_PAT }}
+    - uses: docker/setup-buildx-action@v3
+    - uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: |
+          ghcr.io/foodsphere/foodsphere-frontend/pos-app:latest
+          ghcr.io/foodsphere/foodsphere-frontend/pos-app:${{ github.sha }}
 
-      # 2. Setup pnpm (includes caching)
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v6
 
-      # 3. Setup Node.js (no cache here)
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+    - name: Set up Kustomize
+      run: |
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        sudo mv kustomize /usr/local/bin/
 
-      # 4. Install dependencies
-      - name: Install dependencies
-        run: pnpm install
-
-      # 5. Run ESLint
-      - name: Lint code
-        run: pnpm lint
-
-      # 6. Build Next.js
-      - name: Build Next.js
-        run: pnpm build
-
-      # 7. Deploy to Vercel
-      - name: Deploy to Vercel
-        run: npx vercel --token=${{ secrets.VERCEL_TOKEN }} --prod --confirm
+    - name: Update Kubernetes resources
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBECONFIG }}
+      run: |
+        # Create kubeconfig directory
+        mkdir -p $HOME/.kube
+        # Write KUBECONFIG secret to file (assuming it's raw YAML)
+        echo "${KUBE_CONFIG_DATA}" > $HOME/.kube/config
+        # Set KUBECONFIG to the file path
+        export KUBECONFIG=$HOME/.kube/config
+        
+        # Update image tag using kustomize
+        cd k8s
+        kustomize edit set image ghcr.io/foodsphere/foodsphere-frontend/pos-app=ghcr.io/foodsphere/foodsphere-frontend/pos-app:${{ github.sha }}
+        
+        # Apply manifests
+        kubectl apply -k .

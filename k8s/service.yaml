@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-pos-service
+  labels:
+    app: frontend-pos-service
+spec:
+  type: ClusterIP # ใช้ ClusterIP (ค่าเริ่มต้น) สำหรับคุยกันภายใน Cluster
+  selector:
+    app: frontend-pos-app
+  ports:
+    - protocol: TCP
+      port: 80 # พอร์ตของ Service 
+      targetPort: 3001 # ชี้ไปที่พอร์ตของ Next.js Container

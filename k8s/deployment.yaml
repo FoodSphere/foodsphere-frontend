@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-pos-deployment
+  labels:
+    app: frontend-pos-app
+spec:
+  replicas: 2 # จำนวน Pods (Container) ที่ต้องการรัน เพื่อทำ Load balance และ High Availability
+  selector:
+    matchLabels:
+      app: frontend-pos-app
+  template:
+    metadata:
+      labels:
+        app: frontend-pos-app
+    spec:
+      containers:
+      - name: frontend-pos-container
+        image: ghcr.io/foodsphere/foodsphere-frontend/pos-app # ชื่อ Image ที่เรา build จาก Dockerfile
+        ports:
+        - containerPort: 3001 # พอร์ตที่เรา Expose ไว้ใน Dockerfile
+        
+        # ดึง Environment Variables ทั้งหมดจาก ConfigMap และ Secret มายัดใส่ Container
+        envFrom:
+        - configMapRef:
+            name: frontend-pos-configmap
+        - secretRef:
+            name: frontend-pos-secret
+            
+        # ควบคุมการใช้ทรัพยากร (Best Practice ใน k8s)
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
