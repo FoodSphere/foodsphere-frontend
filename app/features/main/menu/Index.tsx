@@ -350,11 +350,12 @@ export default function MenuRender() {
                 : [],
               components: resolvedComponents,
               tags: item.tags || [],
-              status: item.ingredients.some(
-                (ing) => ing.ingredient.status === 0
-              )
-                ? 2
-                : 1,
+              status:
+                item.status === 0 // 1. เช็คก่อนว่าเมนูถูกปิดการขายจาก Backend หรือไม่ (0 = INACTIVE)
+                  ? 0
+                  : item.ingredients?.some((ing) => ing.ingredient.status === 0) // 2. ถ้าไม่ได้ปิด ค่อยมาเช็คว่าวัตถุดิบหมดไหม
+                    ? 2 // ถ้าวัตถุดิบหมด ให้เป็น 2 (OUT_OF_STOCK)
+                    : item.status, // 3. ถ้าของไม่หมดและไม่ได้ปิด ก็ใช้ status ตาม API (ซึ่งน่าจะเป็น 1 ACTIVE)
               description: item.description || "รายละเอียดเมนู",
             };
           })

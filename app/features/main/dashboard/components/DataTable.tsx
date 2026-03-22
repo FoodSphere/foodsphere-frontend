@@ -26,17 +26,15 @@ function DataTable<T extends object>({
         <h3 className="text-xl font-extrabold text-gray-900 tracking-tight">
           {title}
         </h3>
-        <div className="flex items-center gap-3">
-          {/* แสดง Filter Dropdown (ถ้ามี) */}
-          {headerAction}
-        </div>
+        <div className="flex items-center gap-3">{headerAction}</div>
       </div>
 
       {/* Table Content */}
       <div className="w-full flex-1 overflow-x-auto">
         <div className="min-w-[500px]">
+          {/* Table Header */}
           <div
-            className="grid gap-4 pb-3 border-b border-gray-200 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
+            className="grid gap-4 pb-3 border-b border-gray-200 text-left text-xs font-bold text-gray-400 uppercase tracking-wider pr-2"
             style={{
               gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
             }}
@@ -46,7 +44,8 @@ function DataTable<T extends object>({
             ))}
           </div>
 
-          <div className="mt-2">
+          {/* Table Body - เพิ่ม Scrollbar ตรงนี้ */}
+          <div className="mt-2 max-h-[260px] overflow-y-auto pr-2 custom-scrollbar">
             {data.length > 0 ? (
               data.map((item, rowIndex) => (
                 <div

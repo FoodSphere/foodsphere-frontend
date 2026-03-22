@@ -60,6 +60,6 @@ export const getStockUse = async (queryString: string = "") => {
   const restaurantId = getRestaurantId();
 
   return await apiGet(
-    `/restaurants/${restaurantId}/branches/1/stock/transactions?${queryString}`
+    `/restaurants/${restaurantId}/report/stock-usage?${queryString}`
   );
 };
