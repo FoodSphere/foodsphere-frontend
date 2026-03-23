@@ -148,7 +148,7 @@ const LoginRender = () => {
             )}
           </div>
 
-          <div className="relative mb-0">
+          <div className="relative mb-1">
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
@@ -179,14 +179,7 @@ const LoginRender = () => {
             </p>
           )}
 
-          <div className="text-right mt-1">
-            <a
-              href="/forgot-password"
-              className="text-sm text-primary-orange-main hover:underline"
-            >
-              Forgot password?
-            </a>
-          </div>
+          <div className="text-right mt-1"></div>
 
           {errors.root && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-500">
