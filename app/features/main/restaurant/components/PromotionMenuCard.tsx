@@ -25,9 +25,7 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
   onDelete,
 }) => {
   const handleDeleteClick = () => {
-    if (window.confirm(`Are you sure you want to delete "${promo.name}"?`)) {
-      onDelete(promo.id);
-    }
+    onDelete(promo.id);
   };
 
   return (

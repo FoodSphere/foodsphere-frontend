@@ -494,7 +494,7 @@ const DashboardRender = () => {
               onChange={(e) => setPaymentFilter(e.target.value)}
             >
               <option value="All">All Payments</option>
-              <option value="Cash">Cash</option>
+              <option value="cash">Cash</option>
               <option value="QR Code">QR Code</option>
             </select>
           }
