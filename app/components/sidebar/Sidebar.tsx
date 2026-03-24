@@ -1,10 +1,12 @@
-"use client"; // จำเป็นต้องใส่เพราะมี User Interaction
+"use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation"; // Import router
+import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
+import { useRouter } from "next/navigation";
 
 import { iconNames, Icons } from "@/app/icons";
-import { removeCookie } from "@/libs/cookie"; // Import removeCookie
+import { getCookie, removeCookie } from "@/libs/cookie";
+import { EUserType, PAGE_CORE_PERMISSIONS } from "@/types/enum";
 
 import { SidebarNavList } from "./SidebarNavList";
 
@@ -14,28 +16,73 @@ type NavLink = {
   icon: keyof typeof iconNames;
 };
 
-export const Sidebar = () => {
-  const router = useRouter(); // เรียกใช้ Hook
+interface JwtPayload {
+  permissions?: number[];
+  role?: string[];
+  user_type?: string;
+  [key: string]: any;
+}
 
-  const links: NavLink[] = [
-    { name: "Dashboard", path: "/", icon: "DashboardIcon" },
-    { name: "Order", path: "/order", icon: "OrderIcon" },
-    { name: "Table", path: "/table", icon: "TableIcon" },
-    { name: "Stock", path: "/stock", icon: "StockIcon" },
-    { name: "Menu", path: "/menu", icon: "MenuIcon" },
-    { name: "Restaurant", path: "/restaurant", icon: "RestaurantIcon" },
-  ];
+const ALL_LINKS: NavLink[] = [
+  { name: "Dashboard", path: "/", icon: "DashboardIcon" },
+  { name: "Order", path: "/order", icon: "OrderIcon" },
+  { name: "Table", path: "/table", icon: "TableIcon" },
+  { name: "Stock", path: "/stock", icon: "StockIcon" },
+  { name: "Menu", path: "/menu", icon: "MenuIcon" },
+  { name: "Restaurant", path: "/restaurant", icon: "RestaurantIcon" },
+];
+
+export const Sidebar = () => {
+  const router = useRouter();
+  const [allowedLinks, setAllowedLinks] = useState<NavLink[]>([]);
+
+  useEffect(() => {
+    const token = getCookie("access_token");
+
+    if (token) {
+      try {
+        const decoded = jwtDecode<JwtPayload>(token);
+        const userPermissions = decoded.permissions || [];
+        const userRoles = decoded.role || [];
+        const userType = decoded.user_type; // ดึง user_type ออกมา
+
+        // ---  Logic "Bypass" สำหรับ Master ---
+        // ถ้าเป็น MASTER ให้แสดงทุกเมนูทันที ไม่ต้องไปเช็ค Array Permissions
+        if (
+          userType === EUserType.MASTER ||
+          userRoles.includes("Admin") ||
+          userRoles.includes("SuperAdmin")
+        ) {
+          setAllowedLinks(ALL_LINKS);
+          return; // จบการทำงาน
+        }
+
+        // --- กรองเมนูตาม Permission สำหรับ Worker ---
+        const filteredLinks = ALL_LINKS.filter((link) => {
+          const requiredPermissions = PAGE_CORE_PERMISSIONS[link.path];
+
+          // ถ้าไม่มีกำหนดใน Mapping บล็อกไว้ก่อน (Secure by default)
+          if (!requiredPermissions) {
+            return false;
+          }
+
+          // เช็คว่ามีสิทธิ์ตรงกันไหม
+          return requiredPermissions.some((perm) =>
+            userPermissions.includes(perm)
+          );
+        });
+
+        setAllowedLinks(filteredLinks);
+      } catch (error) {
+        console.error("Failed to decode token", error);
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
-    // 1. ลบ Token, restaurant_id ออกจาก Cookie
     removeCookie("access_token");
     removeCookie("restaurant_id");
-
-    // 2. (Optional) ถ้ามี API Logout ฝั่ง Backend ให้เรียกตรงนี้ด้วย
-    // await apiPost('/auth/logout');
-
-    // 3. Redirect ไปหน้า Login
-    router.replace("/login"); // ใช้ replace เพื่อไม่ให้กด Back กลับมาหน้าเดิมได้ง่ายๆ
+    router.replace("/login");
   };
 
   return (
@@ -44,10 +91,9 @@ export const Sidebar = () => {
         <div className="text-2xl font-extrabold text-primary-orange-main">
           FOOD SPHERE
         </div>
-        <SidebarNavList className="flex flex-col gap-1" links={links} />
+        <SidebarNavList className="flex flex-col gap-1" links={allowedLinks} />
       </div>
 
-      {/* Logout Button */}
       <button
         onClick={handleLogout}
         className="text-black flex flex-col items-center gap-2 hover:text-primary-orange-main transition duration-150 ease-in-out w-full"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 // API
 import { getMenus } from "@/services/menu/menuApi";
@@ -12,9 +12,9 @@ import {
 import {
   IMenuResponse,
   IMenuTag,
-  IPromotionMenuResponse,
 } from "@/types/menuType";
 
+import { PromotionConfirmModal } from "./PromotionConfirmModal";
 import { PromotionFormSection } from "./PromotionFormSection";
 import { PromotionMenuCard, UIPromotion } from "./PromotionMenuCard";
 
@@ -26,6 +26,12 @@ export const ManagePromotionView = () => {
   const [editingPromotion, setEditingPromotion] = useState<UIPromotion | null>(
     null
   );
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [promotionToDelete, setPromotionToDelete] = useState<number | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchMasterData = async () => {
     try {
@@ -41,34 +47,59 @@ export const ManagePromotionView = () => {
       if (tagsRes) setAvailableTags(tagsRes);
 
       if (promotionsRes?.data) {
+        // ใช้ any ชั่วคราวเพื่อให้รองรับ field พิเศษที่อาจจะหลุดมาจาก API
         const mappedPromotions: UIPromotion[] = promotionsRes.data.map(
-          (promo: IPromotionMenuResponse) => {
+          (promo: any) => {
             let originalPrice = 0;
-            const items = (promo.components || []).map((comp) => {
-              const menuItem = menus.find(
-                (m: IMenuResponse) => m.id === comp.menu_id
-              );
+            let isAnyInactive = false;
+            let isAnyOutOfStock = false;
+
+            const items = (promo.components || []).map((comp: any) => {
+              const menuItem = menus.find((m: any) => m.id === comp.menu_id);
               const itemPrice = menuItem?.price || 0;
               const itemName = menuItem?.name || "Unknown Item";
               originalPrice += itemPrice * comp.quantity;
+
+              // === ตรวจสอบสถานะของเมนูย่อย ===
+              // เช็คจาก comp ก่อน ถ้าไม่มีให้ fallback ไปดูจาก master menu
+              const compMenuStatus =
+                comp.menu_status !== undefined
+                  ? comp.menu_status
+                  : menuItem?.status;
+              const compStockAvailability =
+                comp.stock_availability !== undefined
+                  ? comp.stock_availability
+                  : menuItem?.stock_availability;
+
+              if (compMenuStatus === 0) isAnyInactive = true;
+              if (compStockAvailability === false) isAnyOutOfStock = true;
 
               return {
                 menu_id: comp.menu_id,
                 name: itemName,
                 quantity: comp.quantity,
-                price: itemPrice, // แนบ price ไปด้วย ฟอร์มจะได้คำนวณถูก
+                price: itemPrice,
               };
             });
 
-            // ดึง tag_id จาก tags ที่แนบมากับ API Promotion (สมมติว่าเป็น { tag_id: number }[])
             const tagIds = (promo.tags || []).map((t: any) => t.tag_id);
+
+            // === คำนวณสถานะสุดท้ายของ Promotion ===
+            let finalStatus = promo.status;
+            if (promo.status === 0 || isAnyInactive) {
+              finalStatus = 0; // เมนูหลักปิด หรือมีเมนูในเซ็ตถูกปิด
+            } else if (promo.stock_availability === false || isAnyOutOfStock) {
+              finalStatus = 2; // เมนูหลักของหมด หรือมีเมนูในเซ็ตของหมด
+            } else {
+              finalStatus = promo.status; // เปิดปกติ (1)
+            }
 
             return {
               id: promo.id,
               name: promo.name,
               description: promo.description,
               image_url: promo.image_url,
-              status: promo.status,
+              status: finalStatus, // ส่งค่าสถานะใหม่ที่ประมวลผลแล้ว
               specialPrice: promo.price,
               originalPrice: originalPrice,
               items: items,
@@ -89,72 +120,95 @@ export const ManagePromotionView = () => {
     fetchMasterData();
   }, []);
 
-  const handleDeletePromotion = async (id: number) => {
+  const requestDeletePromotion = (id: number) => {
+    setPromotionToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const executeDeletePromotion = async () => {
+    if (!promotionToDelete) return;
+
+    setIsDeleting(true);
     try {
-      const res = await deletePromotionMenu(id);
+      const res = await deletePromotionMenu(promotionToDelete);
 
-      // เช็ค statusCode ว่าสำเร็จหรือไม่ (ปรับตัวแปรตาม Response จริงของโปรเจกต์คุณ)
       if (res?.statusCode === 200 || res?.statusCode === 204) {
-        alert("Promotion deleted successfully!");
-
-        // ถ้ากำลังกด Edit รายการนี้อยู่ ให้เคลียร์ฟอร์มกลับไปเป็นโหมด Create
-        if (editingPromotion?.id === id) {
+        if (editingPromotion?.id === promotionToDelete) {
           setEditingPromotion(null);
         }
-
-        // โหลดข้อมูลใหม่หลังจากลบสำเร็จ
         fetchMasterData();
       } else {
-        alert("Failed to delete promotion.");
+        console.error("Failed to delete promotion.");
       }
     } catch (error) {
       console.error("Error deleting promotion:", error);
-      alert("An error occurred while deleting.");
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+      setPromotionToDelete(null);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start pb-10">
-      <div className="lg:col-span-2 space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Active Promotions
-          </h2>
-          <p className="text-gray-500">Manage your set menus and bundles.</p>
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start pb-10">
+        <div className="lg:col-span-2 space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Active Promotions
+            </h2>
+            <p className="text-gray-500">Manage your set menus and bundles.</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            {isLoadingData ? (
+              <div className="text-center py-10 text-gray-500">
+                Loading promotions...
+              </div>
+            ) : promotions.length === 0 ? (
+              <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                No promotions found. Create one on the right!
+              </div>
+            ) : (
+              promotions.map((promo) => (
+                <PromotionMenuCard
+                  key={promo.id}
+                  promo={promo}
+                  onEdit={(selectedPromo) => setEditingPromotion(selectedPromo)}
+                  onDelete={requestDeletePromotion}
+                />
+              ))
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          {isLoadingData ? (
-            <div className="text-center py-10 text-gray-500">
-              Loading promotions...
-            </div>
-          ) : promotions.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-              No promotions found. Create one on the right!
-            </div>
-          ) : (
-            promotions.map((promo) => (
-              <PromotionMenuCard
-                key={promo.id}
-                promo={promo}
-                onEdit={(selectedPromo) => setEditingPromotion(selectedPromo)}
-                onDelete={handleDeletePromotion} /* เพิ่ม Prop ตรงนี้ */
-              />
-            ))
-          )}
+        <div className="lg:col-span-1">
+          <PromotionFormSection
+            availableMenus={availableMenus}
+            availableTags={availableTags}
+            isLoadingData={isLoadingData}
+            editingPromotion={editingPromotion}
+            onSuccess={fetchMasterData}
+            onCancel={() => setEditingPromotion(null)}
+          />
         </div>
       </div>
 
-      <div className="lg:col-span-1">
-        <PromotionFormSection
-          availableMenus={availableMenus}
-          availableTags={availableTags}
-          isLoadingData={isLoadingData}
-          editingPromotion={editingPromotion}
-          onSuccess={fetchMasterData}
-          onCancel={() => setEditingPromotion(null)}
-        />
-      </div>
-    </div>
+      {/* --- Delete Modal --- */}
+      <PromotionConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Delete Promotion"
+        message="Are you sure you want to delete this promotion? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDestructive={true}
+        isLoading={isDeleting}
+        onConfirm={executeDeletePromotion}
+        onCancel={() => {
+          setIsDeleteModalOpen(false);
+          setPromotionToDelete(null);
+        }}
+      />
+    </>
   );
 };

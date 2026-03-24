@@ -89,8 +89,8 @@ export async function checkout(
         table_name: tableName,
         payment_method: EPaymentMethod.PROMPTPAY,
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/table?session_id={CHECKOUT_SESSION_ID}&payment_method=promptpay&bill_id=${billId}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/table?cancel=true&payment_method=promptpay&bill_id=${billId}`,
+      success_url: `${process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL || "http://localhost:3000"}/table?session_id={CHECKOUT_SESSION_ID}&payment_method=promptpay&bill_id=${billId}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_CUSTOMER_BASE_URL || "http://localhost:3000"}/table?cancel=true&payment_method=promptpay&bill_id=${billId}`,
     });
     return redirect(session.url as string);
   } catch (error) {

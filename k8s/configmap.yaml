@@ -6,6 +6,7 @@ metadata:
 data:
   # กำหนดตัวแปร Environment ทั่วไปตรงนี้
   NODE_ENV: "production"
+  NEXT_PUBLIC_BASE_URL: "http://pos.foodsphere.space"
   NEXT_PUBLIC_API_BASE_URL: "http://pos.foodsphere.space/api"
-  NEXT_PUBLIC_CUSTOMER_BASE_URL: "http://ordering.foodsphere.space/"
+  NEXT_PUBLIC_CUSTOMER_BASE_URL: "http://ordering.foodsphere.space"
   NEXT_PUBLIC_BASE_SRIPE_URL: https://api.stripe.com/v1

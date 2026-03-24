@@ -3,6 +3,14 @@
 
 echo "Starting Next.js Runtime Injection..."
 
+if [ -z "$NEXT_PUBLIC_BASE_URL" ]; then
+  echo "Warning: NEXT_PUBLIC_BASE_URL is not set in environment!"
+else
+  echo "Injecting NEXT_PUBLIC_BASE_URL: $NEXT_PUBLIC_BASE_URL"
+  
+  find /app/.next -type f -name "*.js" -exec sed -i "s|__NEXT_PUBLIC_BASE_URL__|${NEXT_PUBLIC_BASE_URL}|g" {} +
+fi
+
 if [ -z "$NEXT_PUBLIC_API_BASE_URL" ]; then
   echo "Warning: NEXT_PUBLIC_API_BASE_URL is not set in environment!"
 else

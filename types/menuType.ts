@@ -18,7 +18,13 @@ export interface IMenuResponse {
     quantity: number;
   }[];
   ingredients: {
-    ingredient: { id: number; name: string; unit: string; image_url: string; status: number; };
+    ingredient: {
+      id: number;
+      name: string;
+      unit: string;
+      image_url: string;
+      status: number;
+    };
     amount: number;
   }[];
   tags: {
@@ -28,6 +34,7 @@ export interface IMenuResponse {
   display_name: string;
   description: string;
   image_url: string;
+  stock_availability: boolean;
   status: number;
 }
 
@@ -71,6 +78,9 @@ export interface IPromotionMenuResponse {
   components: {
     menu_id: number;
     quantity: number;
+    // เพิ่ม 2 ตัวนี้ตามที่ Backend ส่งมาครับ
+    stock_availability: boolean;
+    menu_status: number;
   }[];
   tags: {
     tag_id: number;
@@ -79,6 +89,7 @@ export interface IPromotionMenuResponse {
   display_name: string;
   description: string;
   image_url: string;
+  stock_availability: boolean;
   status: number;
 }
 

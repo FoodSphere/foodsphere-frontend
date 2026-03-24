@@ -25,14 +25,27 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
   onDelete,
 }) => {
   const handleDeleteClick = () => {
-    if (window.confirm(`Are you sure you want to delete "${promo.name}"?`)) {
-      onDelete(promo.id);
+    onDelete(promo.id);
+  };
+
+  // สร้างฟังก์ชันสำหรับจัดการสีและข้อความของสถานะ
+  const getStatusDisplay = (status: number) => {
+    switch (status) {
+      case 1:
+        return { text: "Active", className: "bg-green-100 text-green-700" };
+      case 2:
+        return { text: "Out of Stock", className: "bg-red-100 text-red-600" };
+      case 0:
+      default:
+        return { text: "Inactive", className: "bg-gray-100 text-gray-500" };
     }
   };
 
+  const statusDisplay = getStatusDisplay(promo.status);
+
   return (
     <div className="bg-white rounded-[24px] flex flex-col sm:flex-row shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 relative group overflow-hidden">
-      {/* Action Buttons - ปรับตำแหน่งเล็กน้อยให้ลอยเหนือรูป/เนื้อหา */}
+      {/* Action Buttons */}
       <div className="absolute top-3 right-3 flex gap-2 z-20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
         <button
           onClick={() => onEdit(promo)}
@@ -50,7 +63,7 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
         </button>
       </div>
 
-      {/* Image Section - ปรับให้เต็มพื้นที่ฝั่งซ้าย */}
+      {/* Image Section */}
       <div className="w-full sm:w-56 h-48 sm:h-auto bg-gray-50 shrink-0 relative overflow-hidden border-b sm:border-b-0 sm:border-r-2 border-primary-orange-main">
         {promo.image_url ? (
           <img
@@ -65,11 +78,11 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
           </div>
         )}
 
-        {/* Overlay ไล่เฉดสีเบาๆ ให้รูปดูมีมิติ (Optional) */}
+        {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-50"></div>
       </div>
 
-      {/* Content Section - ใส่ Padding ที่นี่แทน */}
+      {/* Content Section */}
       <div className="flex-1 flex flex-col justify-between p-6">
         <div>
           <div className="flex justify-between items-start pr-12 sm:pr-16">
@@ -82,14 +95,11 @@ export const PromotionMenuCard: React.FC<PromotionMenuCardProps> = ({
               </p>
             </div>
 
+            {/* อัปเดตการแสดงผล Status */}
             <span
-              className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
-                promo.status === 1
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-400"
-              }`}
+              className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${statusDisplay.className}`}
             >
-              {promo.status === 1 ? "Active" : "Inactive"}
+              {statusDisplay.text}
             </span>
           </div>
 

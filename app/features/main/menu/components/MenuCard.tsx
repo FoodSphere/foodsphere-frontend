@@ -72,7 +72,7 @@ export const MenuCard = ({
         )}
 
         {/* Badge สำหรับ Promotion Menu */}
-        {isPromotion && status && (
+        {isPromotion && status !== 0 && (
           <div className="absolute top-2 left-2 bg-primary-orange-main text-white px-2.5 py-1 rounded-xl text-[12px] font-bold uppercase tracking-wide shadow-sm">
             Promo Set
           </div>

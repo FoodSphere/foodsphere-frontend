@@ -37,6 +37,8 @@ export interface MenuComponent {
   menu_id: number;
   quantity: number;
   name?: string;
+  stock_availability?: boolean;
+  menu_status?: number;
 }
 export interface IMenuItem {
   id: number;
@@ -160,6 +162,10 @@ export default function MenuRender() {
         await updateMenu(id, payload);
         console.log(`Toggled status for Menu: ${itemToUpdate.name}`);
       }
+
+      // อัปเดตตามสถานะของเมนูย่อยที่เพิ่งถูกปิดไปโดยอัตโนมัติ
+      await fetchMenusData();
+      
     } catch (error) {
       console.error("Failed to update status:", error);
       // หากพัง ให้ Revert UI กลับ
@@ -292,18 +298,15 @@ export default function MenuRender() {
       const res = await getMenus();
 
       if (res && res.data && Array.isArray(res.data)) {
-        const apiData: IMenuResponse[] = res.data;
+        // ใช้ any หรือ IMenuResponse & IPromotionMenuResponse ชั่วคราวเพื่อให้รองรับทั้ง 2 แบบ
+        const apiData: any[] = res.data;
 
-        // ใช้ Promise.all เพื่อรอให้ดึงชื่อย่อยเสร็จครบทุกตัวก่อนเซ็ตลง State
         const mappedMenus: IMenuItem[] = await Promise.all(
           apiData.map(async (item) => {
-            // Map ข้อมูล Components (เมนูย่อยของโปรโมชั่น)
             const resolvedComponents = item.components
               ? await Promise.all(
-                  item.components.map(async (comp) => {
-                    let componentName = `Menu ID: ${comp.menu_id}`; // ค่า Default
-
-                    // 1. ลองหาชื่อจาก apiData ที่มีอยู่แล้วก่อน (ช่วยลดจำนวนการยิง API ประหยัดเวลาโหลด)
+                  item.components.map(async (comp: any) => {
+                    let componentName = `Menu ID: ${comp.menu_id}`;
                     const foundInList = apiData.find(
                       (m) => m.id === comp.menu_id
                     );
@@ -311,10 +314,8 @@ export default function MenuRender() {
                     if (foundInList) {
                       componentName = foundInList.name;
                     } else {
-                      // 2. ถ้าไม่เจอ (เช่น เมนูย่อยอาจจะไม่ได้อยู่ใน List หรือถูกซ่อนไว้) ค่อยยิง API getMenuById
                       try {
                         const detail = await getMenuById(comp.menu_id);
-                        // หมายเหตุ: ปรับ .data.name ให้ตรงกับโครงสร้าง Response จาก Backend ของคุณนะครับ
                         componentName = detail?.data?.name;
                       } catch (error) {
                         console.error(
@@ -327,11 +328,38 @@ export default function MenuRender() {
                     return {
                       menu_id: comp.menu_id,
                       quantity: comp.quantity,
-                      name: componentName, // ส่งชื่อเข้าไปแล้ว!
+                      name: componentName,
+                      // เก็บข้อมูลจาก Promotion components ไว้ด้วย
+                      stock_availability: comp.stock_availability,
+                      menu_status: comp.menu_status,
                     };
                   })
                 )
               : [];
+
+            // === Logic การเช็ค Status ของ Components ===
+            // เช็คว่ามีเมนูย่อยตัวไหนถูกปิด (0) หรือของหมด (false) หรือไม่
+            const isAnyComponentInactive = resolvedComponents.some(
+              (c: any) => c.menu_status === 0
+            );
+            const isAnyComponentOutOfStock = resolvedComponents.some(
+              (c: any) => c.stock_availability === false
+            );
+
+            // คำนวณสถานะสุดท้ายของเมนู
+            let finalStatus = item.status;
+
+            if (item.status === 0 || isAnyComponentInactive) {
+              finalStatus = 0; // 1. เมนูหลักปิด หรือมีเมนูในเซ็ตถูกปิดร้าน (INACTIVE)
+            } else if (
+              item.stock_availability === false ||
+              isAnyComponentOutOfStock
+            ) {
+              finalStatus = 2; // 2. เมนูหลักของหมด หรือมีเมนูในเซ็ตของหมด/วัตถุดิบขาด (OUT_OF_STOCK)
+            } else {
+              finalStatus = item.status; // 3. เปิดปกติ (ACTIVE)
+            }
+            // ===============================================
 
             return {
               id: item.id,
@@ -340,8 +368,8 @@ export default function MenuRender() {
               price: item.price,
               currency: "บาท",
               ingredients: item.ingredients
-                ? item.ingredients.map((ing) => ({
-                    ingredient_id: ing.ingredient.id, // <-- Map ID มาเก็บไว้ด้วย
+                ? item.ingredients.map((ing: any) => ({
+                    ingredient_id: ing.ingredient.id,
                     name: ing.ingredient.name,
                     amount: ing.amount,
                     unit: ing.ingredient.unit,
@@ -350,12 +378,10 @@ export default function MenuRender() {
                 : [],
               components: resolvedComponents,
               tags: item.tags || [],
-              status:
-                item.status === 0 // 1. เช็คก่อนว่าเมนูถูกปิดการขายจาก Backend หรือไม่ (0 = INACTIVE)
-                  ? 0
-                  : item.ingredients?.some((ing) => ing.ingredient.status === 0) // 2. ถ้าไม่ได้ปิด ค่อยมาเช็คว่าวัตถุดิบหมดไหม
-                    ? 2 // ถ้าวัตถุดิบหมด ให้เป็น 2 (OUT_OF_STOCK)
-                    : item.status, // 3. ถ้าของไม่หมดและไม่ได้ปิด ก็ใช้ status ตาม API (ซึ่งน่าจะเป็น 1 ACTIVE)
+
+              // อัปเดตการส่งค่า status ให้ใช้ finalStatus ที่เราคำนวณไว้
+              status: finalStatus,
+
               description: item.description || "รายละเอียดเมนู",
             };
           })
