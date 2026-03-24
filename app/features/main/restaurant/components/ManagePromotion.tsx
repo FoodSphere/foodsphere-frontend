@@ -12,7 +12,6 @@ import {
 import {
   IMenuResponse,
   IMenuTag,
-  IPromotionMenuResponse,
 } from "@/types/menuType";
 
 import { PromotionConfirmModal } from "./PromotionConfirmModal";
@@ -48,16 +47,32 @@ export const ManagePromotionView = () => {
       if (tagsRes) setAvailableTags(tagsRes);
 
       if (promotionsRes?.data) {
+        // ใช้ any ชั่วคราวเพื่อให้รองรับ field พิเศษที่อาจจะหลุดมาจาก API
         const mappedPromotions: UIPromotion[] = promotionsRes.data.map(
-          (promo: IPromotionMenuResponse) => {
+          (promo: any) => {
             let originalPrice = 0;
-            const items = (promo.components || []).map((comp) => {
-              const menuItem = menus.find(
-                (m: IMenuResponse) => m.id === comp.menu_id
-              );
+            let isAnyInactive = false;
+            let isAnyOutOfStock = false;
+
+            const items = (promo.components || []).map((comp: any) => {
+              const menuItem = menus.find((m: any) => m.id === comp.menu_id);
               const itemPrice = menuItem?.price || 0;
               const itemName = menuItem?.name || "Unknown Item";
               originalPrice += itemPrice * comp.quantity;
+
+              // === ตรวจสอบสถานะของเมนูย่อย ===
+              // เช็คจาก comp ก่อน ถ้าไม่มีให้ fallback ไปดูจาก master menu
+              const compMenuStatus =
+                comp.menu_status !== undefined
+                  ? comp.menu_status
+                  : menuItem?.status;
+              const compStockAvailability =
+                comp.stock_availability !== undefined
+                  ? comp.stock_availability
+                  : menuItem?.stock_availability;
+
+              if (compMenuStatus === 0) isAnyInactive = true;
+              if (compStockAvailability === false) isAnyOutOfStock = true;
 
               return {
                 menu_id: comp.menu_id,
@@ -69,12 +84,22 @@ export const ManagePromotionView = () => {
 
             const tagIds = (promo.tags || []).map((t: any) => t.tag_id);
 
+            // === คำนวณสถานะสุดท้ายของ Promotion ===
+            let finalStatus = promo.status;
+            if (promo.status === 0 || isAnyInactive) {
+              finalStatus = 0; // เมนูหลักปิด หรือมีเมนูในเซ็ตถูกปิด
+            } else if (promo.stock_availability === false || isAnyOutOfStock) {
+              finalStatus = 2; // เมนูหลักของหมด หรือมีเมนูในเซ็ตของหมด
+            } else {
+              finalStatus = promo.status; // เปิดปกติ (1)
+            }
+
             return {
               id: promo.id,
               name: promo.name,
               description: promo.description,
               image_url: promo.image_url,
-              status: promo.status,
+              status: finalStatus, // ส่งค่าสถานะใหม่ที่ประมวลผลแล้ว
               specialPrice: promo.price,
               originalPrice: originalPrice,
               items: items,

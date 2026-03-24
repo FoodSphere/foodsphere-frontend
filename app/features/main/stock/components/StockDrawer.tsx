@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
+import { ConfirmDeleteModal } from "@/app/components/featureComponents/ConfirmDeleteModal";
 import { Badge } from "@/app/components/ui/badge";
 import { Icons } from "@/app/icons";
 import { getStockTags } from "@/services/stock/stockTagApi";
@@ -56,6 +57,8 @@ export const StockDrawer = ({
   // Image States
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const tagWrapperRef = useRef<HTMLDivElement>(null);
   const unitWrapperRef = useRef<HTMLDivElement>(null);
@@ -183,13 +186,14 @@ export const StockDrawer = ({
   };
 
   const handleDeleteClick = () => {
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
     if (stockItem && onDelete) {
-      // อาจจะใส่ confirm dialog ตรงนี้ หรือให้ parent จัดการก็ได้
-      // ในที่นี้ใส่ confirm แบบ simple ไว้ก่อนครับ
-      if (confirm("Are you sure you want to delete this ingredient?")) {
-        onDelete(stockItem.id);
-        onClose();
-      }
+      onDelete(stockItem.id);
+      setIsConfirmModalOpen(false); // ปิด Modal ยืนยัน
+      onClose(); // ปิด Drawer
     }
   };
 
@@ -393,9 +397,7 @@ export const StockDrawer = ({
                 onClick={handleDeleteClick}
                 className="px-4 py-3 rounded-xl border-2 border-red-100 text-red-500 hover:bg-red-50 font-bold transition-colors flex items-center gap-2"
               >
-                <Icons name="TrashIcon" className="w-5 h-5" />{" "}
-                {/* สมมติว่ามี Icon */}
-                Delete
+                <Icons name="TrashIcon" className="w-5 h-5" /> Delete
               </button>
             )}
           </div>
@@ -417,6 +419,14 @@ export const StockDrawer = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Ingredient"
+        message={`Are you sure you want to delete "${stockItem?.name || "this ingredient"}"? This action cannot be undone.`}
+      />
     </>
   );
 };
