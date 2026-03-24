@@ -60,3 +60,14 @@ export const updateOrderStatus = async (
   const response = await apiPut(path, payload);
   return response;
 };
+
+// 5. check จำนวน limit ในการสั่ง Order
+export const CheckOrdersLimit = async (
+  payload: ICreateOrderRequest
+) => {
+  const restaurantId = getRestaurantId();
+  const path = `/s/restaurants/${restaurantId}/order/probe`;
+
+  const response = await apiPost(path, payload);
+  return response;
+};

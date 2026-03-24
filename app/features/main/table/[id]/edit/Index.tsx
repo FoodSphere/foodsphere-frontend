@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import * as signalR from "@microsoft/signalr";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 // Import Components
 import { OrderCard } from "@/app/features/main/order/components/OrderCard";
+import { Icons } from "@/app/icons";
 import { getCookie } from "@/libs/cookie";
 import { getActiveBillByTableId } from "@/services/bill/billApi";
 import { getMenuById } from "@/services/menu/menuApi";
@@ -15,7 +16,12 @@ import {
   updateOrderStatus,
 } from "@/services/order/orderApi";
 import { getTables } from "@/services/table/tableApi";
-import { ICreateOrderFromSignalR, IOrder, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
+import {
+  ICreateOrderFromSignalR,
+  IOrder,
+  IUpdateOrderItemFromSignalR,
+  IUpdateOrderStatusFromSignalR,
+} from "@/types/orderType";
 
 import {
   FilterStatus,
@@ -26,6 +32,8 @@ import { OrderUpdateStatusConfirmModal } from "../../../order/components/OrderUp
 import { ModalConfig } from "../../../order/Index";
 
 export default function TableEditOrderRender() {
+  const router = useRouter();
+
   const [orders, setOrders] = useState<IOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentFilter, setCurrentFilter] = useState<FilterStatus>("All");
@@ -33,7 +41,7 @@ export default function TableEditOrderRender() {
 
   const params = useParams();
   const tableId = (params?.id as string) || "1";
-  const [tableName, setTableName] = useState<string>(`Loading...`); // เปลี่ยนค่าเริ่มต้น
+  const [tableName, setTableName] = useState<string>(`Loading...`);
   const [activeBillId, setActiveBillId] = useState<string | null>(null);
 
   // --- Modal States ---
@@ -131,103 +139,112 @@ export default function TableEditOrderRender() {
     fetchOrdersData();
 
     const accessToken = getCookie("access_token");
-        const restaurantId = getCookie("restaurant_id");
-    
-        const connect = new signalR.HubConnectionBuilder()
-          .withUrl(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/restaurants/${restaurantId}/branches/1/hubs/pos`,
-            {
-              accessTokenFactory: () => `${accessToken}`,
-            }
-          )
-          .withAutomaticReconnect()
-          .build();
-        connect 
-          .start()
-          .catch((err) =>
-            console.error("Error while connecting to SignalR Hub:", err)
-          );
+    const restaurantId = getCookie("restaurant_id");
 
-    connect.on("order_created", async (createdOrder: ICreateOrderFromSignalR) => {
-      if (!createdOrder || !createdOrder.items) return;
+    const connect = new signalR.HubConnectionBuilder()
+      .withUrl(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/restaurants/${restaurantId}/branches/1/hubs/pos`,
+        {
+          accessTokenFactory: () => `${accessToken}`,
+        }
+      )
+      .withAutomaticReconnect()
+      .build();
+    connect
+      .start()
+      .catch((err) =>
+        console.error("Error while connecting to SignalR Hub:", err)
+      );
 
-      try {
-        const newItemsPromises = createdOrder.items.map(
-          async (item: any, index: number) => {
-            let menuName = "Unknown Menu";
-            let imgUrl = "";
+    connect.on(
+      "order_created",
+      async (createdOrder: ICreateOrderFromSignalR) => {
+        if (!createdOrder || !createdOrder.items) return;
 
-            try {
-              const menuRes = await getMenuById(item.menu_id);
-              if (menuRes && menuRes.data) {
-                menuName = menuRes.data.name;
-                imgUrl = menuRes.data.image_url || imgUrl;
+        try {
+          const newItemsPromises = createdOrder.items.map(
+            async (item: any, index: number) => {
+              let menuName = "Unknown Menu";
+              let imgUrl = "";
+
+              try {
+                const menuRes = await getMenuById(item.menu_id);
+                if (menuRes && menuRes.data) {
+                  menuName = menuRes.data.name;
+                  imgUrl = menuRes.data.image_url || imgUrl;
+                }
+              } catch (error) {
+                console.error(`Failed to fetch menu ID ${item.menu_id}`, error);
               }
-            } catch (error) {
-              console.error(`Failed to fetch menu ID ${item.menu_id}`, error);
+
+              const dateObj = new Date(createdOrder.create_time);
+              const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+
+              return {
+                id: `${createdOrder.bill_id}-${createdOrder.id}-${index}`,
+                originalOrderId: createdOrder.id,
+                billId: createdOrder.bill_id,
+                img: imgUrl,
+                foodName: menuName,
+                table: createdOrder.table.name,
+                additionalDetail: item.note || "-",
+                quantity: item.quantity.toString(),
+                order_at: formattedDate,
+                status: mapOrderStatus(createdOrder.status) as any,
+              } as IOrder;
             }
-
-            const dateObj = new Date(createdOrder.create_time);
-            const formattedDate = `${dateObj.toLocaleDateString("en-GB")} ${dateObj.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
-
-            return {
-              id: `${createdOrder.bill_id}-${createdOrder.id}-${index}`,
-              originalOrderId: createdOrder.id,
-              billId: createdOrder.bill_id,
-              img: imgUrl,
-              foodName: menuName,
-              table: createdOrder.table.name,
-              additionalDetail: item.note || "-",
-              quantity: item.quantity.toString(),
-              order_at: formattedDate,
-              status: mapOrderStatus(createdOrder.status) as any,
-            } as IOrder;
-          }
-        );
-
-        const newOrders = await Promise.all(newItemsPromises);
-
-        setOrders((prevOrders) => {
-          const merged = [...prevOrders, ...newOrders];
-          merged.sort(
-            (a, b) =>
-              new Date(b.order_at).getTime() - new Date(a.order_at).getTime()
           );
-          return merged;
-        });
-      } catch (err) {
-        console.error("Error processing new order:", err);
+
+          const newOrders = await Promise.all(newItemsPromises);
+
+          setOrders((prevOrders) => {
+            const merged = [...prevOrders, ...newOrders];
+            merged.sort(
+              (a, b) =>
+                new Date(b.order_at).getTime() - new Date(a.order_at).getTime()
+            );
+            return merged;
+          });
+        } catch (err) {
+          console.error("Error processing new order:", err);
+        }
       }
-    });
+    );
 
-    connect.on("order_status_updated", async (updatedOrder: IUpdateOrderStatusFromSignalR) => {
-      setOrders((prevOrders) => {
-        return prevOrders.map((order) => {
-          if (order.originalOrderId === updatedOrder.resource.id) {
-            return {
-              ...order,
-              status: mapOrderStatus(updatedOrder.status) as any,
-            };
-          }
-          return order;
+    connect.on(
+      "order_status_updated",
+      async (updatedOrder: IUpdateOrderStatusFromSignalR) => {
+        setOrders((prevOrders) => {
+          return prevOrders.map((order) => {
+            if (order.originalOrderId === updatedOrder.resource.id) {
+              return {
+                ...order,
+                status: mapOrderStatus(updatedOrder.status) as any,
+              };
+            }
+            return order;
+          });
         });
-      });
-    });
+      }
+    );
 
-    connect.on("order_item_updated", async (updatedOrder: IUpdateOrderItemFromSignalR) => {
-      setOrders((prevOrders) => {
-        return prevOrders.map((order) => {
-          if (order.originalOrderId === updatedOrder.order_id) {
-            return {
-              ...order,
-              quantity: updatedOrder.quantity.toString(),
-              additionalDetail: updatedOrder.note,
-            };
-          }
-          return order;
+    connect.on(
+      "order_item_updated",
+      async (updatedOrder: IUpdateOrderItemFromSignalR) => {
+        setOrders((prevOrders) => {
+          return prevOrders.map((order) => {
+            if (order.originalOrderId === updatedOrder.order_id) {
+              return {
+                ...order,
+                quantity: updatedOrder.quantity.toString(),
+                additionalDetail: updatedOrder.note,
+              };
+            }
+            return order;
+          });
         });
-      });
-    });
+      }
+    );
 
     return () => {
       connect.stop();
@@ -325,7 +342,13 @@ export default function TableEditOrderRender() {
     <div className="w-full">
       <div className="w-full max-w-[1600px] mx-auto px-4 py-6 md:px-8 md:py-10 flex flex-col">
         {/* Header Title */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center mb-6 gap-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors shadow-sm"
+          >
+            <Icons name="ArrowLeftIcon" className="w-5 h-5" />
+          </button>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-2">
             <span>Order Table</span>
             <span className="bg-primary-orange-main text-white px-4 py-2 rounded-lg text-2xl font-bold">
