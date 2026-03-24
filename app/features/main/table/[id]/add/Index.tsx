@@ -53,12 +53,11 @@ export default function TableAddOrderRender() {
       // 1. ลองดึงข้อมูลบิลตามปกติ
       const res = await getActiveBillByTableId(Number(tableId));
 
-      // 2. เรียก API ดึงข้อมูลโต๊ะโดยตรง (สมมติว่าคุณมีฟังก์ชัน getTableById)
+      // 2. เรียก API ดึงข้อมูลโต๊ะโดยตรง
       const tableRes = await getTableById(tableId);
       const actualTableName = tableRes?.data.name;
 
       if (res && res.data) {
-        // เอา actualTableName มาใส่แทนถ้ามี
         const name =
           res.data.table_name ||
           res.data.table?.name ||
