@@ -41,6 +41,7 @@ import {
 } from "@/types/staffType";
 
 import { SearchBar } from "./SearchBar";
+import Link from "next/link";
 
 interface FormData {
   name: string;
@@ -602,8 +603,9 @@ const QrModal = ({
           <span className="font-semibold text-gray-900">{staffName}</span>
         </p>
 
-        <div className="bg-gray-50 p-6 rounded-2xl mb-8 border border-gray-100 shadow-inner">
+        <div className="flex flex-col bg-gray-50 p-6 rounded-2xl mb-8 border border-gray-100 shadow-inner justify-center items-center">
           <QrCodeComponent data={qrUrl} width={220} />
+          <Link href={qrUrl} className="text-gray-500 mb-6 text-center text-sm underline hover:text-orange-500">{qrUrl}</Link>
         </div>
 
         <Button
