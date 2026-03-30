@@ -458,6 +458,7 @@ const TableRender = () => {
           } else {
             setShowPaymentFailedModal(true);
           }
+          router.replace("/table");
         } catch (error) {
           console.error("Failed to verify cash payment:", error);
           toast({ variant: "error", title: "Failed to verify cash payment" });
@@ -478,6 +479,7 @@ const TableRender = () => {
           } else {
             setShowPaymentFailedModal(true);
           }
+          router.replace("/table");
         } catch (error) {
           console.error("Failed to verify QR payment:", error);
           toast({ variant: "error", title: "Failed to verify QR payment" });
@@ -773,10 +775,10 @@ const TableRender = () => {
           amountTotal={stripeResult.amount_total}
           paymentMethod={stripeResult.payment_method || "CASH"}
           onClose={() => {
+            router.replace("/table");
             setShowPaymentSuccessModal(false);
             setShowPaymentModal(false);
             setShowConfirmPaymentModal(false);
-            router.replace("/table");
           }}
         />
       )}
