@@ -356,40 +356,46 @@ const TableRender = () => {
 
     if (paymentId && paymentMethod === EPaymentMethod.CASH && billId) {
       const verify = async () => {
+        console.log("cash payment verify");
         try {
           const result = await verifyCashPayment(paymentId, billId);
           setStripeResult(result);
           if (result.success) {
+            console.log("cash payment success");
             setShowPaymentSuccessModal(true);
           } else {
+            console.log("cash payment failed");
             setShowPaymentFailedModal(true);
           }
         } catch (error) {
           console.error("Failed to verify cash payment:", error);
           toast({ variant: "error", title: "Failed to verify cash payment" });
         } finally {
-          // Remove query params to prevent refetching on reload
-          router.replace("/table");
+          console.log("cash payment finally");
+          window.history.replaceState(null, '', window.location.pathname);
         }
       };
       verify();
     }
     if (sessionId && paymentMethod === EPaymentMethod.PROMPTPAY && billId) {
       const verify = async () => {
+        console.log("QR payment verify");
         try {
           const result = await verifyCheckoutSession(sessionId, billId);
           setStripeResult(result);
           if (result.success) {
+            console.log("QR payment success");
             setShowPaymentSuccessModal(true);
           } else {
+            console.log("QR payment failed");
             setShowPaymentFailedModal(true);
           }
         } catch (error) {
           console.error("Failed to verify QR payment:", error);
           toast({ variant: "error", title: "Failed to verify QR payment" });
         } finally {
-          // Remove query params to prevent refetching on reload
-          router.replace("/table");
+          console.log("QR payment finally");
+          window.history.replaceState(null, '', window.location.pathname);
         }
       };
       verify();
