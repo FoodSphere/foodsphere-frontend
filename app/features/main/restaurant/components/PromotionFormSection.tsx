@@ -1,12 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Image as ImageIcon,
-  Search,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
+import { Image as ImageIcon, Search, Trash2, Upload, X } from "lucide-react";
 
 import {
   createPromotionMenuWithImage,
@@ -50,6 +43,11 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState({
+    name: false,
+    price: false,
+    items: false,
+  });
 
   // --- State สำหรับ Searchable Dropdown ---
   const [tagSearch, setTagSearch] = useState("");
@@ -114,6 +112,7 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
     setImageFile(null);
     setMenuSearch("");
     setTagSearch("");
+    setErrors({ name: false, price: false, items: false });
   };
 
   const totalOriginalPrice = newSetItems.reduce(
@@ -121,20 +120,15 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
     0
   );
 
-  // Filters สำหรับ Searchable Dropdown
   const filteredTags = availableTags.filter((tag) =>
     tag.name.toLowerCase().includes(tagSearch.toLowerCase())
   );
 
-  // Filters สำหรับ Searchable Dropdown
   const filteredMenus = availableMenus.filter((menu) => {
-    // 1. ตรวจสอบว่าเป็นเมนูปกติ (ไม่มี components หรือ components ว่างเปล่า)
     const isNormalMenu = !menu.components || menu.components.length === 0;
-    
-    // 2. ตรวจสอบชื่อเมนูให้ตรงกับคำค้นหา
-    const isMatchSearch = menu.name.toLowerCase().includes(menuSearch.toLowerCase());
-    
-    // จะแสดงก็ต่อเมื่อเป็นเมนูปกติ "และ" ตรงกับคำค้นหา
+    const isMatchSearch = menu.name
+      .toLowerCase()
+      .includes(menuSearch.toLowerCase());
     return isNormalMenu && isMatchSearch;
   });
 
@@ -189,10 +183,20 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
   };
 
   const handleRequestSave = () => {
-    if (!setName || newSetItems.length === 0) {
-      alert("Please enter set name and add at least one menu item.");
+    // ตรวจสอบความถูกต้องของข้อมูล (Validation)
+    const currentErrors = {
+      name: !setName.trim(), // ถ้าว่างให้เป็น true (มี error)
+      price: !specialPrice || parseFloat(specialPrice) <= 0,
+      items: newSetItems.length === 0,
+    };
+
+    setErrors(currentErrors);
+
+    // ถ้ามีช่องไหน error ให้ return ออกไปเลย ไม่เปิด Modal
+    if (currentErrors.name || currentErrors.price || currentErrors.items) {
       return;
     }
+
     setIsConfirmModalOpen(true);
   };
 
@@ -205,6 +209,7 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
           display_name: setName,
           description: description,
           status: 1,
+          stock_availability: true, // สำหรับเมนู Promotion หลัก
           price: parseFloat(specialPrice) || 0,
           components: newSetItems.map((item) => ({
             menu_id: Number(item.menu_id),
@@ -225,6 +230,7 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
           display_name: setName,
           description: description,
           status: 1,
+          stock_availability: true, // สำหรับเมนู Promotion หลัก
           price: parseFloat(specialPrice) || 0,
           components: newSetItems.map((item) => ({
             menu_id: Number(item.menu_id),
@@ -322,14 +328,27 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-semibold text-gray-700">
-                Set Name
+                Set Name <span className="text-red-500">*</span>
               </label>
               <input
                 value={setName}
-                onChange={(e) => setSetName(e.target.value)}
+                onChange={(e) => {
+                  setSetName(e.target.value);
+                  if (errors.name)
+                    setErrors((prev) => ({ ...prev, name: false })); // พิมพ์ปุ๊บหายแดงปั๊บ
+                }}
                 placeholder="e.g. Valentine's Dinner"
-                className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 hover:bg-white focus:bg-white focus:border-primary-orange-main focus:ring-4 focus:ring-orange-50 transition-all outline-none text-gray-900"
+                className={`w-full h-12 px-4 rounded-xl border bg-gray-50 hover:bg-white focus:bg-white focus:ring-4 transition-all outline-none text-gray-900 ${
+                  errors.name
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                    : "border-gray-200 focus:border-primary-orange-main focus:ring-orange-50"
+                }`}
               />
+              {errors.name && (
+                <p className="text-xs text-red-500 mt-1">
+                  Please enter a set name.
+                </p>
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-semibold text-gray-700">
@@ -432,7 +451,11 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
                   isLoadingData ? "Loading menus..." : "Search a Dish..."
                 }
                 disabled={isLoadingData}
-                className="w-full h-12 px-4 pr-10 rounded-xl border border-gray-200 bg-gray-50 hover:bg-white focus:bg-white focus:border-primary-orange-main focus:ring-4 focus:ring-orange-50 transition-all outline-none text-gray-900"
+                className={`w-full h-12 px-4 pr-10 rounded-xl border bg-gray-50 hover:bg-white focus:bg-white focus:ring-4 transition-all outline-none text-gray-900 ${
+                  errors.items
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-100"
+                    : "border-gray-200 focus:border-primary-orange-main focus:ring-orange-50"
+                }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                 <Search className="w-5 h-5" />
@@ -441,22 +464,50 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
               {isMenuOpen && (
                 <div className="absolute z-20 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto py-1">
                   {filteredMenus.length > 0 ? (
-                    filteredMenus.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => {
-                          handleAddItemById(Number(item.id));
-                          setMenuSearch("");
-                          setIsMenuOpen(false);
-                        }}
-                        className="px-4 py-2.5 hover:bg-orange-50 text-gray-700 cursor-pointer text-sm transition-colors flex justify-between items-center"
-                      >
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-gray-400 text-xs font-semibold">
-                          ฿{item.price}
-                        </span>
-                      </div>
-                    ))
+                    filteredMenus.map((item) => {
+                      // เช็คว่าเมนูพร้อมใช้งานไหม
+                      const isAvailable = item.stock_availability;
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            // ถ้าไม่พร้อมใช้งาน ให้หยุดการทำงาน (กดไม่ได้)
+                            if (!isAvailable) return;
+
+                            handleAddItemById(Number(item.id));
+                            setMenuSearch("");
+                            setIsMenuOpen(false);
+                          }}
+                          className={`px-4 py-2.5 text-sm transition-colors flex justify-between items-center ${
+                            isAvailable
+                              ? "hover:bg-orange-50 text-gray-700 cursor-pointer"
+                              : "bg-gray-50 text-gray-400 cursor-not-allowed" // ใส่สไตล์สำหรับกดไม่ได้
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`font-medium ${!isAvailable && "text-gray-400 opacity-70"}`}
+                            >
+                              {item.name}
+                            </span>
+                            {/* แสดง Badge ถ้าเมนูของหมด */}
+                            {!isAvailable && (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-md tracking-wide">
+                                ไม่พร้อมใช้งาน
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs font-semibold ${
+                              isAvailable ? "text-gray-400" : "text-gray-300"
+                            }`}
+                          >
+                            ฿{item.price}
+                          </span>
+                        </div>
+                      );
+                    })
                   ) : (
                     <div className="px-4 py-3 text-sm text-gray-500 text-center">
                       No menus found
@@ -465,6 +516,11 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
                 </div>
               )}
             </div>
+            {errors.items && (
+              <p className="text-xs text-red-500 mt-1">
+                Please select at least one menu item.
+              </p>
+            )}
 
             {/* Selected Items List */}
             {newSetItems.length > 0 && (
@@ -541,15 +597,28 @@ export const PromotionFormSection: React.FC<PromotionFormSectionProps> = ({
             </div>
             <div className="space-y-1.5">
               <label className="block text-xs text-primary-orange-main font-bold uppercase tracking-wider">
-                Set Price
+                Set Price <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 value={specialPrice}
-                onChange={(e) => setSpecialPrice(e.target.value)}
+                onChange={(e) => {
+                  setSpecialPrice(e.target.value);
+                  if (errors.price)
+                    setErrors((prev) => ({ ...prev, price: false }));
+                }}
                 placeholder="0.00"
-                className="w-full h-12 px-4 rounded-xl border border-orange-200 bg-orange-50 focus:bg-white focus:border-primary-orange-main focus:ring-4 focus:ring-orange-100 transition-all outline-none text-primary-orange-main font-black text-xl"
+                className={`w-full h-12 px-4 rounded-xl border bg-orange-50 focus:bg-white focus:ring-4 transition-all outline-none font-black text-xl ${
+                  errors.price
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-100 text-red-500"
+                    : "border-orange-200 focus:border-primary-orange-main focus:ring-orange-100 text-primary-orange-main"
+                }`}
               />
+              {errors.price && (
+                <p className="text-xs text-red-500 mt-1">
+                  Please enter a valid price.
+                </p>
+              )}
             </div>
           </div>
         </div>

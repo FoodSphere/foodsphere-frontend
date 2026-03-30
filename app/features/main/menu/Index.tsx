@@ -15,7 +15,6 @@ import { getMenuTags } from "@/services/menu/menuTagApi";
 import { updatePromotionMenu } from "@/services/promotion/promotionApi";
 import { getIngredients } from "@/services/stock/stockApi";
 import {
-  IMenuResponse,
   IUpdateMenuRequest,
   IUpdatePromotionMenuRequest,
 } from "@/types/menuType";
@@ -51,6 +50,7 @@ export interface IMenuItem {
   tags: { tag_id: number; name: string }[];
   description: string;
   status: number;
+  stock_availability: boolean;
 }
 
 export default function MenuRender() {
@@ -136,6 +136,7 @@ export default function MenuRender() {
           display_name: itemToUpdate.name,
           description: itemToUpdate.description,
           status: newStatus,
+          stock_availability: itemToUpdate.stock_availability,
           tags: payloadTags,
           ingredients:
             payloadIngredients.length > 0 ? payloadIngredients : undefined,
@@ -165,7 +166,6 @@ export default function MenuRender() {
 
       // อัปเดตตามสถานะของเมนูย่อยที่เพิ่งถูกปิดไปโดยอัตโนมัติ
       await fetchMenusData();
-      
     } catch (error) {
       console.error("Failed to update status:", error);
       // หากพัง ให้ Revert UI กลับ
@@ -378,10 +378,8 @@ export default function MenuRender() {
                 : [],
               components: resolvedComponents,
               tags: item.tags || [],
-
-              // อัปเดตการส่งค่า status ให้ใช้ finalStatus ที่เราคำนวณไว้
               status: finalStatus,
-
+              stock_availability: item.stock_availability,
               description: item.description || "รายละเอียดเมนู",
             };
           })

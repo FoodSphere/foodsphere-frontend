@@ -47,6 +47,12 @@ export const StockDrawer = ({
   const [unit, setUnit] = useState("กิโล");
   const [description, setDescription] = useState("");
 
+  // Validation State (เพิ่มเข้ามาใหม่)
+  const [errors, setErrors] = useState({
+    name: false,
+    stock: false,
+  });
+
   // Tag & Unit Dropdown States
   const [dbTags, setDbTags] = useState<TagOption[]>([]);
   const [selectedTags, setSelectedTags] = useState<TagOption[]>([]);
@@ -116,6 +122,8 @@ export const StockDrawer = ({
         setSelectedFile(null);
         setPreviewUrl(null);
       }
+      // Reset validation errors
+      setErrors({ name: false, stock: false });
     }
   }, [isOpen, stockItem]);
 
@@ -156,11 +164,31 @@ export const StockDrawer = ({
   );
 
   const handleSave = () => {
-    // สร้าง Payload ให้ตรงกับ IUpdateIngredientRequest/ICreateIngredientRequest
+    // 1. ตรวจสอบความถูกต้องของข้อมูล (Validation)
+    let isValid = true;
+    const newErrors = { name: false, stock: false };
+
+    // เช็คชื่อว่าห้ามเป็นค่าว่าง
+    if (!name.trim()) {
+      newErrors.name = true;
+      isValid = false;
+    }
+
+    // เช็คสต็อกว่าห้ามว่าง และต้องมากกว่าหรือเท่ากับ 0
+    if (stock === "" || Number(stock) < 0) {
+      newErrors.stock = true;
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+
+    // 2. ถ้ามีข้อผิดพลาดให้หยุดการทำงาน
+    if (!isValid) return;
+
+    // 3. ถ้าผ่าน ค่อยบันทึกข้อมูล
     const payload = {
       name,
       stock: Number(stock),
-      // ส่งเป็นโครงสร้าง { tag_id: number }[] ตามที่ backend ต้องการ
       tags: selectedTags.map((t) => ({ tag_id: t.id })),
       unit,
       description,
@@ -254,28 +282,51 @@ export const StockDrawer = ({
               {/* Ingredient Name */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700">
-                  Ingredient Name
+                  Ingredient Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm"
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (errors.name) setErrors({ ...errors, name: false });
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm ${
+                    errors.name ? "border-red-500 bg-red-50" : "border-gray-200"
+                  }`}
                   placeholder="e.g. Wagyu Beef"
                 />
+                {errors.name && (
+                  <p className="text-xs text-red-500 font-medium mt-1">
+                    Please enter the ingredient name.
+                  </p>
+                )}
               </div>
 
               {/* Stock & Unit */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">
-                    Stock Quantity
+                    Stock Quantity <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
+                    min="0"
                     value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm"
+                    onChange={(e) => {
+                      setStock(e.target.value);
+                      if (errors.stock) setErrors({ ...errors, stock: false });
+                    }}
+                    className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm ${
+                      errors.stock
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200"
+                    }`}
                   />
+                  {errors.stock && (
+                    <p className="text-xs text-red-500 font-medium mt-1">
+                      Must be 0 or more.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2 relative" ref={unitWrapperRef}>

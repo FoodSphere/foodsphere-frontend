@@ -47,6 +47,12 @@ export const MenuDrawer = ({
   const [tags, setTags] = useState<string[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
 
+  // Validation State (เพิ่มเข้ามาใหม่)
+  const [errors, setErrors] = useState({
+    name: false,
+    price: false,
+  });
+
   // Searchable Dropdown States
   const [tagSearch, setTagSearch] = useState("");
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
@@ -70,14 +76,12 @@ export const MenuDrawer = ({
   // --- Click Outside Handler ---
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // ปิด Tag Dropdown ถ้าคลิกข้างนอก
       if (
         tagWrapperRef.current &&
         !tagWrapperRef.current.contains(event.target as Node)
       ) {
         setIsTagDropdownOpen(false);
       }
-      // ปิด Ingredient Dropdown ถ้าคลิกข้างนอก
       if (
         ingWrapperRef.current &&
         !ingWrapperRef.current.contains(event.target as Node)
@@ -96,7 +100,7 @@ export const MenuDrawer = ({
         setPreviewUrl(menuItem.image_url);
         setName(menuItem.name);
         setPrice(menuItem.price);
-        setTags(menuItem.tags?.map((t: any) => t.name) || []); // ดึงแค่ชื่อมาแสดง
+        setTags(menuItem.tags?.map((t: any) => t.name) || []);
         setIngredients(menuItem.ingredients || []);
       } else {
         setPreviewUrl(null);
@@ -108,6 +112,8 @@ export const MenuDrawer = ({
       }
       setTagSearch("");
       setIngSearch("");
+      // Reset errors เมื่อเปิด Drawer ใหม่
+      setErrors({ name: false, price: false });
     }
   }, [isOpen, menuItem]);
 
@@ -123,6 +129,29 @@ export const MenuDrawer = ({
   if (!isOpen) return null;
 
   const handleSave = () => {
+    // 1. ตรวจสอบความถูกต้องของข้อมูล (Validation)
+    const newErrors = { name: false, price: false };
+    let isValid = true;
+
+    // เช็คชื่อว่าห้ามเป็นค่าว่าง
+    if (!name.trim()) {
+      newErrors.name = true;
+      isValid = false;
+    }
+
+    // เช็คราคาว่าห้ามว่าง และต้องมีค่ามากกว่าหรือเท่ากับ 0
+    if (price === "" || Number(price) < 0) {
+      newErrors.price = true;
+      isValid = false;
+    }
+
+    // อัปเดต state ของ error
+    setErrors(newErrors);
+
+    // 2. ถ้าไม่ผ่านเงื่อนไข ให้หยุดการทำงานทันที
+    if (!isValid) return;
+
+    // 3. ถ้าผ่าน ค่อยบันทึกข้อมูล
     onSave(
       {
         id: menuItem?.id,
@@ -152,8 +181,8 @@ export const MenuDrawer = ({
   const handleConfirmDelete = () => {
     if (menuItem && onDelete) {
       onDelete(menuItem.id);
-      setIsConfirmModalOpen(false); // ปิด Modal ยืนยัน
-      onClose(); // ปิด Drawer
+      setIsConfirmModalOpen(false);
+      onClose();
     }
   };
 
@@ -259,30 +288,53 @@ export const MenuDrawer = ({
               {/* Name */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700">
-                  Name
+                  Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (errors.name) setErrors({ ...errors, name: false }); // ลบ Error ทันทีเมื่อพิมพ์แก้
+                  }}
                   placeholder={
                     isEditMode ? "Edit menu name..." : "Add menu name..."
                   }
-                  className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm"
+                  className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm ${
+                    errors.name ? "border-red-500 bg-red-50" : "border-gray-200"
+                  }`}
                 />
+                {errors.name && (
+                  <p className="text-xs text-red-500 font-medium">
+                    Please enter the menu name.
+                  </p>
+                )}
               </div>
 
               {/* Price */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700">
-                  Price
+                  Price <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
+                  min="0" // กำหนดให้เบราว์เซอร์ช่วยป้องกันติดลบอีกชั้น
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  onChange={(e) => {
+                    setPrice(e.target.value);
+                    if (errors.price) setErrors({ ...errors, price: false }); // ลบ Error ทันทีเมื่อพิมพ์แก้
+                  }}
                   placeholder="0.00"
-                  className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm"
+                  className={`w-full px-4 py-3 rounded-xl bg-white border focus:outline-none focus:ring-2 focus:ring-primary-orange-main transition-all shadow-sm ${
+                    errors.price
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-200"
+                  }`}
                 />
+                {errors.price && (
+                  <p className="text-xs text-red-500 font-medium">
+                    Please enter a valid price (must be 0 or more).
+                  </p>
+                )}
               </div>
 
               {/* Tags (Searchable Dropdown) */}
