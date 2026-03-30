@@ -409,10 +409,24 @@ const TableRender = () => {
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
     const paymentMethod = searchParams.get("payment_method");
+    const tableId = searchParams.get("table_id");
     const billId = searchParams.get("bill_id");
     const tableId = searchParams.get("table_id");
     const cancel = searchParams.get("cancel");
     const paymentId = searchParams.get("payment_id");
+
+    if (tableId && billId) {
+      console.log("tableId", tableId);
+      console.log("billId", billId);
+        const currentTableData = {
+          id: tableId,
+          name: currentTable?.name || "",
+          hasCustomers: true,
+          billId: billId,
+        };
+        openTable(currentTableData);
+        router.replace("/table")
+    }
 
     const clearQueryParams = () => {
       router.replace(pathname, { scroll: false });
