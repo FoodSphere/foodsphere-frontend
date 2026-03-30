@@ -28,6 +28,7 @@ export default function TableAddOrderRender() {
   const params = useParams();
   const tableId = (params?.id as string) || "1";
   const [tableName, setTableName] = useState<string>(`Loading...`);
+  const [billId, setBillId] = useState<string>("");
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [menuItems, setMenuItems] = useState<IMenuResponse[]>([]);
@@ -289,7 +290,7 @@ export default function TableAddOrderRender() {
       }
 
       setOrderItems([]);
-      router.push(`/table?table_id=${tableId}&bill_id=${billId}`);
+      router.push(`/table?table_id=${tableId}`);
     } catch (error) {
       console.error("Failed to confirm order:", error);
       setErrorMessage("เกิดข้อผิดพลาดในการส่งออเดอร์ กรุณาลองใหม่อีกครั้ง");
@@ -314,7 +315,7 @@ export default function TableAddOrderRender() {
       {/* 1. Header */}
       <div className="bg-white pt-6 px-6 flex items-center gap-4">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push(`/table?table_id=${tableId}`)}
           className="p-2.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors shadow-sm"
         >
           <Icons name="ArrowLeftIcon" className="w-5 h-5" />

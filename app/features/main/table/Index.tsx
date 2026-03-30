@@ -413,17 +413,24 @@ const TableRender = () => {
     const cancel = searchParams.get("cancel");
     const paymentId = searchParams.get("payment_id");
 
-    if (tableId && billId) {
-      console.log("tableId", tableId);
-      console.log("billId", billId);
-        const currentTableData = {
-          id: tableId,
-          name: currentTable?.name || "",
-          hasCustomers: true,
-          billId: billId,
-        };
-        openTable(currentTableData);
-        router.replace("/table")
+    if (tableId) {
+      const getActiveBill = async () => {
+        const activeBillIdResponse = await getActiveBillByTableId(
+          Number(tableId)
+        );
+        const activeBillId = activeBillIdResponse?.data?.id;
+        if (activeBillId) {
+          const currentTableData = {
+            id: tableId,
+            name: currentTable?.name || "",
+            hasCustomers: true,
+            billId: activeBillId,
+          };
+          openTable(currentTableData);
+          router.replace("/table");
+        }
+      };
+      getActiveBill();
     }
 
     if (cancel && billId) {
@@ -769,6 +776,7 @@ const TableRender = () => {
             setShowPaymentSuccessModal(false);
             setShowPaymentModal(false);
             setShowConfirmPaymentModal(false);
+            router.replace("/table");
           }}
         />
       )}

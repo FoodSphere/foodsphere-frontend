@@ -344,7 +344,7 @@ export default function TableEditOrderRender() {
         {/* Header Title */}
         <div className="flex items-center mb-6 gap-4">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push(`/table?table_id=${tableId}`)}
             className="p-2.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors shadow-sm"
           >
             <Icons name="ArrowLeftIcon" className="w-5 h-5" />
