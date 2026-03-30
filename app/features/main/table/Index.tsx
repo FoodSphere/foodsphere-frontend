@@ -29,9 +29,9 @@ import {
 } from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
 import {
+  CreatedBillFromSignalR,
   IBillOrder,
   IBillResponse,
-  CreatedBillFromSignalR,
   UpdatedBillFromSignalR,
 } from "@/types/billType";
 import {
