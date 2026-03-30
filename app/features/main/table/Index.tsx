@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { toast } from "@/app/components/ui/toast/use-toast";
 import { TableBillDrawer } from "@/app/features/main/table/components/TableBillDrawer";
@@ -69,6 +69,7 @@ import { TablePaymentSuccessModal } from "./components/TablePaymentSuccessModal"
 
 const TableRender = () => {
   const router = useRouter();
+  const pathname = usePathname();
 
   const [tables, setTables] = useState<TableData[]>([]);
   const [currentTable, setCurrentTable] = useState<TableData | null>(null);
@@ -413,25 +414,10 @@ const TableRender = () => {
     const cancel = searchParams.get("cancel");
     const paymentId = searchParams.get("payment_id");
 
-    if (tableId) {
-      const getActiveBill = async () => {
-        const activeBillIdResponse = await getActiveBillByTableId(
-          Number(tableId)
-        );
-        const activeBillId = activeBillIdResponse?.data?.id;
-        if (activeBillId) {
-          const currentTableData = {
-            id: tableId,
-            name: currentTable?.name || "",
-            hasCustomers: true,
-            billId: activeBillId,
-          };
-          openTable(currentTableData);
-          router.replace("/table");
-        }
-      };
-      getActiveBill();
-    }
+    const clearQueryParams = () => {
+      router.replace(pathname, { scroll: false });
+      window.history.replaceState(null, "", window.location.pathname);
+    };
 
     if (cancel && billId) {
       setShowPaymentFailedModal(true);
@@ -446,11 +432,23 @@ const TableRender = () => {
         error: "Payment cancelled",
       };
       setStripeResult(result);
+      clearQueryParams();
+      return;
     }
 
     if (paymentId && paymentMethod === EPaymentMethod.CASH && billId) {
+      // เช็คว่าเคย Verify Payment ID นี้ไปหรือยัง
+      const isProcessed = sessionStorage.getItem(
+        `processed_payment_${paymentId}`
+      );
+      if (isProcessed) {
+        clearQueryParams();
+        return;
+      }
+
       const verify = async () => {
         try {
+          sessionStorage.setItem(`processed_payment_${paymentId}`, "true"); // มาร์คว่ากำลังทำ/ทำเสร็จแล้ว
           const result = await verifyCashPayment(paymentId, billId);
           setStripeResult(result);
           if (result.success) {
@@ -461,16 +459,27 @@ const TableRender = () => {
         } catch (error) {
           console.error("Failed to verify cash payment:", error);
           toast({ variant: "error", title: "Failed to verify cash payment" });
+          sessionStorage.removeItem(`processed_payment_${paymentId}`); // ลบออกถ้าพัง จะได้ลองใหม่ได้
         } finally {
-          // Remove query params to prevent refetching on reload
-          router.replace("/table");
+          clearQueryParams();
         }
       };
       verify();
     }
+
     if (sessionId && paymentMethod === EPaymentMethod.PROMPTPAY && billId) {
+      // เช็คว่าเคย Verify Session ID นี้ไปหรือยัง
+      const isProcessed = sessionStorage.getItem(
+        `processed_session_${sessionId}`
+      );
+      if (isProcessed) {
+        clearQueryParams();
+        return;
+      }
+
       const verify = async () => {
         try {
+          sessionStorage.setItem(`processed_session_${sessionId}`, "true"); // มาร์คว่ากำลังทำ/ทำเสร็จแล้ว
           const result = await verifyCheckoutSession(sessionId, billId);
           setStripeResult(result);
           if (result.success) {
@@ -481,14 +490,14 @@ const TableRender = () => {
         } catch (error) {
           console.error("Failed to verify QR payment:", error);
           toast({ variant: "error", title: "Failed to verify QR payment" });
+          sessionStorage.removeItem(`processed_session_${sessionId}`); // ลบออกถ้าพัง จะได้ลองใหม่ได้
         } finally {
-          // Remove query params to prevent refetching on reload
-          router.replace("/table");
+          clearQueryParams();
         }
       };
       verify();
     }
-  }, [searchParams, router]);
+  }, [searchParams, pathname, router]);
 
   // ==========================================
 
