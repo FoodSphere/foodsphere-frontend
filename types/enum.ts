@@ -54,6 +54,13 @@ export enum EBillStatus {
   CANCELLED = 3,
 }
 
+export enum ETableStatus {
+  READY = 0,
+  DISABLED = 1,
+  OCCUPIED = 2,
+  RESERVED = 3,
+}
+
 export enum EUserType {
   MASTER = "Master",
   WORKER = "Worker",
@@ -87,7 +94,7 @@ export enum EServiceRequestStatus {
 
 export enum EServiceRequestReasonType {
   CALL_WAITER = "call_waiter",
-  CASH_PAYMENT = "cash_payment"
+  CASH_PAYMENT = "cash_payment",
 }
 
 export enum EMenuStatus {

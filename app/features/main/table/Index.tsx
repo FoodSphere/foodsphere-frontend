@@ -29,9 +29,9 @@ import {
 } from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
 import {
+  CreatedBillFromSignalR,
   IBillOrder,
   IBillResponse,
-  CreatedBillFromSignalR,
   UpdatedBillFromSignalR,
 } from "@/types/billType";
 import {
@@ -411,6 +411,7 @@ const TableRender = () => {
     const paymentMethod = searchParams.get("payment_method");
     const tableId = searchParams.get("table_id");
     const billId = searchParams.get("bill_id");
+    const tableId = searchParams.get("table_id");
     const cancel = searchParams.get("cancel");
     const paymentId = searchParams.get("payment_id");
 
@@ -795,7 +796,10 @@ const TableRender = () => {
           amountTotal={stripeResult.amount_total}
           paymentMethod={stripeResult.payment_method || "CASH"}
           onClose={() => {
-            resetState();
+            setShowPaymentSuccessModal(false);
+            setShowPaymentModal(false);
+            setShowConfirmPaymentModal(false);
+            router.replace("/table");
           }}
         />
       )}
