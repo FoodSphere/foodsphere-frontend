@@ -40,6 +40,13 @@ export enum ECashPaymentStatusNumber {
   REFUNDED = 3,
 }
 
+export enum ETableStatus {
+  READY = 0,
+  DISABLED = 1,
+  OCCUPIED = 2,
+  RESERVED = 3,
+}
+
 export enum EBillStatus {
   OPEN = 0,
   PAID = 1,

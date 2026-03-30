@@ -54,3 +54,26 @@ export interface IPortalResponse {
   usage_count: number;
   valid_duration: string;
 }
+
+export interface CreatedBillFromSignalR {
+  id: string;
+  create_time: string;
+  update_time: string | null;
+  delete_time: string | null;
+  restaurant_id: string;
+  branch_id: number;
+  table_id: number;
+  consumer_id: string | null;
+  orders: IBillOrder[];
+  pax: number;
+  status: number;
+}
+
+export interface UpdatedBillFromSignalR {
+  resource: { id: string };
+  branch: {
+    restaurantId: string;
+    id: number;
+  };
+  status: number;
+}
