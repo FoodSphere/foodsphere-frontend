@@ -356,6 +356,7 @@ const TableRender = () => {
 
     const clearQueryParams = () => {
       router.replace(pathname, { scroll: false });
+      window.history.replaceState(null, "", window.location.pathname);
     };
 
     if (cancel && billId) {
