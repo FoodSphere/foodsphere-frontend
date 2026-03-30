@@ -394,7 +394,7 @@ const TableRender = () => {
       };
       verify();
     }
-  }, [searchParams, router]);
+  }, [router]);
 
   // ==========================================
 
