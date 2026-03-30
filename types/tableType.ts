@@ -7,3 +7,12 @@ export interface ITableResponse {
   name: string;
   status: number;
 }
+
+export interface UpdatedTableFromSignalR {
+  resource: {
+    restaurantId: string;
+    branchId: number;
+    id: number;
+  };
+  status: number;
+}

@@ -28,11 +28,18 @@ import {
   verifyCheckoutSession,
 } from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
-import { IBillOrder, IBillResponse } from "@/types/billType";
 import {
+  IBillOrder,
+  IBillResponse,
+  CreatedBillFromSignalR,
+  UpdatedBillFromSignalR,
+} from "@/types/billType";
+import {
+  EBillStatus,
   EPaymentMethod,
   EServiceRequestReasonType,
   EServiceRequestStatus,
+  ETableStatus,
 } from "@/types/enum";
 import {
   ICreateOrderFromSignalR,
@@ -44,7 +51,7 @@ import {
   ServiceRequest,
   UpdatedServiceRequestFromSignalR,
 } from "@/types/serviceRequestType";
-import { ITableResponse } from "@/types/tableType";
+import { ITableResponse, UpdatedTableFromSignalR } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
@@ -334,6 +341,58 @@ const TableRender = () => {
         }
       );
 
+      connect.on(
+        "table_status_updated",
+        (updatedTable: UpdatedTableFromSignalR) => {
+          console.log("Table Status Updated", updatedTable);
+          setTables((prev) => {
+            return prev.map((table) => {
+              if (Number(table.id) === updatedTable.resource.id) {
+                console.log(table.name);
+                return {
+                  ...table,
+                  status: updatedTable.status,
+                  hasCustomers: updatedTable.status === ETableStatus.OCCUPIED,
+                };
+              }
+              return table;
+            });
+          });
+        }
+      );
+
+      connect.on(
+        "bill_status_updated",
+        (updatedBill: UpdatedBillFromSignalR) => {
+          if (updatedBill.status === EBillStatus.PAID) {
+            setActiveBillData((prev) => {
+              if (!prev || prev.id !== updatedBill.resource.id) return prev;
+              return {
+                ...prev,
+                status: updatedBill.status,
+              };
+            });
+            toast({
+              title: "Payment Success",
+              description: "Payment has been processed successfully",
+            });
+          } else if (updatedBill.status === EBillStatus.COMPLETED) {
+            setActiveBillData((prev) => {
+              if (!prev || prev.id !== updatedBill.resource.id) return prev;
+              return {
+                ...prev,
+                status: updatedBill.status,
+              };
+            });
+            setShowTableBillDrawer(false);
+            toast({
+              title: "Bill Completed",
+              description: "Bill has been completed",
+            });
+          }
+        }
+      );
+
       return () => {
         connect.stop();
       };
@@ -350,9 +409,23 @@ const TableRender = () => {
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
     const paymentMethod = searchParams.get("payment_method");
+    const tableId = searchParams.get("table_id");
     const billId = searchParams.get("bill_id");
     const cancel = searchParams.get("cancel");
     const paymentId = searchParams.get("payment_id");
+
+    if (tableId && billId) {
+      console.log("tableId", tableId);
+      console.log("billId", billId);
+        const currentTableData = {
+          id: tableId,
+          name: currentTable?.name || "",
+          hasCustomers: true,
+          billId: billId,
+        };
+        openTable(currentTableData);
+        router.replace("/table")
+    }
 
     const clearQueryParams = () => {
       router.replace(pathname, { scroll: false });
