@@ -93,7 +93,11 @@ export function TableAddOrderListSidebar({
                         className="font-bold text-gray-800 text-sm truncate"
                         title={item.name}
                       >
-                        {item.name}
+                        {item.name}{" "}
+                        <span className="text-sm font-bold text-primary-orange-main">
+                          {"  "}
+                          {item.price.toLocaleString()} ฿
+                        </span>
                       </p>
                       <button
                         onClick={() => onRemoveItem(item.id)}
@@ -107,6 +111,9 @@ export function TableAddOrderListSidebar({
                     <div className="flex items-center justify-between mt-auto">
                       {/* Price */}
                       <p className="text-sm font-bold text-primary-orange-main">
+                        <span className="font-medium text-black">
+                          ทั้งหมด:{"  "}
+                        </span>
                         {(item.price * item.quantity).toLocaleString()} ฿
                       </p>
 

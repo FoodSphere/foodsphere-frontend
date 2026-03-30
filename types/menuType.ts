@@ -78,7 +78,6 @@ export interface IPromotionMenuResponse {
   components: {
     menu_id: number;
     quantity: number;
-    // เพิ่ม 2 ตัวนี้ตามที่ Backend ส่งมาครับ
     stock_availability: boolean;
     menu_status: number;
   }[];
@@ -110,6 +109,7 @@ export interface ICreatePromotionMenuRequest {
   display_name: string;
   description: string;
   status: number;
+  stock_availability: boolean;
 }
 
 export interface IUpdatePromotionMenuRequest {
@@ -129,4 +129,5 @@ export interface IUpdatePromotionMenuRequest {
   display_name: string;
   description: string;
   status: number;
+  stock_availability: boolean;
 }
