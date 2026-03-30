@@ -18,11 +18,11 @@ export const Header = ({ totalTable }: HeaderProps) => {
         <div className="flex gap-2 items-center">
           <div className="flex gap-1 items-center">
             <div className="w-4 h-4 bg-gray-600 rounded"></div>
-            <span>No Customers</span>
+            <span>Available</span>
           </div>
           <div className="flex gap-1 items-center">
             <div className="w-4 h-4 bg-primary-orange-main rounded"></div>
-            <span>Have Customers</span>
+            <span>Occupied</span>
           </div>
         </div>
       </div>

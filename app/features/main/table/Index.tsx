@@ -28,19 +28,30 @@ import {
   verifyCheckoutSession,
 } from "@/services/stripe";
 import { getTables } from "@/services/table/tableApi";
-import { IBillOrder, IBillResponse } from "@/types/billType";
 import {
+  IBillOrder,
+  IBillResponse,
+  CreatedBillFromSignalR,
+  UpdatedBillFromSignalR,
+} from "@/types/billType";
+import {
+  EBillStatus,
   EPaymentMethod,
   EServiceRequestReasonType,
   EServiceRequestStatus,
+  ETableStatus,
 } from "@/types/enum";
-import { ICreateOrderFromSignalR, IUpdateOrderItemFromSignalR, IUpdateOrderStatusFromSignalR } from "@/types/orderType";
+import {
+  ICreateOrderFromSignalR,
+  IUpdateOrderItemFromSignalR,
+  IUpdateOrderStatusFromSignalR,
+} from "@/types/orderType";
 import {
   CreatedServiceRequestFromSignalR,
   ServiceRequest,
   UpdatedServiceRequestFromSignalR,
 } from "@/types/serviceRequestType";
-import { ITableResponse } from "@/types/tableType";
+import { ITableResponse, UpdatedTableFromSignalR } from "@/types/tableType";
 
 import { EditButtonGroup } from "./components/EditButtonGroup";
 import { Header } from "./components/Header";
@@ -161,53 +172,63 @@ const TableRender = () => {
         throw err;
       });
 
-      connect.on("order_created", async (createdOrder: ICreateOrderFromSignalR) => {
-        if (!createdOrder || !createdOrder.items) return;
+      connect.on(
+        "order_created",
+        async (createdOrder: ICreateOrderFromSignalR) => {
+          if (!createdOrder || !createdOrder.items) return;
 
-        try {
-          // Construct the new IBillOrder object correctly from SignalR data
-          const newBillOrder: IBillOrder = {
-            id: createdOrder.id,
-            create_time: createdOrder.create_time,
-            update_time: createdOrder.update_time,
-            delete_time: createdOrder.delete_time,
-            bill_id: createdOrder.bill_id,
-            status: createdOrder.status,
-            items: createdOrder.items.map((item) => ({
-              id: Number(item.id),
-              create_time: item.create_time,
-              update_time: item.update_time,
-              bill_id: item.bill_id,
-              order_id: Number(item.order_id),
-              restaurant_id: item.restaurant_id,
-              menu_id: item.menu_id,
-              price_snapshot: item.price_snapshot,
-              quantity: item.quantity,
-              note: item.note,
-            })),
-          };
-
-          setActiveBillData((prevActiveBillData) => {
-            // Only update if the order belongs to the currently displayed bill
-            if (!prevActiveBillData || prevActiveBillData.id !== createdOrder.bill_id) {
-              return prevActiveBillData;
-            }
-
-            const updatedOrders = [...prevActiveBillData.orders, newBillOrder];
-            updatedOrders.sort(
-              (a, b) =>
-                new Date(b.create_time).getTime() - new Date(a.create_time).getTime()
-            );
-
-            return {
-              ...prevActiveBillData,
-              orders: updatedOrders,
+          try {
+            // Construct the new IBillOrder object correctly from SignalR data
+            const newBillOrder: IBillOrder = {
+              id: createdOrder.id,
+              create_time: createdOrder.create_time,
+              update_time: createdOrder.update_time,
+              delete_time: createdOrder.delete_time,
+              bill_id: createdOrder.bill_id,
+              status: createdOrder.status,
+              items: createdOrder.items.map((item) => ({
+                id: Number(item.id),
+                create_time: item.create_time,
+                update_time: item.update_time,
+                bill_id: item.bill_id,
+                order_id: Number(item.order_id),
+                restaurant_id: item.restaurant_id,
+                menu_id: item.menu_id,
+                price_snapshot: item.price_snapshot,
+                quantity: item.quantity,
+                note: item.note,
+              })),
             };
-          });
-        } catch (err) {
-          console.error("Error processing new order:", err);
+
+            setActiveBillData((prevActiveBillData) => {
+              // Only update if the order belongs to the currently displayed bill
+              if (
+                !prevActiveBillData ||
+                prevActiveBillData.id !== createdOrder.bill_id
+              ) {
+                return prevActiveBillData;
+              }
+
+              const updatedOrders = [
+                ...prevActiveBillData.orders,
+                newBillOrder,
+              ];
+              updatedOrders.sort(
+                (a, b) =>
+                  new Date(b.create_time).getTime() -
+                  new Date(a.create_time).getTime()
+              );
+
+              return {
+                ...prevActiveBillData,
+                orders: updatedOrders,
+              };
+            });
+          } catch (err) {
+            console.error("Error processing new order:", err);
+          }
         }
-      });
+      );
 
       connect.on(
         "order_status_updated",
@@ -319,6 +340,58 @@ const TableRender = () => {
         }
       );
 
+      connect.on(
+        "table_status_updated",
+        (updatedTable: UpdatedTableFromSignalR) => {
+          console.log("Table Status Updated", updatedTable);
+          setTables((prev) => {
+            return prev.map((table) => {
+              if (Number(table.id) === updatedTable.resource.id) {
+                console.log(table.name);
+                return {
+                  ...table,
+                  status: updatedTable.status,
+                  hasCustomers: updatedTable.status === ETableStatus.OCCUPIED,
+                };
+              }
+              return table;
+            });
+          });
+        }
+      );
+
+      connect.on(
+        "bill_status_updated",
+        (updatedBill: UpdatedBillFromSignalR) => {
+          if (updatedBill.status === EBillStatus.PAID) {
+            setActiveBillData((prev) => {
+              if (!prev || prev.id !== updatedBill.resource.id) return prev;
+              return {
+                ...prev,
+                status: updatedBill.status,
+              };
+            });
+            toast({
+              title: "Payment Success",
+              description: "Payment has been processed successfully",
+            });
+          } else if (updatedBill.status === EBillStatus.COMPLETED) {
+            setActiveBillData((prev) => {
+              if (!prev || prev.id !== updatedBill.resource.id) return prev;
+              return {
+                ...prev,
+                status: updatedBill.status,
+              };
+            });
+            setShowTableBillDrawer(false);
+            toast({
+              title: "Bill Completed",
+              description: "Bill has been completed",
+            });
+          }
+        }
+      );
+
       return () => {
         connect.stop();
       };
@@ -336,8 +409,22 @@ const TableRender = () => {
     const sessionId = searchParams.get("session_id");
     const paymentMethod = searchParams.get("payment_method");
     const billId = searchParams.get("bill_id");
+    const tableId = searchParams.get("table_id");
     const cancel = searchParams.get("cancel");
     const paymentId = searchParams.get("payment_id");
+
+    if (tableId && billId) {
+      console.log("tableId", tableId);
+      console.log("billId", billId);
+        const currentTableData = {
+          id: tableId,
+          name: currentTable?.name || "",
+          hasCustomers: true,
+          billId: billId,
+        };
+        openTable(currentTableData);
+        router.replace("/table")
+    }
 
     if (cancel && billId) {
       setShowPaymentFailedModal(true);
@@ -616,8 +703,9 @@ const TableRender = () => {
           billData={activeBillData}
           qrUrl={qrData}
           serviceRequests={serviceRequests.filter(
-            (request) => request.table.id == Number(currentTable.id)
-            && request.bill_id === activeBillData?.id
+            (request) =>
+              request.table.id == Number(currentTable.id) &&
+              request.bill_id === activeBillData?.id
           )}
           onCheckBill={() => setShowPaymentModal(true)}
           onCompleteBill={() => setShowConfirmCompleteBillModal(true)}
@@ -678,7 +766,9 @@ const TableRender = () => {
           amountTotal={stripeResult.amount_total}
           paymentMethod={stripeResult.payment_method || "CASH"}
           onClose={() => {
-            resetState();
+            setShowPaymentSuccessModal(false);
+            setShowPaymentModal(false);
+            setShowConfirmPaymentModal(false);
           }}
         />
       )}
