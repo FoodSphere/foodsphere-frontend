@@ -54,13 +54,6 @@ export enum EBillStatus {
   CANCELLED = 3,
 }
 
-export enum ETableStatus {
-  READY = 0,
-  DISABLED = 1,
-  OCCUPIED = 2,
-  RESERVED = 3,
-}
-
 export enum EUserType {
   MASTER = "Master",
   WORKER = "Worker",
