@@ -289,7 +289,7 @@ export default function TableAddOrderRender() {
       }
 
       setOrderItems([]);
-      router.back();
+      router.push(`/table?table_id=${tableId}&bill_id=${billId}`);
     } catch (error) {
       console.error("Failed to confirm order:", error);
       setErrorMessage("เกิดข้อผิดพลาดในการส่งออเดอร์ กรุณาลองใหม่อีกครั้ง");
