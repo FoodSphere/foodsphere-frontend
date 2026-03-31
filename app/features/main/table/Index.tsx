@@ -457,18 +457,8 @@ const TableRender = () => {
     }
 
     if (paymentId && paymentMethod === EPaymentMethod.CASH && billId) {
-      // เช็คว่าเคย Verify Payment ID นี้ไปหรือยัง
-      const isProcessed = sessionStorage.getItem(
-        `processed_payment_${paymentId}`
-      );
-      if (isProcessed) {
-        clearQueryParams();
-        return;
-      }
-
       const verify = async () => {
         try {
-          sessionStorage.setItem(`processed_payment_${paymentId}`, "true"); // มาร์คว่ากำลังทำ/ทำเสร็จแล้ว
           const result = await verifyCashPayment(paymentId, billId);
           setStripeResult(result);
           if (result.success) {
@@ -479,9 +469,8 @@ const TableRender = () => {
         } catch (error) {
           console.error("Failed to verify cash payment:", error);
           toast({ variant: "error", title: "Failed to verify cash payment" });
-          sessionStorage.removeItem(`processed_payment_${paymentId}`); // ลบออกถ้าพัง จะได้ลองใหม่ได้
         } finally {
-          clearQueryParams();
+          router.replace("/table");
         }
       };
       verify();
